@@ -1,0 +1,538 @@
+--- a/src/ecos/ifxos_ecos_print_io.c
++++ b/src/ecos/ifxos_ecos_print_io.c
+@@ -251,6 +251,57 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++#ifndef _lint
++   IFX_int_t   nRet = 0;
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   IFXOS_staticMemoryFile_t *pprivMemFile = IFX_NULL;
++#endif
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   pprivMemFile = IFXOS_IsStaticMemoryFile(stream);
++
++   if (pprivMemFile)
++   {
++      nRet = vsnprintf(pprivMemFile->pBuffer + pprivMemFile->currPos, 
++                       pprivMemFile->bufSize - pprivMemFile->currPos, format, vaList);
++      pprivMemFile->currPos += nRet;
++   }
++   else
++#endif
++   {
++      nRet = vfprintf(stream, format, vaList);
++   }
++
++#else
++   IFX_int_t   nRet = 0;
++#endif
++   return nRet;
++}
++#endif
+ /** @} */
+ 
+ #endif      /* #ifdef ECOS */
+--- a/src/generic_os/ifxos_generic_os_print_io.c
++++ b/src/generic_os/ifxos_generic_os_print_io.c
+@@ -239,6 +239,41 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++   IFX_int_t   nRet = 0;
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++   /*
++      Customer-ToDo:
++      Fill with your customer OS implementation like:
++
++      nRet = vfprintf(stream, format, vaList);
++   */
++
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef GENERIC_OS */
+--- a/src/linux/ifxos_linux_print_io_appl.c
++++ b/src/linux/ifxos_linux_print_io_appl.c
+@@ -192,6 +192,38 @@ IFX_int_t IFXOS_VSNPrintf (
+    return vsnprintf(pStrBuf, bufSize, format, vaList);
+ }
+ #endif
++
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++   IFX_int_t   nRet = 0;
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++   nRet = vfprintf(stream, format, vaList);
++
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef LINUX */
+--- a/src/nucleus/ifxos_nucleus_print_io.c
++++ b/src/nucleus/ifxos_nucleus_print_io.c
+@@ -254,6 +254,58 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++#ifndef _lint
++   IFX_int_t   nRet = 0;
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   IFXOS_staticMemoryFile_t *pprivMemFile = IFX_NULL;
++#endif
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   pprivMemFile = IFXOS_IsStaticMemoryFile(stream);
++
++   if (pprivMemFile)
++   {
++      nRet = vsnprintf(pprivMemFile->pBuffer + pprivMemFile->currPos, 
++                       pprivMemFile->bufSize - pprivMemFile->currPos, format, vaList);
++      pprivMemFile->currPos += nRet;
++   }
++   else
++#endif
++   {
++      nRet = vfprintf(stream, format, vaList);
++   }
++
++#else
++   IFX_int_t   nRet = 0;
++#endif
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef NUCLEUS_PLUS */
+--- a/src/rtems/ifxos_rtems_print_io.c
++++ b/src/rtems/ifxos_rtems_print_io.c
+@@ -248,6 +248,41 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++   IFX_int_t   nRet = 0;
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++   /*
++      Customer-ToDo:
++      Fill with your customer OS implementation like:
++
++      nRet = vfprintf(stream, format, vaList);
++   */
++
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef RTEMS */
+--- a/src/sun_os/ifxos_sun_os_print_io_appl.c
++++ b/src/sun_os/ifxos_sun_os_print_io_appl.c
+@@ -189,6 +189,38 @@ IFX_int_t IFXOS_VSNPrintf (
+    return vsnprintf(pStrBuf, bufSize, format, vaList);
+ }
+ #endif
++
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++   IFX_int_t   nRet = 0;
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++   nRet = vfprintf(stream, format, vaList);
++
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #if defined(SUN_OS) */
+--- a/src/vxworks/ifxos_vxworks_print_io.c
++++ b/src/vxworks/ifxos_vxworks_print_io.c
+@@ -212,6 +212,40 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++#ifndef _lint
++   IFX_int_t   nRet = 0;
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++   nRet = vfprintf(stream, format, vaList);
++#else
++   IFX_int_t   nRet = 0;
++#endif
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef VXWORKS */
+--- a/src/win32/ifxos_win32_print_io.c
++++ b/src/win32/ifxos_win32_print_io.c
+@@ -241,6 +241,54 @@ IFX_int_t IFXOS_VSNPrintf (
+ }
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++{
++   IFX_int_t   nRet = 0;
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   IFXOS_staticMemoryFile_t *pprivMemFile = IFX_NULL;
++#endif
++
++   IFXOS_RETURN_IF_POINTER_NULL(stream, IFX_ERROR);
++   IFXOS_RETURN_IF_POINTER_NULL(format, IFX_ERROR);
++
++#if ( defined(IFXOS_ADD_STATIC_MEMORY_FILE) && (IFXOS_ADD_STATIC_MEMORY_FILE == 1) )
++   pprivMemFile = IFXOS_IsStaticMemoryFile(stream);
++
++   if (pprivMemFile)
++   {
++      nRet = vsnprintf(pprivMemFile->pBuffer + pprivMemFile->currPos, 
++                       pprivMemFile->bufSize - pprivMemFile->currPos, format, vaList);
++      pprivMemFile->currPos += nRet;
++   }
++   else
++#endif
++   {
++      nRet = vfprintf(stream, format, vaList);
++   }
++
++   return nRet;
++}
++#endif
++
+ /** @} */
+ 
+ #endif      /* #ifdef WIN32 */
+--- a/src/include/ecos/ifxos_ecos_print_io.h
++++ b/src/include/ecos/ifxos_ecos_print_io.h
+@@ -81,6 +81,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX eCos adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF             1
++#endif
++
+ /* ============================================================================
+    IFX eCos adaptation - types
+    ========================================================================= */
+--- a/src/include/generic_os/ifxos_generic_os_print_io.h
++++ b/src/include/generic_os/ifxos_generic_os_print_io.h
+@@ -60,6 +60,9 @@
+ /** IFX Generic OS adaptation - User support "I/O printout and get - vsnprintf" */
+ #define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ 
++/** IFX Generic OS adaptation - User support "I/O printout and get - vfprintf" */
++#define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++
+ /* ============================================================================
+    IFX Generic OS adaptation - types
+    ========================================================================= */
+--- a/src/include/ifxos_print_io.h
++++ b/src/include/ifxos_print_io.h
+@@ -204,6 +204,31 @@ IFX_int_t IFXOS_VSNPrintf (
+    ;
+ #endif
+ 
++#if ( defined(IFXOS_HAVE_IOPRINT_VFPRINTF) && (IFXOS_HAVE_IOPRINT_VFPRINTF == 1) )
++/**
++   Print to a file, (pipe,) stdout, stderr or memory file.
++
++\param
++   stream  - handle of the stream.
++\param
++   format   - points to the printf format string.
++\param
++   vaList   - variable argument list for further parameters.
++
++\return
++   For success - Number of written bytes.
++   For error   - negative value.
++*/
++IFX_int_t IFXOS_VFPrintf (
++                     IFXOS_File_t      *stream,
++                     const IFX_char_t  *format, 
++                     IFXOS_valist_t    vaList)
++#ifdef __GNUC__
++   __attribute__ ((format (printf, 2, 0)))
++#endif
++   ;
++#endif
++
+ /** @} */
+ 
+ #ifdef __cplusplus
+@@ -213,4 +238,3 @@ IFX_int_t IFXOS_VSNPrintf (
+ #endif      /* #ifndef _IFXOS_IOPRINT_H */
+ 
+ 
+-
+--- a/src/include/linux/ifxos_linux_print_io.h
++++ b/src/include/linux/ifxos_linux_print_io.h
+@@ -68,6 +68,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX LINUX adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++#endif
++
+ /* ============================================================================
+    IFX LINUX adaptation - types
+    ========================================================================= */
+--- a/src/include/nucleus/ifxos_nucleus_print_io.h
++++ b/src/include/nucleus/ifxos_nucleus_print_io.h
+@@ -69,6 +69,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX Nucleus adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++#endif
++
+ /* ============================================================================
+    IFX Nucleus adaptation - types
+    ========================================================================= */
+--- a/src/include/rtems/ifxos_rtems_print_io.h
++++ b/src/include/rtems/ifxos_rtems_print_io.h
+@@ -60,6 +60,9 @@
+ /** RTEMS adaptation - User support "I/O printout and get - vsnprintf" */
+ #define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ 
++/** RTEMS adaptation - User support "I/O printout and get - vfprintf" */
++#define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++
+ /* ============================================================================
+    RTEMS adaptation - types
+    ========================================================================= */
+--- a/src/include/sun_os/ifxos_sun_os_print_io.h
++++ b/src/include/sun_os/ifxos_sun_os_print_io.h
+@@ -68,6 +68,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX Sun OS adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++#endif
++
+ /* ============================================================================
+    IFX Sun OS adaptation - types
+    ========================================================================= */
+--- a/src/include/vxworks/ifxos_vxworks_print_io.h
++++ b/src/include/vxworks/ifxos_vxworks_print_io.h
+@@ -69,6 +69,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX VxWorks adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++#endif
++
+ /* ============================================================================
+    IFX VxWorks adaptation - types
+    ========================================================================= */
+--- a/src/include/win32/ifxos_win32_print_io.h
++++ b/src/include/win32/ifxos_win32_print_io.h
+@@ -68,6 +68,11 @@
+ #  define IFXOS_HAVE_IOPRINT_VSNPRINTF             1
+ #endif
+ 
++/** IFX Win32 adaptation - User support "I/O printout and get - vfprintf" */
++#ifndef IFXOS_HAVE_IOPRINT_VFPRINTF
++#  define IFXOS_HAVE_IOPRINT_VFPRINTF              1
++#endif
++
+ /* ============================================================================
+    IFX Win32 adaptation - types
+    ========================================================================= */

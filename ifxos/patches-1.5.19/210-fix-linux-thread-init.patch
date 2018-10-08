@@ -1,0 +1,22 @@
+IFXOS_ThreadInit: for Linux implementation configure new thread with pthread_detach()
+to release resources upon thread termination
+
+diff --git a/src/linux/ifxos_linux_thread_appl.c b/src/linux/ifxos_linux_thread_appl.c
+--- a/src/linux/ifxos_linux_thread_appl.c
++++ b/src/linux/ifxos_linux_thread_appl.c
+@@ -211,11 +211,14 @@ IFX_int32_t IFXOS_ThreadInit(
+             pthread_attr_destroy(&attr);
+             IFXOS_PRN_USR_ERR_NL( IFXOS, IFXOS_PRN_LEVEL_ERR,
+                ("IFXOS ERROR - User Thread create <%s> - pthread_create = %d" IFXOS_CRLF,
+-                 (pName ? (pName) : "noname"), errno ));
++                 (pName ? (pName) : "noname"), retVal ));
+ 
+             return IFX_ERROR;
+          }
+ 
++         /* use pthread_detach() so all resources are realesed upon thread termination  */
++         pthread_detach(tid);
++
+          pThrCntrl->tid = tid;
+          pThrCntrl->bValid = IFX_TRUE;
+ 

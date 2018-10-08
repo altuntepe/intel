@@ -1,0 +1,11 @@
+--- a/src/include/ifxos_thread.h
++++ b/src/include/ifxos_thread.h
+@@ -171,7 +171,7 @@ typedef IFX_int32_t (*IFXOS_ThreadFuncti
+    Check the init status of the given mutex object
+ */
+ #define IFXOS_THREAD_INIT_VALID(P_THREAD_ID)\
+-   (((P_THREAD_ID)) ? (((P_THREAD_ID)->bValid == IFX_TRUE) ? IFX_TRUE : IFX_FALSE) : IFX_FALSE)
++   (((void *)(P_THREAD_ID) != NULL) ? (((P_THREAD_ID)->bValid == IFX_TRUE) ? IFX_TRUE : IFX_FALSE) : IFX_FALSE)
+ 
+ /**
+    Creates a new thread / task.

@@ -1,0 +1,26 @@
+set thread names on linux, if define "PR_SET_NAME" is found
+- this param is supported since kernel 2.6.9
+
+diff --git a/src/linux/ifxos_linux_thread_appl.c b/src/linux/ifxos_linux_thread_appl.c
+--- a/src/linux/ifxos_linux_thread_appl.c
++++ b/src/linux/ifxos_linux_thread_appl.c
+@@ -29,6 +29,7 @@
+ #include <pthread.h>
+ #include <string.h>
+ #include <errno.h>
++#include <sys/prctl.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+@@ -112,6 +113,11 @@ IFXOS_STATIC IFX_int32_t IFXOS_UserThrea
+          ("IFXOS - User Thread Startup <%s>, TID %d (PID %d) - ENTER" IFXOS_CRLF,
+            pThrCntrl->thrParams.pName, (IFX_int_t)pthread_self(), (IFX_int_t)getpid()));
+ 
++#ifdef PR_SET_NAME
++      if (pThrCntrl->thrParams.pName != NULL)
++         prctl(PR_SET_NAME, pThrCntrl->thrParams.pName, 0, 0, 0);
++#endif
++
+       pThrCntrl->thrParams.bRunning = IFX_TRUE;
+       retVal = pThrCntrl->pThrFct(&pThrCntrl->thrParams);
+       pThrCntrl->thrParams.bRunning = IFX_FALSE;

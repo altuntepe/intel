@@ -1,0 +1,65 @@
+--- a/src/linux/ifxos_linux_thread_drv.c
++++ b/src/linux/ifxos_linux_thread_drv.c
+@@ -38,7 +38,7 @@
+ #include <linux/smp_lock.h>
+ #endif
+ #include <linux/signal.h>
+-
++#include <linux/kthread.h>
+ 
+ #include "ifx_types.h"
+ #include "ifxos_rt_if_check.h"
+@@ -70,10 +70,6 @@
+ #if ( defined(IFXOS_HAVE_THREAD) && (IFXOS_HAVE_THREAD == 1) )
+ 
+ 
+-IFXOS_STATIC IFX_int32_t IFXOS_KernelThreadStartup(
+-                              IFXOS_ThreadCtrl_t *pThrCntrl);
+-
+-
+ /* ============================================================================
+    IFX Linux adaptation - Kernel Thread handling
+    ========================================================================= */
+@@ -98,9 +94,9 @@ IFXOS_STATIC IFX_int32_t IFXOS_KernelThr
+    - IFX_SUCCESS on success
+    - IFX_ERROR on error
+ */
+-IFXOS_STATIC IFX_int32_t IFXOS_KernelThreadStartup(
+-                              IFXOS_ThreadCtrl_t *pThrCntrl)
++IFXOS_STATIC int IFXOS_KernelThreadStartup(void *data)
+ {
++   IFXOS_ThreadCtrl_t *pThrCntrl = (IFXOS_ThreadCtrl_t*) data;
+    IFX_int32_t retVal          = IFX_ERROR;
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
+    struct task_struct *kthread = current;
+@@ -141,8 +137,6 @@ IFXOS_STATIC IFX_int32_t IFXOS_KernelThr
+    /* let others run */
+    unlock_kernel();
+ #else
+-   daemonize(pThrCntrl->thrParams.pName);
+-
+    /* Enable signals in Kernel >= 2.6 */
+    allow_signal(SIGKILL);
+    allow_signal(SIGINT);
+@@ -221,9 +215,7 @@ IFX_int32_t IFXOS_ThreadInit(
+          init_completion(&pThrCntrl->thrCompletion);
+ 
+          /* start kernel thread via the wrapper function */
+-         pThrCntrl->tid = kernel_thread( (IFXOS_KERNEL_THREAD_StartRoutine)IFXOS_KernelThreadStartup,
+-                        (void *)pThrCntrl,
+-                        IFXOS_DRV_THREAD_OPTIONS);
++         pThrCntrl->tid = kthread_run(IFXOS_KernelThreadStartup, (void *)pThrCntrl, pName);
+ 
+          pThrCntrl->bValid = IFX_TRUE;
+ 
+--- a/src/include/linux/ifxos_linux_thread.h
++++ b/src/include/linux/ifxos_linux_thread.h
+@@ -152,7 +152,7 @@ typedef struct
+    IFXOS_ThreadFunction_t  pThrFct;
+ 
+    /** Kernel thread process ID */
+-   IFX_int32_t             tid;
++   struct task_struct             *tid;
+ 
+    /** requested kernel thread priority */
+    IFX_int32_t             nPriority;

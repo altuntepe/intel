@@ -1,0 +1,24 @@
+IFXOS_EventWait: return values of "wait_event_interruptible_timeout" were not handled in a correct way
+and gave no possibility to differentiate errors from timeouts
+
+diff --git a/src/linux/ifxos_linux_event_drv.c b/src/linux/ifxos_linux_event_drv.c
+--- a/src/linux/ifxos_linux_event_drv.c
++++ b/src/linux/ifxos_linux_event_drv.c
+@@ -184,12 +184,14 @@ IFX_int_t IFXOS_EventWait(
+          pEventId->bConditionFlag = 0;
+          return IFX_SUCCESS;
+ #  else
+-         if ( wait_event_interruptible_timeout(
++         int ret;
++         ret = wait_event_interruptible_timeout(
+                      pEventId->object, 
+                      (pEventId->bConditionFlag == 1), 
+-                     ((HZ * (waitTime_ms)) / 1000)) == 0 )
++                     ((HZ * (waitTime_ms)) / 1000));
++         if (ret <= 0)
+          {
+-            if(pRetCode) 
++            if (pRetCode && ret == 0)
+                *pRetCode = 1;
+ 
+             pEventId->bConditionFlag = 0;

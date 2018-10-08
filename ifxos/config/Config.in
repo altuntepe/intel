@@ -1,0 +1,10 @@
+config IFXOS_IPV6_SUPPORT
+	bool "IPv6 support"
+	default n
+	help
+		Option to enable IPv6 support
+
+config IFXOS_SHARED_LIB
+	bool "IFXOS as shared library"
+	help
+		Provide IFXOS also as shared library

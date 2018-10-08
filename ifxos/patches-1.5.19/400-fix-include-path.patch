@@ -1,0 +1,12 @@
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -15,9 +15,6 @@ lib_LIBRARIES = libifxos.a
+ AM_CPPFLAGS = \
+ 	-I@srcdir@\
+ 	-I@srcdir@/include \
+-	-I@KERNEL_INCL_PATH@ \
+-	-I@KERNEL_BUILD_PATH@/include \
+-	-I@KERNEL_BUILD_PATH@/include2 \
+ 	-I$(TARGET_INCL_PATH)
+ 
+ if HAVE_GCC

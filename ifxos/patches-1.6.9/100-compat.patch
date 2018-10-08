@@ -1,0 +1,47 @@
+Portability fixes:
+- Add support for Linux kernel 4.9
+  sock_recvmsg() does not take size argument any more
+- tar fix for Redhat6
+
+diff --git a/configure.in b/configure.in
+--- a/configure.in
++++ b/configure.in
+@@ -5,7 +5,7 @@
+ AC_INIT(lib_ifxos, 1.6.9, www.lantiq.com)
+ AC_CONFIG_SRCDIR([config.h.in])
+ AC_CONFIG_HEADER([config.h])
+-AM_INIT_AUTOMAKE
++AM_INIT_AUTOMAKE([-Wno-portability tar-pax])
+ 
+ # Checks for programs.
+ AC_PROG_CC
+diff --git a/src/linux/ifxos_linux_socket_drv.c b/src/linux/ifxos_linux_socket_drv.c
+--- a/src/linux/ifxos_linux_socket_drv.c
++++ b/src/linux/ifxos_linux_socket_drv.c
+@@ -192,7 +192,11 @@
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,7,0)
+    ret = sock_recvmsg ((struct socket *) socFd, &msg, bufSize_byte, 0);
++#else
++   ret = sock_recvmsg ((struct socket *) socFd, &msg, 0);
++#endif
+    set_fs(old_fs);
+ 
+    return ret;
+diff --git a/src/linux/ifxos_linux_socket_ipv6_drv.c b/src/linux/ifxos_linux_socket_ipv6_drv.c
+--- a/src/linux/ifxos_linux_socket_ipv6_drv.c
++++ b/src/linux/ifxos_linux_socket_ipv6_drv.c
+@@ -135,7 +135,11 @@
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,7,0)
+    ret = sock_recvmsg ((struct socket *) socFd, &msg, bufSize_byte, 0);
++#else
++   ret = sock_recvmsg ((struct socket *) socFd, &msg, 0);
++#endif
+    set_fs(old_fs);
+ 
+    return ret;

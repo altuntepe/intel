@@ -1,0 +1,72 @@
+Change to libtool to support static and dynamic libraries
+
+--- a/configure.in
++++ b/configure.in
+@@ -6,11 +6,12 @@ AC_INIT(lib_ifxos, 1.6.9, www.lantiq.com
+ AC_CONFIG_SRCDIR([config.h.in])
+ AC_CONFIG_HEADER([config.h])
+ AM_INIT_AUTOMAKE([-Wno-portability tar-pax])
++AC_CONFIG_MACRO_DIR([m4])
+ 
+ # Checks for programs.
+ AC_PROG_CC
+-AC_PROG_RANLIB
+ AM_PROG_CC_C_O
++LT_INIT
+ 
+ # save the configure arguments
+ CONFIGURE_OPTIONS="$ac_configure_args"
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -13,7 +13,7 @@ endif
+ 
+ endif
+ 
+-lib_LIBRARIES = libifxos.a
++lib_LTLIBRARIES = libifxos.la
+ 
+ AM_CPPFLAGS = \
+ 	-I@srcdir@\
+@@ -31,6 +31,9 @@ lauterbach_cflags = -DLAUTERBACH_COMPILE
+ 	-fno-schedule-insns -fno-schedule-insns2 -fno-strict-aliasing -fno-common -DIFXOS_DEBUG
+ # AM_CFLAGS += $(lauterbach_cflags)
+ 
++if ENABLE_LINUX
++AM_LDFLAGS = -Wl,--no-undefined
++endif
+ 
+ else !HAVE_GCC
+ 
+@@ -65,6 +68,8 @@ endif ENABLE_ECOS
+ 
+ if ENABLE_LINUX
+ 
++libifxos_la_LIBADD = -lpthread -lrt
++
+ libifxos_additional_cflags+=\
+ 	-DLINUX \
+ 	-DRW_MULTI_THREAD \
+@@ -604,11 +609,11 @@ lib_ifxos_specific=\
+ 	$(lib_ifxos_ini_file_access_specific)
+ endif
+ 
+-libifxos_a_CFLAGS = \
++libifxos_la_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(libifxos_additional_cflags)
+ 
+-libifxos_a_SOURCES = \
++libifxos_la_SOURCES = \
+ 	$(lib_ifxos_specific) \
+ 	$(lib_ifxos_common)\
+ 	$(lib_ifxos_extra_libraries)
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,6 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+ AUTOMAKE_OPTIONS = foreign 1.6 nostdinc
++ACLOCAL_AMFLAGS = -I m4
+ 
+ SUBDIRS = src
+ 
