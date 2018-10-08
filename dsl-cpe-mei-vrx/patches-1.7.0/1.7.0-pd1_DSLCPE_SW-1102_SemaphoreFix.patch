@@ -1,0 +1,38 @@
+diff -Naur org/configure.in new/configure.in
+--- org/configure.in
++++ new/configure.in
+@@ -1,7 +1,7 @@
+ 
+ AC_REVISION($Revision: 1.21 $)
+ 
+-AC_INIT(IFX MEI CPE Driver, 1.7.0, , drv_mei_cpe)
++AC_INIT(IFX MEI CPE Driver, 1.7.0-pd1, , drv_mei_cpe)
+ AC_CONFIG_SRCDIR(src/Makefile.am)
+ AM_INIT_AUTOMAKE([tar-pax])
+ 
+diff -Naur org/src/drv_mei_cpe_msg_process.c new/src/drv_mei_cpe_msg_process.c
+--- org/src/drv_mei_cpe_msg_process.c
++++ new/src/drv_mei_cpe_msg_process.c
+@@ -2546,10 +2546,10 @@ IFX_int32_t MEI_WaitForInstance(
+                               MEI_DEV_T          *pMeiDev,
+                               MEI_DYN_CMD_DATA_T *pDynCmd)
+ {
++   /* block int, block other tasks - check if this struct is currently in use */
++   MEI_DRV_GET_UNIQUE_ACCESS(pMeiDev);
+    if (MEI_DRV_DYN_MBBUF_STATE_GET(pDynCmd) != e_MEI_MB_BUF_FREE)
+    {
+-      /* block int, block other tasks - check if this struct is currently in use */
+-      MEI_DRV_GET_UNIQUE_ACCESS(pMeiDev);
+       if (pMeiDev->pCurrDynCmd == pDynCmd)
+       {
+          PRN_ERR_USR_NL( MEI_DRV, MEI_DRV_PRN_LEVEL_ERR,
+@@ -2568,8 +2568,8 @@ IFX_int32_t MEI_WaitForInstance(
+       }
+       MEI_DRV_DYN_MBBUF_STATE_SET(pDynCmd, e_MEI_MB_BUF_FREE);
+ 
+-      MEI_DRV_RELEASE_UNIQUE_ACCESS(pMeiDev);
+    }
++   MEI_DRV_RELEASE_UNIQUE_ACCESS(pMeiDev);
+ 
+    return IFX_SUCCESS;
+ }

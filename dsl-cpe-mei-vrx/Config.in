@@ -1,0 +1,191 @@
+menu "Configuration"
+	depends on PACKAGE_dsl-cpe-mei-vrx
+
+	choice
+		prompt "Device selection"
+		default dsl-cpe-mei-vrx_DEVICE_VR9
+		help
+		  Selection of a device.
+
+	config dsl-cpe-mei-vrx_DEVICE_VR9
+		bool "VRX200"
+		help
+		  Actiavtes build for VRX200 Family.
+
+	config dsl-cpe-mei-vrx_DEVICE_VR10
+		bool "VRX300"
+		help
+		  Actiavtes build for VRX300 Family.
+
+	config dsl-cpe-mei-vrx_DEVICE_VR10_320
+		bool "VRX320"
+		help
+		  Actiavtes build for VRX300 Family, VRX320 Subfamily.
+
+	config dsl-cpe-mei-vrx_DEVICE_VR11
+		bool "VRX500"
+		help
+		  Actiavtes build for VRX500 Family.
+
+	endchoice
+
+	choice
+		prompt "Build Model"
+		default dsl-cpe-mei-vrx_MODEL_DEBUG
+		help
+		  Selection of a build model for the VRX MEI Driver.
+
+	config dsl-cpe-mei-vrx_MODEL_RELEASE
+		bool "Release"
+		help
+		  Excludes debug functionalities and symbols.
+
+	config dsl-cpe-mei-vrx_MODEL_DEBUG
+		bool "Debug"
+		help
+		  Includes all debug functionalities and symbols.
+	endchoice
+
+	menu "Additional external driver c-flags"
+ 	config dsl-cpe-mei-vrx_USE_MEI_ADD_EXT_DRV_CFLAGS
+		depends on PACKAGE_dsl-cpe-mei-vrx
+		bool "Use additional external driver c-flags"
+		default n
+		help
+		  Defines additional external driver c-flags.
+		  For example platform specific and selected by the buildbot.
+
+	config dsl-cpe-mei-vrx_MEI_ADD_EXT_DRV_CFLAGS
+		depends on dsl-cpe-mei-vrx_USE_MEI_ADD_EXT_DRV_CFLAGS
+		string "Additional external driver c-flags"
+		help
+		  Defines additional external driver c-flags.
+		  For example platform specific and selected by the buildbot.
+	endmenu
+
+	config dsl-cpe-mei-vrx_USE_KERNEL_BUILD_IN
+		bool "Use kernel build-in"
+		default n
+
+	config dsl-cpe-mei-vrx_USE_PCI_SLAVE_DOWNLOAD
+		bool "Use PCI Slave firmware download"
+		default n
+
+	config dsl-cpe-mei-vrx_MEI_PREDEF_DBG_BAR
+		bool "Enable BAR debug user functionality"
+		default y
+
+	config dsl-cpe-mei-vrx_MEI_DEBUG_STREAM_SUPPORT
+		bool "Enable Debug stream support functionality"
+		default y
+
+	choice
+		prompt "Debug & Test mode"
+		default dsl-cpe-mei-vrx_DTM_NONE
+		help
+		  Configures the MEI Driver to operate in a specific debug or test mode.
+
+	config dsl-cpe-mei-vrx_DTM_NONE
+		bool "None (normal operation)"
+		help
+		  Do not use any specific debug or test mode (default)
+
+	config dsl-cpe-mei-vrx_DTM_EMULATION
+		bool "Emulation"
+		help
+		  Selects (pre-silicon) emulation related configuration and operation mode.
+
+	config dsl-cpe-mei-vrx_DTM_STANDALONE
+		bool "Standalone"
+		help
+		  Selects standalone operation mode for DSL Subsystem.
+		  1) If DSL CPE API (dsl-cpe-api-vrx) is NOT included the DSL Subsystem is initialized
+		     by the MEI Driver during system boot in a very basic way (just FW download, no
+		     xDSL multimode capability etc.)
+		     This mode is useful for system bringup purpose for example.
+		  2) If DSL CPE API (dsl-cpe-api-vrx) is additionally included the DSL Subsystem is
+		     initialized by standard OpenWRT boot procedure but without higher layer, such
+		     like DSL-FAPI and DSL-SL.
+		     Full functionality will be available on DSL CPE PHY subsystem level in this case.
+
+	endchoice
+
+	choice
+		prompt "IRQ Polling mode"
+		default dsl-cpe-mei-vrx_IRQ_POLLING_ACTIVE if dsl-cpe-mei-vrx_DEVICE_VR10_320
+		default dsl-cpe-mei-vrx_IRQ_NORMAL
+		help
+		  Change the IRQ mode.
+
+	config dsl-cpe-mei-vrx_IRQ_NORMAL
+		bool "Normal IRQ mode"
+		help
+		  Uses the normal IRQs received from the device tree or from
+		  the PCIe enpoint driver.
+
+	config dsl-cpe-mei-vrx_IRQ_POLLING_PASSIVE
+		bool "Passive IRQ polling mode"
+		help
+		  Instead of using the IRQ provided by the PCIe Endpoint
+		  driver or by the device tree, use passive IRQ polling mode. (0)
+		  ATTENTION:
+		  In case of using the MEI Driver standalone operation, means there are
+		  no SW layers used above, which are frequently sending DSL Firmware
+		  messages this configuration must be avoided. In this case it is strictly
+		  recommended to select active polling instead.
+
+	config dsl-cpe-mei-vrx_IRQ_POLLING_ACTIVE
+		bool "Active IRQ polling mode"
+		help
+		  Instead of using the IRQ provided by the PCIe Endpoint
+		  driver or by the device tree, use active IRQ polling mode. (99)
+
+	endchoice
+
+	choice
+		depends on dsl-cpe-mei-vrx_USE_PCI_SLAVE_DOWNLOAD
+		prompt "PCI Slave address range"
+		default dsl-cpe-mei-vrx_USE_PCI_SLAVE_ADDR_RANGE_ADTRAN
+	config dsl-cpe-mei-vrx_USE_PCI_SLAVE_ADDR_RANGE_ADTRAN
+		bool "ADTRAN"
+	config dsl-cpe-mei-vrx_USE_PCI_SLAVE_ADDR_RANGE_BONDING
+		bool "BONDING"
+    	endchoice
+
+	config dsl-cpe-mei-vrx_DSL_NETLINK_ID
+		depends on PACKAGE_dsl-cpe-logger
+		string
+		prompt "Netlink ID for debug messages"
+		default "28"
+		help
+		  Defines Netlink ID number for the debug message channel.
+
+	choice
+		prompt "PPA Version"
+		default dsl-cpe-mei-vrx_PPA_WITHOUT_TC_CB if (dsl-cpe-mei-vrx_DEVICE_VR10_320)
+		default dsl-cpe-mei-vrx_PPA_WITH_TC_CB
+		help
+		  Choose which version of PPA subsystem this should be built against.
+
+	config dsl-cpe-mei-vrx_PPA_NO
+		bool "Without PPA support"
+		help
+		  With this option the driver will not call any PPA functions
+		  and will operate independently of PPA. With this mode traffic
+		  will probably not work. Do not use this in normal cases.
+
+	config dsl-cpe-mei-vrx_PPA_WITHOUT_TC_CB
+		bool "With PPA < 3.3 support"
+		help
+		  This will use the PPA subsystem, but it will not use the TC
+		  callbacks. This is needed for PPA version older than
+		  version 3.3.
+
+	config dsl-cpe-mei-vrx_PPA_WITH_TC_CB
+		bool "With PPA >= 3.3 support"
+		help
+		  This will use the PPA subsystem with the TC callbacks.
+		  This should be used with PPA subsystem >= 3.3.
+
+	endchoice
+endmenu
