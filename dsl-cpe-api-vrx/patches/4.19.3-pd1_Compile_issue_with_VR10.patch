@@ -1,0 +1,54 @@
+diff -Naur org/configure.in new/configure.in
+--- org/configure.in
++++ new/configure.in
+@@ -1,7 +1,7 @@
+ 
+ AC_REVISION($Revision: 1.177 $)
+ 
+-AC_INIT([DSL CPE API driver],[4.19.3],[],[drv_dsl_cpe_api])
++AC_INIT([DSL CPE API driver],[4.19.3-pd1],[],[drv_dsl_cpe_api])
+ 
+ AC_CONFIG_SRCDIR(src/Makefile.am)
+ AM_INIT_AUTOMAKE
+diff -Naur org/src/device/drv_dsl_cpe_device_vrx.c new/src/device/drv_dsl_cpe_device_vrx.c
+--- org/src/device/drv_dsl_cpe_device_vrx.c
++++ new/src/device/drv_dsl_cpe_device_vrx.c
+@@ -1816,9 +1816,11 @@ DSL_Error_t DSL_DRV_VRX_FailReasonGet(
+    case ALM_ModemFSM_FailReasonGet_S_INTENDED_LOCAL_SHUTDOWN:
+       lineInitSubStatus = LINIT_SUB_S_INTENDED_LOCAL_SHUTDOWN;
+       break;
++#if defined (DSL_VRX_DEVICE_VR11)
+    case ALM_ModemFSM_FailReasonGet_S_PP_CLOCK_NEW:
+       lineInitSubStatus = LINIT_SUB_S_PP_CLOCK_NEW;
+       break;
++#endif /* defined (DSL_VRX_DEVICE_VR11) */
+    default:
+       lineInitSubStatus = LINIT_SUB_UNKNOWN;
+       break;
+@@ -4529,7 +4531,9 @@ DSL_Error_t DSL_DRV_DEV_FwDownload(
+    DSL_FirmwareXdslFeature_t nFeatureSet = DSL_FW_XDSLFEATURE_CLEANED;
+    DSL_FirmwareFeatures_t nFwFeatures;
+    DSL_FirmwareType_t nNextMode;
++#if defined (DSL_VRX_DEVICE_VR11)
+    DSL_DEV_VersionCheck_t nVerCheck = DSL_VERSION_ERROR;
++#endif /* defined (DSL_VRX_DEVICE_VR11) */
+    DSL_boolean_t bFwEventActivation;
+    DSL_uint32_t nOppositeLine;
+ 
+diff -Naur org/src/device/drv_dsl_cpe_msg_vrx.c new/src/device/drv_dsl_cpe_msg_vrx.c
+--- org/src/device/drv_dsl_cpe_msg_vrx.c
++++ new/src/device/drv_dsl_cpe_msg_vrx.c
+@@ -6588,8 +6588,13 @@ DSL_Error_t DSL_DRV_VRX_SendMsgModemFSMEventConfigure(
+    memset(&sAck, 0, sizeof(sAck));
+ 
+    sCmd.Length = 1;
++#if defined (DSL_VRX_DEVICE_VR11)
+    sCmd.E15 = sCmd.E14 = sCmd.E13 = sCmd.E12 = sCmd.E11 = sCmd.E10 = sCmd.E9 = sCmd.E8 = flag;
+    sCmd.E7 = sCmd.E6 = sCmd.E5 = sCmd.E4 = sCmd.E3 = sCmd.E2 = sCmd.E1 = sCmd.E0 = flag;
++#else
++   sCmd.E13 = sCmd.E12 = sCmd.E11 = sCmd.E10 = sCmd.E9 = sCmd.E8 = flag;
++   sCmd.E6 = sCmd.E5 = sCmd.E4 = sCmd.E3 = sCmd.E2 = sCmd.E0 = flag;
++#endif /* defined (DSL_VRX_DEVICE_VR11) */
+ 
+    nErrCode = DSL_DRV_VRX_SendMessage( pContext, CMD_MODEMFSM_EVENTCONFIGURE,
+                   sizeof(CMD_ModemFSM_EventConfigure_t), (DSL_uint8_t *)&sCmd,

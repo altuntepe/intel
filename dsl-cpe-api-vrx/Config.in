@@ -1,0 +1,71 @@
+menu "Configuration"
+	depends on PACKAGE_dsl-cpe-api-vrx
+
+	choice
+		prompt "Build Model"
+		default dsl-cpe-api-vrx_MODEL_FULL
+		help
+		  Selection of a model (predefined combination of configure options).
+
+	config dsl-cpe-api-vrx_MODEL_LITE
+		bool "Lite"
+		help
+		  Minimum features included.
+		  This model should ONLY demonstrate the minimum possible size.
+
+	config dsl-cpe-api-vrx_MODEL_FOOTPRINT
+		bool "Footprint"
+		help
+		  Defined for low footprint applications.
+
+	config dsl-cpe-api-vrx_MODEL_TYPICAL
+		bool "Typical"
+		help
+		  Defined for most typical use.
+
+	config dsl-cpe-api-vrx_MODEL_FULL
+		bool "Full"
+		help
+		  Includes all features but NOT all debug functionalities.
+
+	config dsl-cpe-api-vrx_MODEL_DEBUG
+		bool "Debug"
+		help
+		  Includes all features AND debug functionalities.
+	endchoice
+
+	menu "optional build options"
+		depends on PACKAGE_dsl-cpe-api-vrx
+	config dsl-cpe-api-vrx_USE_ADDITIONAL_BUILD_OPTIONS
+		depends on PACKAGE_dsl-cpe-api-vrx
+		bool "Use additional build options"
+		default n
+		help
+		  Provides the possibility to include/exclude single features directly.
+		  This configuration overwrites selections which are done by the "build model" configuration.
+
+	config dsl-cpe-api-vrx_ADDITIONAL_BUILD_OPTIONS
+		depends on dsl-cpe-api-vrx_USE_ADDITIONAL_BUILD_OPTIONS
+		string "Additional build options"
+		help
+		  Defines to include/exclude single feature using available configure options.
+		  Please refer to the documentation of the DSL CPE API "Configure options for the DSL CPE API"
+	endmenu
+
+	menu "Additional external driver c-flags"
+ 	config dsl-cpe-api-vrx_USE_DSL_ADD_EXT_DRV_CFLAGS
+		depends on PACKAGE_dsl-cpe-api-vrx
+		bool "Use additional external driver c-flags"
+		default n
+		help
+		  Defines additional external driver c-flags.
+		  For example platform specific and selected by the buildbot.
+
+	config dsl-cpe-api-vrx_DSL_ADD_EXT_DRV_CFLAGS
+		depends on dsl-cpe-api-vrx_USE_DSL_ADD_EXT_DRV_CFLAGS
+		string "Additional external driver c-flags"
+		help
+		  Defines additional external driver c-flags.
+		  For example platform specific and selected by the buildbot.
+	endmenu
+endmenu
