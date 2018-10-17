@@ -1,0 +1,103 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2012 OpenWrt.org
+
+# needs to start before the atm layer which starts at 50
+START=48
+USE_PROCD=1
+
+export LD_LIBRARY_PATH=@dsl_dir@/lib:@dsl_dir@/usr/lib:${LD_LIBRARY_PATH}
+export PATH=@dsl_dir@/sbin:@dsl_dir@/usr/sbin:@dsl_bin_dir@:${PATH}
+
+DebugLevel=3
+
+BIN_DIR=@dsl_bin_dir@
+
+service_triggers() {
+	procd_add_reload_trigger xdsl
+}
+
+configure_xDSL() {
+	local section=$1
+	local enable lines
+	local xdsl_phy_tc
+	local phy_mode tc_mode
+	local ReTxUs ReTxDs_V ReTxDs_A SraUs_V SraDs_V
+	local Vectoring
+	local XTSE
+
+	config_get enable $section enable
+	config_get lines $section lines
+	config_get xdsl_phy_tc $section xdsl_phy_tc
+	config_get ReTxUs $section ReTxUs
+	config_get ReTxDs_V $section ReTxDs_V
+	config_get ReTxDs_A $section ReTxDs_A
+	config_get SraUs_V $section SraUs_V
+	config_get SraDs_V $section SraDs_V
+	config_get Vectoring $section Vectoring
+	config_get XTSE $section XTSE
+	##TODO: 1. If enable is '0' Completely disable the DSL... Discuss and implement
+
+	##TODO: 2. If Lines are more than 1... Implement for DSL-Bonding.
+
+	##3. Pass all the config values to the DSL config utility...
+	#/opt/lantiq/bin/dsl_fapi_cli_owrt $xdsl_phy_tc $ReTxUs $ReTxDs_V $ReTxDs_A $SraUs_V $SraDs_V $Vectoring $XTSE
+}
+
+start_service() {
+
+	if [ -r ${BIN_DIR}/dsl.cfg ]; then
+		. ${BIN_DIR}/dsl.cfg 2> /dev/null
+	fi
+
+	if [ "$xDSL_Dbg_DebugLevel" != "" ]; then
+		DebugLevel="${xDSL_Dbg_DebugLevel}"
+	else
+		if [ -e ${BIN_DIR}/debug_level.cfg ]; then
+			# read in the global definition of the debug level
+			. ${BIN_DIR}/debug_level.cfg 2> /dev/null
+
+			if [ "$ENABLE_DEBUG_OUTPUT" != "" ]; then
+				DebugLevel="${ENABLE_DEBUG_OUTPUT}"
+			fi
+		fi
+	fi
+
+	# Get environment variables for system related configuration
+	if [ -r ${BIN_DIR}/dsl_auto.cfg ]; then
+		. ${BIN_DIR}/dsl_auto.cfg 2> /dev/null
+	fi
+
+	# loading VDSL MEI Driver -
+	cd ${BIN_DIR}
+	${BIN_DIR}/inst_drv_mei_cpe.sh $DebugLevel
+
+	if [ "$xDSL_Dbg_DebugLevel" != "" ]; then
+	DebugLevel="${xDSL_Dbg_DebugLevel}"
+	else
+		if [ -e ${BIN_DIR}/debug_level.cfg ]; then
+			# read in the global definition of the debug level
+			. ${BIN_DIR}/debug_level.cfg 2> /dev/null
+			if [ "$ENABLE_DEBUG_OUTPUT" != "" ]; then
+				DebugLevel="${ENABLE_DEBUG_OUTPUT}"
+			fi
+		fi
+	fi
+
+	# loading DSL CPE API driver -
+	cd ${BIN_DIR}
+	${BIN_DIR}/inst_drv_dsl_cpe_api.sh $DebugLevel
+
+	@dsl_dir@/etc/init.d/ltq_cpe_control_init.sh start
+
+	# Parse the xDSL config file(/etc/config/xdsl), and configure the DSL
+	config_load xdsl
+	config_foreach configure_xDSL
+}
+
+reload_service() {
+	echo "xdsl reload"
+}
+
+stop_service() {
+	@dsl_dir@/etc/init.d/ltq_cpe_control_init.sh stop
+}

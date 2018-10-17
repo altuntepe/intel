@@ -1,0 +1,56 @@
+diff -Naur org/configure.in new/configure.in
+--- a/configure.in
++++ b/configure.in
+@@ -1,6 +1,6 @@
+ AC_REVISION($Revision: 1.173 $)
+ 
+-AC_INIT([DSL CPE Control application],[4.19.3],[],[dsl_cpe_control])
++AC_INIT([DSL CPE Control application],[4.19.3-pa1],[],[dsl_cpe_control])
+ AC_CONFIG_SRCDIR(src/Makefile.am)
+ AM_INIT_AUTOMAKE([tar-pax])
+ 
+diff -Naur org/src/dsl_cpe_bnd_vrx.c new/src/dsl_cpe_bnd_vrx.c
+--- org/src/dsl_cpe_bnd_vrx.c
++++ new/src/dsl_cpe_bnd_vrx.c
+@@ -477,24 +477,27 @@ DSL_Error_t DSL_CPE_BND_SystemInterfaceStatusHandle(
+       nLine = (pBndCtx->nPafLineHandled == nOppositeLine) ? nCurrentLine :
+                                                             nOppositeLine;
+ 
+-      memset(&nAcs, 0x0, sizeof(DSL_AutobootControl_t));
+-      nAcs.data.nCommand = DSL_AUTOBOOT_CTRL_DISABLE;
+-
+-      nErrorCode = DSL_CPE_Ioctl(pBndCtx->pCtrlCtx->fd[nLine],
+-                    DSL_FIO_AUTOBOOT_CONTROL_SET, (DSL_int_t) &nAcs);
+-      if ((nErrorCode < 0) || (nAcs.accessCtl.nReturn < DSL_SUCCESS))
++      if (nLine != nCurrentLine)
+       {
+-         DSL_CCA_DEBUG(DSL_CCA_DBG_ERR, (DSL_CPE_PREFIX
+-            "DSL_FIO_AUTOBOOT_CONTROL_SET ioctl call failed!" DSL_CPE_CRLF));
++         memset(&nAcs, 0x0, sizeof(DSL_AutobootControl_t));
++         nAcs.data.nCommand = DSL_AUTOBOOT_CTRL_DISABLE;
+ 
+-         return DSL_ERROR;
+-      }
++         nErrorCode = DSL_CPE_Ioctl(pBndCtx->pCtrlCtx->fd[nLine],
++                       DSL_FIO_AUTOBOOT_CONTROL_SET, (DSL_int_t) &nAcs);
++         if ((nErrorCode < 0) || (nAcs.accessCtl.nReturn < DSL_SUCCESS))
++         {
++            DSL_CCA_DEBUG(DSL_CCA_DBG_ERR, (DSL_CPE_PREFIX
++               "DSL_FIO_AUTOBOOT_CONTROL_SET ioctl call failed!" DSL_CPE_CRLF));
++
++            return DSL_ERROR;
++         }
+ 
+-      /* Mark disabled line num */
+-      pBndCtx->nPafLineDisabled = nLine;
++         /* Mark disabled line num */
++         pBndCtx->nPafLineDisabled = nLine;
+ 
+-      /* Clear paf-available line num */
+-      pBndCtx->nPafLineHandled = -1;
++         /* Clear paf-available line num */
++         pBndCtx->nPafLineHandled = -1;
++      }
+    }
+    else
+    {

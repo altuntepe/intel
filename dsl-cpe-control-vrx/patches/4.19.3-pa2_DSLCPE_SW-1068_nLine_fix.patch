@@ -1,0 +1,65 @@
+diff -Naur org/configure.in new/configure.in
+--- org/configure.in
++++ new/configure.in
+@@ -1,6 +1,6 @@
+ AC_REVISION($Revision: 1.173 $)
+ 
+-AC_INIT([DSL CPE Control application],[4.19.3-pa1],[],[dsl_cpe_control])
++AC_INIT([DSL CPE Control application],[4.19.3-pa2],[],[dsl_cpe_control])
+ AC_CONFIG_SRCDIR(src/Makefile.am)
+ AM_INIT_AUTOMAKE([tar-pax])
+ 
+diff -Naur org/src/dsl_cpe_control.c new/src/dsl_cpe_control.c
+--- org/src/dsl_cpe_control.c
++++ new/src/dsl_cpe_control.c
+@@ -2769,6 +2769,7 @@ DSL_Error_t DSL_CPE_ScriptExecute (
+    DSL_char_t *buf = DSL_NULL;
+    DSL_char_t *args = DSL_NULL;
+    DSL_char_t nLineIdentifiers[3][9] = { "nLine=0", "nLine=1", "nLine=-1" };
++   DSL_uint16_t nLineOffset = 0;
+    DSL_char_t *pLine = DSL_NULL;
+    DSL_char_t *str_command = DSL_NULL;
+    DSL_boolean_t bTagFound = DSL_FALSE,
+@@ -3757,14 +3758,39 @@ DSL_Error_t DSL_CPE_ScriptExecute (
+          str_command[script_buf->nSize - 1] = '\0';
+
+          args = buf + DSL_MIN(strlen(str_command) + 1, script_buf->nSize - 1);
++         nLineOffset = 0;
+
+          if(strncmp(args, nLineIdentifiers[0], strlen(nLineIdentifiers[0])) == 0 ||
+-            strncmp(args, nLineIdentifiers[1], strlen(nLineIdentifiers[1])) == 0 ||
+-            strncmp(args, nLineIdentifiers[2], strlen(nLineIdentifiers[2])) == 0)
++            strncmp(args, nLineIdentifiers[1], strlen(nLineIdentifiers[1])) == 0)
++         {
++            /* remove 'nLine=[0|1]' from args */
++            if(pContext->bBackwardCompMode)
++            {
++               nLineOffset = strlen(nLineIdentifiers[0]);
++            }
++            else
++            {
++               nLineOffset = strlen(nLineIdentifiers[0]) - 1;
++            }
++         }
++         else if(strncmp(args, nLineIdentifiers[2], strlen(nLineIdentifiers[2])) == 0)
++         {
++            /* remove 'nLine=-1' from args */
++            if(pContext->bBackwardCompMode)
++            {
++               nLineOffset = strlen(nLineIdentifiers[2]);
++            }
++            else
++            {
++               nLineOffset = strlen(nLineIdentifiers[0]) - 2;
++            }
++         }
++
++         if(nLineOffset > 0)
+          {
+             /* Check if a CLI command is given */
+             DSL_CPE_CliDeviceCommandExecute (pContext, nDevice,
+-               str_command, args + (strlen(nLineIdentifiers[0]) - 1), DSL_CPE_STDOUT);
++               str_command, args + nLineOffset, DSL_CPE_STDOUT);
+          }
+          else
+          {
