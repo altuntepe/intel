@@ -1,0 +1,34 @@
+config COMMON_DTI_ERROR_PRINTS
+	bool
+	prompt "Enable error output"
+	default y
+
+config COMMON_DTI_TCP_IP_PORT
+	int
+	prompt "Default TCP/IP port"
+	default 9000
+
+config COMMON_DTI_CLI
+	bool
+	prompt "Build and add the DTI CLI Feature"
+	default y
+
+config COMMON_DTI_STATISTICS
+	bool
+	prompt "Build and add the DTI CORE Statistics"
+	default n
+
+config COMMON_DTI_STANDALONE
+	bool
+	prompt "Build and install the DTI Standalone Agent"
+	default y
+
+config COMMON_DTI_GENERIC_DEVICE
+	bool
+	prompt "Build and add the DTI Generic Device"
+	default y
+
+config COMMON_DTI_CLIENT_LIB
+	bool
+	prompt "Build and add the DTI Client Library"
+	default n
