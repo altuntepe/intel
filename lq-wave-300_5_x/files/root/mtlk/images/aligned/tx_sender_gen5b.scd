@@ -33,7 +33,8 @@ S 4 1 8 66 Tx Start: MGMT Unicast Encrypted
 S 4 1 9 55 Tx Start: AddBA request
 S 4 1 11 80 Tx Start: BAR
 S 4 1 12 80 Tx Start: NDP
-S 4 1 13 145 Tx Start: NDP Filler
+S 4 1 13 44 Fatal Error in file: "../Code/Source/ndpFiller.c"; Fatal Print: tx_ndp_filler
+S 4 1 13 148 Tx Start: NDP Filler
 S 4 1 14 328 Tx Start: CTS to Self
 S 4 1 15 218 Tx Start: RTS
 S 4 1 16 168 Tx Start: CF End

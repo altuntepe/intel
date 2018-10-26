@@ -6,4 +6,4 @@ fi
 
 export DEV_CREAT_PATH=/dev
 
-$VENDOR_PATH/usr/bin/mtdump "$@"
+$VENDOR_PATH/usr/bin/mtdump "$@" -f $VENDOR_PATH/bin/

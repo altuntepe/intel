@@ -12,29 +12,28 @@ PKG_NAME:=ltq-wlan-wave_5_x
 LINUX_ENV_NAME:=ugw-linux310
 PKG_BASE_NAME:=ltq-wave300
 PKG_BUILD_DEPENDS_EXTRA:=kmod-lantiq-cpufreq
-DEPENDS_EXTRA:=@+PACKAGE_iw \
-		+libnl3 +libpthread +librt +libnl-genl
+DEPENDS_EXTRA:=+libnl3 +libpthread +librt +libnl-genl
 
 # Package Info
-PKG_VERSION:=05.04.01.55
-DRV_VERSION:=05.04.01.00.38.a56531985720
-FW_VERSION:=FW_5.4.1_r18554
+PKG_VERSION:=05.04.02.47
+DRV_VERSION:=05.04.02.00.25.631d9a7d75d3
+FW_VERSION:=FW_5.4.2_r21111
 TX_SENDER_VERSION:=TxSender_2.1_r2165
 HOST_INTERFACE_VERSION:=HostInterface_2.1_r2174
 RX_HANDLER_VERSION:=RxHandler_2.1_r2223
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=6a735c0acee6cd9031276e95e2f0afdd0f9f0b36
+PKG_SOURCE_VERSION:=eb4a7ab53a5f5b9e9f6fa49b2e1e8105ad471628
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
 
-TX_SENDER_GEN5B_VERSION:=TxSender_3.4.1_r4221
-HOST_INTERFACE_GEN5B_VERSION:=HostInterface_3.4.1_r4249
-RX_HANDLER_GEN5B_VERSION:=RxHandler_3.4.1_r4033
+TX_SENDER_GEN5B_VERSION:=TxSender_3.4.1_r4550
+HOST_INTERFACE_GEN5B_VERSION:=HostInterface_3.4.2_r4564
+RX_HANDLER_GEN5B_VERSION:=RxHandler_3.4.1_r4552
 
 PROGMODEL_VERSION_AR10:=3002
 PROGMODEL_VERSION_WAVE500:=2721
-PROGMODEL_VERSION_GEN5B:=3760
+PROGMODEL_VERSION_GEN5B:=4201
 
 FPGA_SIM_VERSION:=wave500_mac_npu_2_2_26_3_G5_G5_6MHz_async
 WAVE_PSD_VER:=TODO_UPDATE_VER_STRING
@@ -44,7 +43,7 @@ PKG_RELEASE:=1
 #PKG_SOURCE:=lq-wave-300-$(PKG_SOURCE_VERSION).tar.bz2
 
 DRV_RFLIB_PKG_NAME:=$(PKG_NAME)-rflib
-DRV_RFLIB_PKG_VERSION:=05.04.01.55
+DRV_RFLIB_PKG_VERSION:=05.04.02.47
 DRV_RFLIB_PKG_SOURCE:=lq-wave-300-$(DRV_VERSION).rflib.wls.src.tar.bz2
 DRV_RFLIB_PKG_SOURCE_URL:=http://localhost
 DRV_RFLIB_PKG_BIN:=lq-wave-300-$(DRV_VERSION).rflib.wls.bin.tar.bz2
@@ -70,13 +69,13 @@ PKG_NO_AUTORECONF:=y
 COPY_SCRIPTS:=n
 SCRIPTS_FOLDER:=etc/rc.d
 BIN_FOLDER:=bin
-BINS_FOLDER:=lib/firmware
+BINS_FOLDER:=root/mtlk/images
 IMAGES_FOLDER:=files/root/mtlk/images
 DRIVER_FOLDER:=lib/modules/$(LINUX_VERSION)/net
 SBIN_FOLDER:=sbin
 UBIN_FOLDER:=/usr/bin
 
-ifeq ($(CONFIG_PACKAGE_fapi_wlan_vendor_wave),y)
+ifneq ($(CONFIG_PACKAGE_fapi_wlan_vendor_wave),)
  COPY_SCRIPTS:=
  SCRIPTS_FOLDER=$(VENDOR_PATH)/wave/scripts
  BIN_FOLDER:=$(VENDOR_PATH)/bin
@@ -193,7 +192,8 @@ define Package/$(PKG_NAME)
 		@+PACKAGE_udev \
 		@+PACKAGE_crda_wave \
 		@+PACKAGE_hostapd_wave \
-		@+PACKAGE_wireless-tools
+		@+PACKAGE_wireless-tools \
+		@+PACKAGE_iw_wave
 #		@+BUSYBOX_CONFIG_LSMOD 
 	URL:=http://www.lantiq.com
 	MAINTAINER:=Lantiq Technologies
@@ -297,7 +297,7 @@ ifneq ($(4),y)
   MD5SUM:=$(3)
   PROTO:=git
   URL:=git@dev.iopsys.eu:intel/$(1).git
-  VERSION:=32773cf20e6476c984ebf4bb5b2e6a256a4713a5
+  VERSION:=0315e3d102bbdc7feec87c47fb56bc9232d331d8
   SUBDIR:=$(PKG_SOURCE_SUBDIR)
  endef
  define Prepare/$(1)
@@ -331,6 +331,8 @@ endif
 		$(INSTALL_DIR) $(PKG_FULL_DIR)/wireless/driver/rflib/prebuilt/;
 		cp $(BUILD_DIR)/lq-wave*rflib*bin/ugw_models/$(UGW_MODEL_NAME)/* $(PKG_FULL_DIR)/wireless/driver/rflib/prebuilt/ || true;
 	)
+	### For iw compilation, copy vendor_cmds.h
+	$(CP) $(PKG_FULL_DIR)/wireless/driver/linux/vendor_cmds.h $(STAGING_DIR)/usr/include
 endef
 
 define Build/Configure
@@ -447,8 +449,8 @@ endif
 
 ifeq ($(COPY_WAVE500_PCIE),y)
  ifeq ($(wildcard ./$(IMAGES_FOLDER)/progmodels/bin_files.list.mod),)
-	$(CP) ./$(IMAGES_FOLDER)/progmodels/wave500/CHIP/* $(1)/$(BINS_FOLDER)/
-	@echo "COPY_WAVE500_PCIE->progmodels in legacy mode"
+	$(CP) ./$(IMAGES_FOLDER)/progmodels/wave500/CHIP/* $(1)/$(BINS_FOLDER)/  || true
+	@echo "COPY_WAVE500_PCIE->progmodels in legacy mode or mixed mode"
  else
 	@echo "COPY_WAVE500_PCIE->progmodels handled in auto mode"
  endif
@@ -487,8 +489,8 @@ endif
 
 ifeq ($(COPY_AR10),y)
  ifeq ($(wildcard ./$(IMAGES_FOLDER)/progmodels/bin_files.list.mod),)
-	$(CP) ./$(IMAGES_FOLDER)/progmodels/ar10/* $(1)/$(BINS_FOLDER)/
-	@echo "COPY_AR10->progmodels in legacy mode"
+	$(CP) ./$(IMAGES_FOLDER)/progmodels/ar10/* $(1)/$(BINS_FOLDER)/ || true
+	@echo "COPY_AR10->progmodels in legacy mode or mixed mode"
  else
 	@echo "COPY_AR10->progmodels handled in auto mode"
  endif
