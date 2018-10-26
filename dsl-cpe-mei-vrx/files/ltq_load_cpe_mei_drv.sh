@@ -15,18 +15,21 @@ start() {
 
 	# Temporary workaround for missing FAPI implementation
 	[ -n "`lspci -n | grep 1bef:0020`" ] && {
-		echo "VRX318 TC inserted"
-		insmod /lib/modules/*/vrx318.ko
-		insmod /lib/modules/*/vrx318_tc.ko
+		[ -z "`cat /proc/modules | grep vrx318`" ] && {
+			echo "VRX318 TC inserting"
+			insmod /lib/modules/*/vrx318.ko
+			insmod /lib/modules/*/vrx318_tc.ko
+		}
 	}
-	
+
 	[ -n "`lspci -n | grep 8086:09a9`" ] && {
-		echo "VRX518 TC inserted"
-	insmod /lib/modules/*/vrx518.ko
-	insmod /lib/modules/*/vrx518_tc.ko
+		[ -z "`cat /proc/modules | grep vrx518`" ] && {
+			echo "VRX518 TC inserting"
+			insmod /lib/modules/*/vrx518.ko
+			insmod /lib/modules/*/vrx518_tc.ko
+		}
 	}
-	
-	
+
 	if [ -r ${BIN_DIR}/dsl.cfg ]; then
 		. ${BIN_DIR}/dsl.cfg 2> /dev/null
 	fi
@@ -55,23 +58,94 @@ start() {
 }
 
 stop() {
-	rmmod drv_mei_cpe.ko
+   if [ -r ${BIN_DIR}/dsl.cfg ]; then
+      . ${BIN_DIR}/dsl.cfg 2> /dev/null
+   fi
 
-	if [ -r ${BIN_DIR}/dsl.cfg ]; then
-		. ${BIN_DIR}/dsl.cfg 2> /dev/null
-	fi
+   nEnabledLines=0
+   bDisableAllLines=1
 
-	if [ "${xDSL_Cfg_LdAfeShutdown}" == "1" ]; then
-		[ -n "`lspci -n | grep 1bef:0020`" ] && {
-			echo "vrx318 modules removing"
-			rmmod vrx318_tc
-			rmmod vrx318
-		}
+   eval $( cat /proc/driver/mei_cpe/devinfo )
+   bonding=$(( $MaxDeviceNumber * $LinesPerDevice ))
 
-		[ -n "`lspci -n | grep 8086:09a9`" ] && {
-			echo "vrx518 modules removing"
-			rmmod vrx518_tc
-			rmmod vrx518
-		}
-	fi
+   # from SL via dsl_web.cfg
+   if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "" ]; then
+      if [ -r /tmp/dsl_web.cfg ]; then
+         . /tmp/dsl_web.cfg 2> /dev/null
+      fi
+
+      # all lines will be operated
+      if [ "${EntitiesEnabled}" == "2" ]; then
+
+         bDisableAllLines=0
+
+         if [ ${bonding} -eq 2 ]; then
+            nEnabledLines=2
+         else
+            nEnabledLines=1
+         fi
+
+      # one line will be operated
+      elif [ "${EntitiesEnabled}" == "1" ]; then
+
+         bDisableAllLines=0
+         nEnabledLines=1
+
+      # none lines will be operated
+      else
+         :
+      fi
+
+   # from dsl.cfg
+   else
+      # all lines will be operated
+      if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "0" ] ||
+         ([ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "2" ]); then
+
+         bDisableAllLines=0
+
+         if [ ${bonding} -eq 2 ]; then
+            nEnabledLines=2
+         else
+            nEnabledLines=1
+         fi
+
+      # one line will be operated
+      elif [ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "1" ]; then
+
+         bDisableAllLines=0
+         nEnabledLines=1
+
+      # none lines will be operated
+      else
+         :
+      fi
+
+   fi
+
+   echo ${nEnabledLines} > /proc/driver/mei_cpe/entities_enable_ctrl
+
+   sleep 1
+
+   if [ ${bDisableAllLines} -eq 1 ]; then
+
+      rmmod drv_mei_cpe.ko
+
+      [ -n "`lspci -n | grep 1bef:0020`" ] && {
+         [ ! -z "`cat /proc/modules | grep vrx318`" ] && {
+            echo "vrx318 modules removing"
+            rmmod vrx318_tc
+            rmmod vrx318
+         }
+      }
+
+      [ -n "`lspci -n | grep 8086:09a9`" ] && {
+         [ ! -z "`cat /proc/modules | grep vrx518`" ] && {
+            echo "vrx518 modules removing"
+            rmmod vrx518_tc
+            rmmod vrx518
+         }
+      }
+
+   fi
 }

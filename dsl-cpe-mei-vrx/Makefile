@@ -9,10 +9,10 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=dsl-cpe-mei-vrx
-PKG_VERSION:=1.7.2
-#PKG_MD5SUM:=0cef2d728dcd830bebcd989eadac1180
+PKG_VERSION:=1.8.1.1
+#PKG_MD5SUM:=37caf38002b82bf92d8e62659254197a
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=572bb4b2d955cf9c46c70656c5b3fda173b20509
+PKG_SOURCE_VERSION:=6b6c877a44fd4dee6aea25857d0821e13fb41160
 
 # re-define PATCH_DIR to get version-specific patches
 PATCH_DIR:=./patches-$(PKG_VERSION)
@@ -24,10 +24,8 @@ PKG_INSTALL:=1
 #PKG_SOURCE_URL:=http://localhost
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
 
-#DSL_BIN_DIR=$(VENDOR_PATH)/bin
-DSL_BIN_DIR=/opt/intel/bin
-#DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
-DSL_INITD_DIR=/etc/init.d
+DSL_BIN_DIR=$(VENDOR_PATH)/bin
+DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
 DSL_FW_DIR=/lib/firmware
 
 PKG_FIXUP:=autoreconf
@@ -56,13 +54,13 @@ endif
 
 define Package/$(PKG_NAME)
   SECTION:=driver
-  CATEGORY:=Intel
+  CATEGORY:=Lantiq
   SUBMENU:=DSL Subsystem
   TITLE:=DSL CPE MEI Driver for VRX Family
-  URL:=http://www.intel.com/
-  MAINTAINER:=Intel Corporation
+  URL:=http://www.Lantiq.com/
+  MAINTAINER:=Lantiq Beteiligungs-GmbH & Co. KG
   DEPENDS:=+kmod-ifxos \
-#	+kmod-dsl-cpe-mei-vrx \
+	+kmod-dsl-cpe-mei-vrx \
 	+PACKAGE_kmod-vrx518-dp-mod:kmod-vrx518-dp-mod \
 	+PACKAGE_kmod-vrx518_tc_drv:kmod-vrx518_tc_drv \
 	+PACKAGE_kmod-vrx318-dp-mod:kmod-vrx318-dp-mod
@@ -71,20 +69,18 @@ define Package/$(PKG_NAME)
 endef
 
 define KernelPackage/$(PKG_NAME)
-  SUBMENU:=Intel
+  SUBMENU:=Lantiq
   TITLE:=DSL CPE MEI Driver for VRX Family
-  URL:=http://www.intel.com/
-  MAINTAINER:=Intel Corporation
-  DEPENDS:=+kmod-ifxos +kmod-vrx518_ep $(if $(CONFIG_LANTIQ_OPENWRT_FIRMWARE), \
+  URL:=http://www.lantiq.com/
+  MAINTAINER:=Lantiq Beteiligungs-GmbH & Co. KG
+  DEPENDS:=+kmod-ifxos \
 			+PACKAGE_kmod-vrx518-dp-mod:kmod-vrx518-dp-mod \
 			+PACKAGE_kmod-vrx318-dp-mod:kmod-vrx318-dp-mod \
-			+PACKAGE_kmod-vrx518_tc_drv:kmod-vrx518_ep, )
+			+PACKAGE_kmod-vrx518_tc_drv:kmod-vrx518_ep
 #  @(TARGET_ltqcpe_vr9||TARGET_ltqcpe_platform_vr9||TARGET_ltqcpe_platform_ar10_vrx318||TARGET_lantiq_xway)
   KCONFIG:=CONFIG_LTQ_DSL_CPE_MEI_VRX=y
-ifeq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
   FILES:=$(PKG_BUILD_DIR)/src/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION)
-  AUTOLOAD:=$(call AutoLoad,40,$(PKG_BASE_NAME))
-endif
+  AUTOLOAD:=$(call AutoLoad,44,$(PKG_BASE_NAME))
 endef
 
 
@@ -93,10 +89,10 @@ define Package/$(PKG_NAME)/config
 $(call Package/$(PKG_NAME)/override_version)
 $(call Package/$(PKG_NAME)/override_source_path)
 	source "$(SOURCE)/Config.in"
-endef 
+endef
 
 define Package/$(PKG_NAME)/description
-	Intel MEI CPE Driver
+	Lantiq MEI CPE Driver
 	Supported Devices:
 		- VRX200 Family
 		- VRX300 Family
@@ -104,25 +100,9 @@ define Package/$(PKG_NAME)/description
 endef
 
 define KernelPackage/$(PKG_NAME)/description
-	Intel MEI CPE Kernel Module Driver
+	Lantiq MEI CPE Kernel Module Driver
 endef
 
-define KernelPackage/vrx518_ep
-  SUBMENU:=Intel
-  TITLE:=VRX518 EP Support
-  KCONFIG:= \
-	CONFIG_VRX518=y \
-	CONFIG_VRX518_TC=n \
-	CONFIG_VRX518_PCIE_SWITCH_BONDING=n \
-	CONFIG_TEST=n
-  AUTOLOAD:=$(call AutoLoad,43,vrx518)
-  FILES:= \
-	$(LINUX_DIR)/drivers/net/ethernet/intel/vrx518/vrx518.ko
-endef
-
-define KernelPackage/vrx518_ep/description
-  VRX518 endpoint driver
-endef
 
 ifeq ($(CONFIG_dsl-cpe-mei-vrx_DEVICE_VR9),y)
 CONFIGURE_ARGS += --enable-device=vr9
@@ -162,7 +142,7 @@ endif
 MEI_DRV_CFLAGS += -I$(STAGING_DIR)/include
 
 CONFIGURE_ARGS += \
-	--enable-kernelincl="$(LINUX_DIR)/include" 
+	--enable-kernelincl="$(LINUX_DIR)/include"
 CONFIGURE_ARGS += \
 	--enable-error_print \
 	--enable-ifxos-include="-I$(STAGING_DIR)/usr/include/ifxos" \
@@ -186,7 +166,7 @@ endif
 ifeq ($(CONFIG_dsl-cpe-mei-vrx_USE_KERNEL_BUILD_IN),y)
 CONFIGURE_ARGS += \
 	--enable-ifxos_drv=no \
-	--enable-lkm=no 
+	--enable-lkm=no
 endif
 
 ifeq ($(CONFIG_dsl-cpe-mei-vrx_USE_PCI_SLAVE_DOWNLOAD),y)
@@ -318,7 +298,7 @@ endif
 	$(SED) "s:@dsl_bin_dir@:$(DSL_BIN_DIR):g" $(1)/$(DSL_BIN_DIR)/dsl_auto.cfg
 	@- [ -e ./files/dsl_auto_mei.cfg ] && $(INSTALL_DATA) ./files/dsl_auto_mei.cfg $(1)/$(DSL_BIN_DIR)
 
- 
+
 
 	# Set support flag for L2 vectoring
 ifeq ($(CONFIG_PTM_VECTORING),y)
@@ -346,14 +326,11 @@ else
 	-rm -f $(LINUX_DIR)/drivers/char/ltq_dsl_cpe_mei_vrx.o
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION) $(1)/$(DSL_BIN_DIR)
 	$(INSTALL_DIR) $(1)/$(MODULES_SUBDIR)
-ifneq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
-	ln -snf /$(DSL_BIN_DIR)/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION) $(1)/$(MODULES_SUBDIR)/$(PKG_BASE_NAME).$(LINUX_KMOD_SUFFIX)
-endif
+	ln -snf /$(MODULES_SUBDIR)/$(PKG_BASE_NAME).$(LINUX_KMOD_SUFFIX) $(1)/$(DSL_BIN_DIR)/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION)
 	$(INSTALL_DIR) $(1)/$(DSL_FW_DIR)
 endif
 
 endef
 
-$(eval $(call KernelPackage,vrx518_ep))
 $(eval $(call BuildPackage,$(PKG_NAME)))
 $(eval $(call KernelPackage,$(PKG_NAME)))

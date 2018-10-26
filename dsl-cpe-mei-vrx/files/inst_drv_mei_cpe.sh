@@ -34,50 +34,67 @@ if [ "$debug_level" -le 2 ]; then
     echo 8 > /proc/sys/kernel/printk
 fi
 
-# installation of the driver is only necessary if a loadable module is used
-if [ -e ${bindir}/${drv_obj_file_name} ]; then
+cmd_modlist="cat /proc/modules | grep $drv_dev_base_name"
+modlist=$(eval $cmd_modlist)
+
+if [ -z "$modlist" ]; then
+
+   # installation of the driver is only necessary if a loadable module is used
+   if [ -e ${bindir}/${drv_obj_file_name} ]; then
+      if [ "$debug_level" -le 2 ]; then
+         echo "- loading MEI CPE device driver -"
+      fi
+      insmod $drv_obj_file_name debug_level=$debug_level
+      # add "drv_major_number=$drv_major_number" for fixed major number
+
+      if [ $? -ne 0 ]; then
+         echo "- loading driver failed! -"
+         exit 1
+      fi
+   fi
+
+   major_no=`grep mei_cpe /proc/devices |cut -d' ' -f1`
+   #major_no=$drv_major_number
+
+   # exit if major number not found (in case of devfs)
+   if [ -z $major_no ]; then
+      exit 0
+   fi
+
    if [ "$debug_level" -le 2 ]; then
-      echo "- loading MEI CPE device driver -"
+      echo - create device nodes for MEI CPE device driver -
    fi
-   insmod $drv_obj_file_name debug_level=$debug_level
-   # add "drv_major_number=$drv_major_number" for fixed major number
 
-   if [ $? -ne 0 ]; then
-       echo "- loading driver failed! -"
-       exit 1
-   fi
+   prefix=/dev/$drv_dev_base_name
+   test ! -d $prefix/ && mkdir $prefix/
+
+   eval $( cat /proc/driver/mei_cpe/devinfo )
+   entities=$(( $MaxDeviceNumber * $LinesPerDevice ))
+
+   I=0
+   while test $I -lt $entities; do
+      test ! -e $prefix/$I && mknod $prefix/$I c $major_no `expr $I`
+      I=`expr $I + 1`
+   done
+
+else
+
+   echo "- $drv_dev_base_name loaded -"
+
+   eval $( cat /proc/driver/mei_cpe/devinfo )
+   entities=$(( $MaxDeviceNumber * $LinesPerDevice ))
+
 fi
-
-major_no=`grep mei_cpe /proc/devices |cut -d' ' -f1`
-#major_no=$drv_major_number
-
-# exit if major number not found (in case of devfs)
-if [ -z $major_no ]; then
-    exit 0
-fi
-
-if [ "$debug_level" -le 2 ]; then
-   echo - create device nodes for MEI CPE device driver -
-fi
-
-prefix=/dev/$drv_dev_base_name
-test ! -d $prefix/ && mkdir $prefix/
-
-eval $( cat /proc/driver/mei_cpe/devinfo )
-
-entities=$(( $MaxDeviceNumber * $LinesPerDevice ))
-
-I=0
-while test $I -lt $entities; do
-    test ! -e $prefix/$I && mknod $prefix/$I c $major_no `expr $I`
-    I=`expr $I + 1`
-done
 
 if [ -r ${bindir}/dsl.cfg ]; then
     . ${bindir}/dsl.cfg 2> /dev/null
 fi
 
-if [ "${xDSL_Cfg_LdAfeShutdown}" == "1" ]; then
-    # DBG_FLAGS::Bit1 = DBG_FLAGS::Bit2 = 0x1
-    echo DBG_FLAGS 6 > /proc/driver/mei_cpe/config
+if [ "${xDSL_Cfg_PLL_SwitchOff}" != "" ]; then
+   if [ ${entities} -eq 2 ]; then
+      echo xDSL_Cfg_PLL_SwitchOff ${xDSL_Cfg_PLL_SwitchOff} 0 > /proc/driver/vrx518/cfg
+      echo xDSL_Cfg_PLL_SwitchOff ${xDSL_Cfg_PLL_SwitchOff} 1 > /proc/driver/vrx518/cfg
+   else
+      echo xDSL_Cfg_PLL_SwitchOff ${xDSL_Cfg_PLL_SwitchOff} 0 > /proc/driver/vrx518/cfg
+   fi
 fi
