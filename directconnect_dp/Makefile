@@ -10,12 +10,12 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=directconnect-dp
-PKG_VERSION:=0.2.3.1
+PKG_VERSION:=0.2.4.2
 PKG_RELEASE:=1
 
 PKG_IS_KERNEL_MODULE=y
 
-PKG_SOURCE_VERSION:=96ca5de25950a4532f212cbaf434c7a147d2b92e
+PKG_SOURCE_VERSION:=8dd0eb7534afecb72dc6a1054eefba3c8a8312d6
 #PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/dc_dp_drv.git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/dc_dp_drv.git
 PKG_SOURCE_PROTO:=git
@@ -59,8 +59,6 @@ EXTRA_CFLAGS += \
 	$(if $(CONFIG_TARGET_intel_mips_xrx500), \
 		-DHAVE_DATAPATH_API \
 	)
-	
-	
 
 export CONFIG_DIRECTCONNECT_DP_LITEPATH=y
 export CONFIG_SW_DCMODE1_BUILTIN=y
@@ -76,7 +74,7 @@ endif
 
 ifeq ($(CONFIG_TARGET_intel_xrx330),y)
 ifeq ($(CONFIG_PACKAGE_kmod-vrx518_ep),y)
-	# for VRX518 only
+#	# for VRX518 only
 	export CONFIG_DIRECTCONNECT_DP_330=y
 	EXTRA_CFLAGS += -DHAVE_DATAPATH_API
 endif
