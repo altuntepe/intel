@@ -12,10 +12,7 @@ PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/vrx518_tc_drv.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 
-#PKG_SOURCE_VERSION:=1d8d8cc03d592b69af7746ef7fffbf324ce9c529
-#PKG_SOURCE_VERSION:=4adab7087f25c8f3a8dac5465cfc600da63b414c
-#PKG_SOURCE_VERSION:=5d1996852d125b6527f74a003dd7190826fe21d0
-PKG_SOURCE_VERSION:=25cc6f8944d5f9fe7b7aaeaad8a2c8a32145f480
+PKG_SOURCE_VERSION:=1d1d49f10be8f2fb88e106efcbba1ae366489f3a
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_BASE_NAME:=vrx518_tc
 #PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
@@ -26,27 +23,35 @@ PKG_MIRROR:=0
 include $(INCLUDE_DIR)/package.mk
 -include $(INCLUDE_DIR)/package-version-override.mk
 
+
+KCONFIG_TC:=$(KCONFIG_TC_BASE)
 ifneq ($(CONFIG_TARGET_intel_mips_xrx500),)
 	PLAT_DIR:=grx500
 else ifneq ($(CONFIG_TARGET_lantiq_xrx500),)
-	PLAT_DIR:=grx500
-else ifneq ($(CONFIG_PACKAGE_kmod-directconnect_dp),)
-	PLAT_DIR:=dcdp
+    PLAT_DIR:=grx500
+else
+    PLAT_DIR:=dcdp
 endif
 
 define KernelPackage/$(PKG_NAME)
   SUBMENU:=Intel
   TITLE:=VRX518 TC driver
-  KCONFIG:= CONFIG_VRX518_TC=m \
-        CONFIG_VRX518_PCIE_SWITCH_BONDING=y \
-        CONFIG_ATM=y \
-        CONFIG_ATM_BR2684=y \
-        CONFIG_ATM_LANE=y \
-        CONFIG_ATM_CLIP=y \
-        CONFIG_ATM_MPOA=y \
-        CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT=y
+  KCONFIG:= \
+    CONFIG_VRX518_TC=m \
+    CONFIG_VRX518_PCIE_SWITCH_BONDING=y \
+    CONFIG_ATM=y \
+    CONFIG_ATM_BR2684=y \
+    CONFIG_ATM_LANE=y \
+    CONFIG_ATM_CLIP=y \
+    CONFIG_ATM_MPOA=y \
+    CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT=y \
+    CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND=y
   DEPENDS:=@TARGET_lantiq_xrx500||TARGET_intel_mips_xrx500||TARGET_x86||TARGET_lantiq_xrx330 +PACKAGE_kmod-directconnect_dp:kmod-directconnect_dp +kmod-vrx518_ep +vrx518_ppe_fw +vrx518_aca_fw
+ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
   AUTOLOAD:=$(call AutoLoad,42,vrx518)
+else
+  AUTOLOAD:=$(call AutoLoad,26,vrx518)
+endif
   FILES:=$(PKG_BUILD_DIR)/$(PLAT_DIR)/$(PKG_BASE_NAME).$(LINUX_KMOD_SUFFIX)
   MENU:=1
 endef
@@ -59,9 +64,16 @@ define KernelPackage/vrx518_ep
  SUBMENU:=Intel
  TITLE:=VRX518 EP Support
  KCONFIG:= \
-        CONFIG_VRX518=y \
+        CONFIG_VRX518=m \
+        CONFIG_VRX518_PCIE_SWITCH_BONDING=y \
         CONFIG_TEST=m
+ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
  AUTOLOAD:=$(call AutoLoad,43,vrx518 vrx518_tc)
+else
+ AUTOLOAD:=$(call AutoLoad,27,vrx518 vrx518_tc)
+endif
+ FILES:= \
+        $(LINUX_DIR)/drivers/net/ethernet/intel/vrx518/vrx518.ko
 endef
 
 define KernelPackage/vrx518_ep/description
