@@ -30,6 +30,14 @@ if [ "$debug_level" -le 2 ]; then
    echo 8 > /proc/sys/kernel/printk
 fi
 
+cmd_modlist="cat /proc/modules | grep $drv_dev_base_name"
+modlist=$(eval $cmd_modlist)
+
+[ ! -z "$modlist" ] && {
+   echo "- $drv_dev_base_name loaded -"
+   exit 0
+}
+
 if [ "$debug_level" -le 2 ]; then
    echo "- loading $drv_dev_base_name ($drv_obj_file_name device) driver -"
 fi

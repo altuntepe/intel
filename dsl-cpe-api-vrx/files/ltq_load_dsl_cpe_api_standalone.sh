@@ -6,8 +6,7 @@
 # It will/shall be only used in case of DSL related components from the
 # UGW framework (FAPI/SL) are NOT used/included.
 
-START=18
-
+START=@start_seq@
 initd_dir=@dsl_init_dir@
 
 EXTRA_COMMANDS="dbg_on dbg_off"

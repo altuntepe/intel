@@ -42,7 +42,56 @@ start() {
 }
 
 stop() {
-	rmmod drv_dsl_cpe_api
+   if [ -r ${BIN_DIR}/dsl.cfg ]; then
+      . ${BIN_DIR}/dsl.cfg 2> /dev/null
+   fi
+
+   bDisableAllLines=1
+
+   # from SL via dsl_web.cfg
+   if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "" ]; then
+      if [ -r /tmp/dsl_web.cfg ]; then
+         . /tmp/dsl_web.cfg 2> /dev/null
+      fi
+
+      # all lines will be operated
+      if [ "${EntitiesEnabled}" == "2" ]; then
+
+         bDisableAllLines=0
+
+      # one line will be operated
+      elif [ "${EntitiesEnabled}" == "1" ]; then
+
+         bDisableAllLines=0
+
+      # none lines will be operated
+      else
+         :
+      fi
+
+   # from dsl.cfg
+   else
+
+      # all lines will be operated
+      if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "0" ] ||
+         ([ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "2" ]); then
+
+         bDisableAllLines=0
+
+      # one line will be operated
+      elif [ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "1" ]; then
+
+         bDisableAllLines=0
+
+      # none lines will be operated
+      else
+         :
+      fi
+   fi
+
+   if [ ${bDisableAllLines} -eq 1 ]; then
+      rmmod drv_dsl_cpe_api
+   fi
 }
 
 dbg_on() {

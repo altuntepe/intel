@@ -9,10 +9,10 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=dsl-cpe-api-vrx
-PKG_VERSION:=4.19.3
-#PKG_MD5SUM:=a3368fc2edaac38e3e6aadb1c735a8cc
+PKG_VERSION:=4.20.1.2
+#PKG_MD5SUM:=5363ff46ecae41772a459f31046bc5b7
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=a7c88a2f0e86374c292eb368b25d0202c34222c9
+PKG_SOURCE_VERSION:=17492da2b3f3c33132385dae78f0786872def6f1
 
 PKG_RELEASE:=1
 PKG_INSTALL:=1
@@ -26,6 +26,10 @@ PKG_BUILD_DEPENDS:=dsl-cpe-mei-vrx
 
 DSL_BIN_DIR=$(VENDOR_PATH)/bin
 DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
+
+ifeq (y,$(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE))
+	STARTSEQ = 18
+endif
 
 PKG_FIXUP:=autoreconf
 
@@ -57,17 +61,29 @@ endif
 
 define Package/$(PKG_NAME)
 	SECTION:=driver
-	CATEGORY:=Intel
+	CATEGORY:=Lantiq
 	SUBMENU:=DSL Subsystem
 	TITLE:=DSL CPE API driver for VRX Family
-	URL:=http://www.intel.com/
-	MAINTAINER:=Intel Corporation
-	DEPENDS:=+dsl-cpe-mei-vrx 
+	URL:=http://www.lantiq.com/
+	MAINTAINER:=Lantiq Beteiligungs-GmbH & Co. KG
+	DEPENDS:=+dsl-cpe-mei-vrx \
+		+kmod-dsl-cpe-api-vrx
 	MENU:=1
 endef
 
+define KernelPackage/$(PKG_NAME)
+	SUBMENU:=Lantiq
+	TITLE:=DSL CPE API driver for VRX Family
+	URL:=http://www.lantiq.com/
+	MAINTAINER:=Lantiq Beteiligungs-GmbH & Co. KG
+	DEPENDS:=+kmod-dsl-cpe-mei-vrx
+	KCONFIG:=CONFIG_LTQ_DSL_CPE_API_VRX=y
+	FILES:=$(PKG_BUILD_DIR)/src/drv_dsl_cpe_api$(PKG_MODULE_EXTENSION)
+	AUTOLOAD:=$(call AutoLoad,45,drv_dsl_cpe_api)
+endef
+
 define Package/$(PKG_NAME)/description
-	This package contains the Intel DSL CPE API driver.
+	This package contains the Lantiq DSL CPE API driver.
 
 	Supported Devices:
 		- VRX200 Family
@@ -81,7 +97,11 @@ $(call Package/$(PKG_NAME)/override_source_path)
 source "$(SOURCE)/Config.in"
 endef
 
-CONFIGURE_ARGS += --enable-kernel-include="$(LINUX_DIR)/include" 
+define KernelPackage/$(PKG_NAME)/description
+	Lantiq DSL CPE API Kernel Module Driver
+endef
+
+CONFIGURE_ARGS += --enable-kernel-include="$(LINUX_DIR)/include"
 
 ifdef CONFIG_dsl-cpe-mei-vrx_DSL_NETLINK_ID
 CONFIGURE_ARGS += \
@@ -184,11 +204,13 @@ define Package/$(PKG_NAME)/install
 
 	$(INSTALL_BIN) ./files/ltq_load_dsl_cpe_api.sh $(1)/$(DSL_INITD_DIR)
 	$(SED) "s:@dsl_bin_dir@:$(DSL_BIN_DIR):g" $(1)/$(DSL_INITD_DIR)/ltq_load_dsl_cpe_api.sh
-
-ifeq ($(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE),y)
+ifneq (y,$(CONFIG_NEW_FRAMEWORK))
+ifeq (y,$(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE))
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/ltq_load_dsl_cpe_api_standalone.sh $(1)/etc/init.d/
 	$(SED) "s:@dsl_init_dir@:$(DSL_INITD_DIR):g" $(1)/etc/init.d/ltq_load_dsl_cpe_api_standalone.sh
+	$(SED) "s:@start_seq@:$(STARTSEQ):g" $(1)/etc/init.d/ltq_load_dsl_cpe_api_standalone.sh
+endif
 endif
 
 	$(INSTALL_DIR) $(1)/$(DSL_BIN_DIR)
@@ -203,7 +225,9 @@ endif
 	$(SED) "s:@dsl_bin_dir@:$(DSL_BIN_DIR):g" $(1)/$(DSL_BIN_DIR)/inst_drv_dsl_cpe_api.sh
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/drv_dsl_cpe_api$(PKG_MODULE_EXTENSION) $(1)/$(DSL_BIN_DIR)
 	$(INSTALL_DIR) $(1)/$(MODULES_SUBDIR)
-	ln -snf $(DSL_BIN_DIR)/drv_dsl_cpe_api$(PKG_MODULE_EXTENSION) $(1)/$(MODULES_SUBDIR)/drv_dsl_cpe_api.$(LINUX_KMOD_SUFFIX)
+	$(INSTALL_DIR) $(1)/$(DSL_BIN_DIR)
+	ln -snf /$(MODULES_SUBDIR)/drv_dsl_cpe_api$(PKG_MODULE_EXTENSION) $(1)/$(DSL_BIN_DIR)/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION)
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
+$(eval $(call KernelPackage,$(PKG_NAME)))
