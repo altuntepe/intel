@@ -22,21 +22,25 @@ menu "Configuration"
 
 	config dsl-cpe-control-vrx_MODEL_FOOTPRINT
 		bool "Footprint"
+		select dsl-cpe-control-vrx_DTI
 		help
 		  Defined for low footprint applications.
 
 	config dsl-cpe-control-vrx_MODEL_TYPICAL
 		bool "Typical"
+		select dsl-cpe-control-vrx_DTI
 		help
 		  Defined for most typical use.
 
 	config dsl-cpe-control-vrx_MODEL_FULL
 		bool "Full"
+		select dsl-cpe-control-vrx_DTI
 		help
 		  Includes all features but NOT all debug functionalities.
 
 	config dsl-cpe-control-vrx_MODEL_DEBUG
 		bool "Debug"
+		select dsl-cpe-control-vrx_DTI
 		help
 		  Includes all features AND debug functionalities.
 	endchoice

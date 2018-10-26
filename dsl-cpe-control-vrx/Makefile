@@ -10,9 +10,9 @@ include $(INCLUDE_DIR)/kernel.mk
 
 
 PKG_NAME:=dsl-cpe-control-vrx
-PKG_VERSION:=4.19.3
+PKG_VERSION:=4.20.1.2
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=8f1931ab2ead6a737d305066792744b6d4ec4084
+PKG_SOURCE_VERSION:=114b68c50f0e2b52af61fdf0ea2de29e55b64495
 #PKG_MD5SUM:=85d293ee43f01ba367301a7fe7c46156
 PKG_RELEASE:=1
 PKG_BASE_NAME:=dsl_cpe_control_vrx
@@ -24,6 +24,10 @@ PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
 DSL_BIN_DIR=$(VENDOR_PATH)/bin
 DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
 DSL_FW_DIR=$(VENDOR_PATH)/firmware
+
+ifeq (y,$(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE))
+	STARTSEQ = 22
+endif
 
 PKG_FIXUP:=autoreconf
 
@@ -57,24 +61,23 @@ endif
 
 define Package/dsl-cpe-control
 	SECTION:=application
-	CATEGORY:=Intel
+	CATEGORY:=Lantiq
 	SUBMENU:=DSL Subsystem
 	TITLE:=DSL CPE control application for VRX Family
-	URL:=http://www.intel.com/
-	MAINTAINER:=Intel Corporation
+	URL:=http://www.lantiq.com/
+	MAINTAINER:=Lantiq Beteiligungs-GmbH & Co. KG
 	PROVIDES:=dsl-cpe-control
 	DEPENDS:= +libugwhelper
 	MENU:=1
 endef
 
 define Package/dsl-cpe-control/description
-	Intel DSL CPE for Amazon SE, Danube,Vinax and VRx.
+	Lantiq DSL CPE for Amazon SE, Danube,Vinax and VRx.
 endef
 
 define Package/$(PKG_NAME)
 	$(call Package/dsl-cpe-control)
-	DEPENDS:= +dsl-cpe-api-vrx +libpthread +librt +lib-dti
-	#DEPENDS:= +dsl-cpe-api-vrx +libpthread +librt
+	DEPENDS:= +dsl-cpe-api-vrx +libpthread +librt +lib-dti +(LANTIQ_OPENWRT_FIRMWARE):libscapi
 endef
 
 define Package/$(PKG_NAME)/description
@@ -112,8 +115,6 @@ CONFIGURE_ARGS += \
 CONFIGURE_ARGS += \
 	--enable-dti-include="-I$(STAGING_DIR)/usr/include/dti" \
 	--enable-dti-library="-L$(STAGING_DIR)/usr/lib"
-else
-CONFIGURE_ARGS += --enable-dti=no
 endif
 
 ifeq ($(CONFIG_LTQ_CLI),y)
@@ -130,8 +131,6 @@ else ifeq ($(CONFIG_dsl-cpe-mei-vrx_DEVICE_VR10),y)
 	CONFIGURE_ARGS += --enable-vrx-device=vr10
 else ifeq ($(CONFIG_dsl-cpe-mei-vrx_DEVICE_VR10_320),y)
 	CONFIGURE_ARGS += --enable-vrx-device=vr10_320
-else ifeq ($(CONFIG_dsl-cpe-mei-vrx_DEVICE_VR11),y)
-	CONFIGURE_ARGS += --enable-vrx-device=vr11
 else
 	CONFIGURE_ARGS += --enable-vrx-device=vr9
 endif
@@ -198,10 +197,13 @@ define Package/$(PKG_NAME)/install
 	$(SED) "s:@dsl_fw_dir@:$(DSL_FW_DIR):g" $(1)/$(DSL_INITD_DIR)/ltq_cpe_control_init.sh
 	$(SED) "s:@model_name@:$(MODEL_NAME):g" $(1)/$(DSL_INITD_DIR)/ltq_cpe_control_init.sh
 
-ifeq ($(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE),y)
+ifneq (y,$(CONFIG_NEW_FRAMEWORK))
+ifeq (y,$(CONFIG_dsl-cpe-mei-vrx_DTM_STANDALONE))
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/ltq_cpe_control_init_standalone.sh $(1)/etc/init.d/
 	$(SED) "s:@dsl_init_dir@:$(DSL_INITD_DIR):g" $(1)/etc/init.d/ltq_cpe_control_init_standalone.sh
+	$(SED) "s:@start_seq@:$(STARTSEQ):g" $(1)/etc/init.d/ltq_cpe_control_init_standalone.sh
+endif
 endif
 
 	$(INSTALL_DIR) $(1)/etc/profile.d
@@ -228,7 +230,7 @@ endif
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/dsl_cpe_control $(1)/$(DSL_BIN_DIR)
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tools/pipe/dsl_cpe_pipe $(1)/$(DSL_BIN_DIR)
 	ln -snf dsl_cpe_pipe $(1)/$(DSL_BIN_DIR)/dsl_cpe_pipe.sh
-	
+
 	$(if $(CONFIG_LANTIQ_OPENWRT_FIRMWARE), \
                 $(INSTALL_DIR) $(1)/etc/init.d/; \
                 $(INSTALL_BIN) ./files/xdsl.init $(1)/etc/init.d/xdsl; \

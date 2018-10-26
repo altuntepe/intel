@@ -1,5 +1,6 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2015 OpenWrt.org
+exec > /dev/console
 xTSE=""
 LINE_SET=""
 LINE_GET=""
@@ -25,20 +26,19 @@ eval $( cat /proc/driver/mei_cpe/devinfo )
 xDSL_AutoCfg_Bonding=$(( $MaxDeviceNumber * $LinesPerDevice > 1 ))
 
 status=0
-wait_for_dsl_process()
-{
-retrycnt=10
-i=1
-while [ $i -le $retrycnt ] 
-do 
-	PS=`ps`
-	echo $PS | grep -q dsl_cpe_control &>/dev/null && {
-		status=1
-		return
-	}
-	let i++
-	sleep 1
-done
+wait_for_dsl_process() {
+   retrycnt=10
+   i=1
+   while [ $i -le $retrycnt ]
+   do
+      PS=`ps`
+      echo $PS | grep -q dsl_cpe_control &>/dev/null && {
+         status=1
+         return
+      }
+      let i++
+      sleep 1
+   done
 }
 
 if [ ! "$CONFIGLOADED" ]; then
@@ -81,7 +81,7 @@ fi
 #     0: One or both lines does not reach defined linestate (from $1)
 #     1: Both lines have reached defined linestate (from $1)
 wait_for_firmware_ready() {
-   nTimeout=$1
+   nTimeout=$(($1 * 2))
    nTimeoutInit=$nTimeout
 
    while [ $nTimeout -gt 0 ]
@@ -121,7 +121,7 @@ wait_for_firmware_ready() {
          break
       fi
       nTimeout=`expr $nTimeout - 1`
-      sleep 1;
+      usleep 500000;
    done
 }
 
@@ -410,6 +410,7 @@ start() {
    case "$xDSL_Dbg_DebugAndTestInterfaces" in
       "0")
          # Do not use interfaces, empty string is anyhow default (just in case)
+         DBG_TEST_IF=""
          DTI_IF_STR=""
          TCPM_IF_STR=""
          ;;
@@ -433,14 +434,24 @@ start() {
          ;;
       "2")
          # Use all interfaces for debug and test communication
-         DTI_IF_STR="-d0.0.0.0"
-         TCPM_IF_STR="-t0.0.0.0"
+         DBG_TEST_IF="0.0.0.0"
+         DTI_IF_STR="-d${DBG_TEST_IF}"
+         TCPM_IF_STR="-t${DBG_TEST_IF}"
          ;;
    esac
 
    echo `${xDSL_BinDir}/dsl_cpe_control -h` | grep -q "(-d)" && {
       DTI_IF="${DTI_IF_STR}"
    }
+
+   # Start DTI standalone agent if available (currently only in case of binding
+   # to all interfaces is configured because binding to a specific LAN port
+   # IP address does not work correctly)
+   if [ "$xDSL_Dbg_DebugAndTestInterfaces" = "2" ]; then
+      if [ -e ${xDSL_BinDir}/dsl_cpe_dti_agent ]; then
+         ${xDSL_BinDir}/dsl_cpe_dti_agent -l ${LinesPerDevice} -d ${MaxDeviceNumber} -D 1 -p 9001 -a ${DBG_TEST_IF} &
+      fi
+   fi
 
    echo `${xDSL_BinDir}/dsl_cpe_control -h` | grep -q "(-t)" && {
       TCPM_IF="${TCPM_IF_STR}"
@@ -537,7 +548,8 @@ start() {
          ${DSL_FIRMWARE_2P} ${XDSL_MULTIMODE} ${XTM_MULTIMODE} ${AUTOBOOT_VDSL} \
          ${AUTOBOOT_ADSL} ${NOTIFICATION_SCRIPT} ${TCPM_IF} ${DTI_IF} \
          ${ACTIVATION_CFG} ${REMEMBER_CFG} ${DEVICE_LAYOUT} &
-     wait_for_dsl_process 
+
+      wait_for_dsl_process
 
       # Timeout to wait for dsl_cpe_control startup [in seconds]
       iLp=10
@@ -545,7 +557,7 @@ start() {
          # workaround for nfs: allow write to pipes for non-root
          while [ ! -e /tmp/pipe/dsl_cpe${xDSL_MaxPipeIdx}_ack -a $iLp -gt 0 ] ; do
             iLp=`expr $iLp - 1`
-            sleep 1;
+            usleep 500000;
          done
 
          if [ ${iLp} -le 0 ]; then
@@ -590,7 +602,7 @@ start() {
          fi
       fi
 
-      sleep 1;
+      usleep 500000;
 
       #Init BitSwap config
       nDslMode="ADSL VDSL"
@@ -971,7 +983,7 @@ start() {
             ;;
          "8")
             # Currently the BAR13 configuration is not used (just reserved)
-	    ;;
+            ;;
          *)
             echo "${xDSL_CtrlAppName}: US-ReTx: BAR13 *not* configured (unknown PlatformID)!!!"
             ;;
@@ -1026,8 +1038,11 @@ start() {
             fi
          fi
 
-         # Switch back to polling mode until fixes for event handling (DSLCPE_SW-1118) are included
-         ${xDSL_BinDir}/dsl_cpe_pipe.sh ics $LINE_SET 1 0 0
+         # Test and Debug configuration only: Switch back to polling mode if configured within dsl.cfg
+         if [ "$xDSL_Dbg_FwMsgPollingOnly" = "1" ]; then
+            echo "${xDSL_CtrlAppName}: TestCfg: xDSL_Dbg_FwMsgPollingOnly=$xDSL_Dbg_FwMsgPollingOnly"
+            ${xDSL_BinDir}/dsl_cpe_pipe.sh ics $LINE_SET 1 0 0
+         fi
 
          ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $LINE_SET 1
       else
@@ -1042,15 +1057,91 @@ stop() {
       . ${xDSL_BinDir}/dsl.cfg 2> /dev/null
    fi
 
-   if [ "${xDSL_Cfg_LdAfeShutdown}" == "1" ]; then
-      ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $LINE_SET 7
-      sleep 3
-      ${xDSL_BinDir}/dsl_cpe_pipe.sh quit $LINE_SET
+   if [ ${xDSL_AutoCfg_Bonding} = 1 ]; then
+      sLineNumsToDisable="1 0"
    else
-      ${xDSL_BinDir}/dsl_cpe_pipe.sh acos $LINE_SET 1 1 1 0 0 0
-      ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $LINE_SET 2
-      sleep 3
-      ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $LINE_SET 0
+      sLineNumsToDisable="0"
+   fi
+   bDisableAllLines=1
+
+   # from SL via dsl_web.cfg
+   if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "" ]; then
+	#reset it to 0 when dsl webcfg not found as its duplicate variable from
+	#mei_cpe/devinfo and getting exported
+	EntitiesEnabled=0
+      if [ -r /tmp/dsl_web.cfg ]; then
+         . /tmp/dsl_web.cfg 2> /dev/null
+      fi
+
+      # all lines will be operated
+      if [ "${EntitiesEnabled}" == "2" ]; then
+
+         sLineNumsToDisable=""
+         bDisableAllLines=0
+
+      # one line will be operated
+      elif [ "${EntitiesEnabled}" == "1" ]; then
+
+         bDisableAllLines=0
+
+         if [ ${xDSL_AutoCfg_Bonding} = 1 ]; then
+            sLineNumsToDisable="1"
+         else
+            sLineNumsToDisable=""
+         fi
+
+      # none lines will be operated
+      else
+         :
+      fi
+
+   # from dsl.cfg
+   else
+
+      # all lines will be operated
+      if [ "${xDSL_Cfg_EntitiesEnabledSet}" == "0" ] ||
+         ([ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "2" ]); then
+
+         sLineNumsToDisable=""
+         bDisableAllLines=0
+
+      # one line will be operated
+      elif [ "${xDSL_Cfg_EntitiesEnabledSet}" == "1" ] && [ "${xDSL_Cfg_EntitiesEnabledSelect}" == "1" ]; then
+
+         bDisableAllLines=0
+
+         if [ ${xDSL_AutoCfg_Bonding} = 1 ]; then
+            sLineNumsToDisable="1"
+         else
+            sLineNumsToDisable=""
+         fi
+
+      # none lines will be operated
+      else
+         :
+      fi
+   fi
+
+   for line in $sLineNumsToDisable; do
+      echo "${xDSL_CtrlAppName}: stop(): line[${line}]"
+
+      if [ ${xDSL_AutoCfg_Bonding} -ne 1 ]; then
+         # backward-compatibility
+         line=""
+      fi
+
+      if [ "${xDSL_Cfg_LdAfeShutdown}" == "1" ]; then
+         ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $line 7
+         sleep 3
+      else
+         ${xDSL_BinDir}/dsl_cpe_pipe.sh acos $line 1 1 1 0 0 0
+         ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $line 2
+         sleep 3
+         ${xDSL_BinDir}/dsl_cpe_pipe.sh acs $line 0
+      fi
+   done
+
+   if [ ${bDisableAllLines} -eq 1 ]; then
       ${xDSL_BinDir}/dsl_cpe_pipe.sh quit $LINE_SET
    fi
 }
