@@ -1,0 +1,140 @@
+--- a/src/ap/drv_callbacks.c
++++ b/src/ap/drv_callbacks.c
+@@ -1443,6 +1443,22 @@ static void hostapd_event_ltq_wds_discon
+ 	hostapd_notif_disassoc(hapd, wds_sta->mac_addr);
+ }
+ 
++static void hostapd_event_ltq_radar(struct hostapd_data *hapd,
++	struct ltq_radar *radar)
++{
++	/* Discard event if interface didn't finished initialization.
++	 * This may happen when driver sends irrelevant events due to station mode actions
++	 */
++	if (hapd->iface->state != HAPD_IFACE_ENABLED) {
++		wpa_printf(MSG_DEBUG, "discard driver event (%s) - interface not initialized yet", __FUNCTION__);
++		return;
++	}
++	wpa_msg(hapd->msg_ctx, MSG_INFO, LTQ_RADAR
++		"freq=%d chan_width=%d cf1=%d cf2=%d radar_bit_map=0x%02X",
++		radar->center_freq, radar->width, radar->center_freq1, radar->center_freq2,
++		radar->radar_bit_map);
++}
++
+ struct hostapd_channel_data * hostapd_get_mode_channel(
+ 	struct hostapd_iface *iface, unsigned int freq)
+ {
+@@ -1742,6 +1758,9 @@ void wpa_supplicant_event(void *ctx, enu
+ 			data->ltq_wds_sta_info_data.data,
+ 			data->ltq_wds_sta_info_data.data_len);
+ 		break;
++	case EVENT_LTQ_RADAR:
++		hostapd_event_ltq_radar(hapd, &data->ltq_radar);
++		break;
+ 	case EVENT_ASSOC:
+ 		if (!data)
+ 			return;
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -4494,6 +4494,7 @@ enum wpa_event_type {
+ 	EVENT_LTQ_WDS_CONNECT,
+ 	EVENT_LTQ_WDS_DISCONNECT,
+ 	EVENT_LTQ_CSA_RECEIVED,
++	EVENT_LTQ_RADAR,
+ 
+ 	/**
+ 	 * EVENT_SIGNAL_CHANGE - Indicate change in signal strength
+@@ -5311,6 +5312,17 @@ union wpa_event_data {
+ 	} ltq_csa_received;
+ 
+ 	/**
++	   * struct ltq_radar - Data for LTQ_RADAR events
++	   */
++	struct ltq_radar {
++		u32 center_freq;
++		enum chan_width width;
++		u32 center_freq1;
++		u32 center_freq2;
++		u8 radar_bit_map;
++	} ltq_radar;
++
++	/**
+ 	 * signal_change - Data for EVENT_SIGNAL_CHANGE events
+ 	 */
+ 	struct wpa_signal_info signal_change;
+@@ -5634,6 +5646,14 @@ static inline void drv_event_ltq_csa_rec
+   wpa_supplicant_event(ctx, EVENT_LTQ_CSA_RECEIVED, &event);
+ }
+ 
++static inline void drv_event_ltq_radar (void *ctx, const u8 *data, size_t data_len)
++{
++	union wpa_event_data event;
++	os_memset(&event, 0, sizeof(event));
++	memcpy(&event.ltq_radar, data, data_len);
++	wpa_supplicant_event(ctx, EVENT_LTQ_RADAR, &event);
++}
++
+ /* driver_common.c */
+ void wpa_scan_results_free(struct wpa_scan_results *res);
+ 
+--- a/src/drivers/driver_nl80211_event.c
++++ b/src/drivers/driver_nl80211_event.c
+@@ -2027,6 +2027,19 @@ static void ltq_nl80211_handle_csa_recei
+   drv_event_ltq_csa_received(drv->ctx, data, len);
+ }
+ 
++static void ltq_nl80211_handle_radar(struct wpa_driver_nl80211_data *drv,
++                           const u8 *data, size_t len)
++{
++	struct ltq_radar *radar = (struct ltq_radar *) data;
++
++	wpa_printf(MSG_INFO, "nl80211: Receive LTQ vendor event: radar, ctx=%p",
++		   drv->ctx);
++	if (len != sizeof(*radar))
++		return;
++	radar->width = convert2width(radar->width);
++	drv_event_ltq_radar(drv->ctx, data, len);
++}
++
+ static void nl80211_vendor_event_ltq(struct wpa_driver_nl80211_data *drv,
+ 										u32 subcmd, u8 *data, size_t len)
+ {
+@@ -2052,6 +2065,9 @@ static void nl80211_vendor_event_ltq(str
+     case LTQ_NL80211_VENDOR_EVENT_CSA_RECEIVED:
+       ltq_nl80211_handle_csa_received(drv, data, len);
+       break;
++		case LTQ_NL80211_VENDOR_EVENT_RADAR_DETECTED:
++			ltq_nl80211_handle_radar(drv, data, len);
++			break;
+ 		default:
+ 			wpa_printf(MSG_DEBUG, "nl80211: Ignore unsupported LTQ vendor event %u", subcmd);
+ 			break;
+--- a/src/common/ltq-vendor.h
++++ b/src/common/ltq-vendor.h
+@@ -61,6 +61,7 @@ enum ltq_nl80211_vendor_events {
+ 	LTQ_NL80211_VENDOR_EVENT_WDS_CONNECT = 4,
+ 	LTQ_NL80211_VENDOR_EVENT_WDS_DISCONNECT = 5,
+ 	LTQ_NL80211_VENDOR_EVENT_CSA_RECEIVED = 6,
++	LTQ_NL80211_VENDOR_EVENT_RADAR_DETECTED = 7,
+ };
+ 
+ #endif /* LTQ_VENDOR_H */
+--- a/src/common/wpa_ctrl.h
++++ b/src/common/wpa_ctrl.h
+@@ -320,6 +320,7 @@ extern "C" {
+ #define HOSTAPD_DISCONNECTED "HOSTAPD-DISCONNECTED"
+ #define UNCONNECTED_STA_RSSI "UNCONNECTED-STA-RSSI "
+ #define CSA_RECEIVED "CSA-RECEIVED "
++#define LTQ_RADAR "LTQ-DFS-RADAR-DETECTED "
+ 
+ #define AP_STA_WNM_NOTIF "AP-STA-WNM-NOTIF "
+ 
+--- a/src/drivers/driver_common.c
++++ b/src/drivers/driver_common.c
+@@ -59,6 +59,7 @@ const char * event_to_string(enum wpa_ev
+ 	E2S(LTQ_WDS_CONNECT);
+ 	E2S(LTQ_WDS_DISCONNECT);
+ 	E2S(LTQ_CSA_RECEIVED);
++	E2S(LTQ_RADAR);
+ 	E2S(SIGNAL_CHANGE);
+ 	E2S(INTERFACE_ENABLED);
+ 	E2S(INTERFACE_DISABLED);

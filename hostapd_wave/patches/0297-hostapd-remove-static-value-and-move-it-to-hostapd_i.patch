@@ -1,0 +1,77 @@
+From 3a0cdd97f19dbbf1b1d67de7952cfaa7d516b873 Mon Sep 17 00:00:00 2001
+From: sdinkinx <simonx.dinkin@intel.com>
+Date: Wed, 15 Nov 2017 16:00:35 +0200
+Subject: [PATCH] hostapd: remove static value and move it to hostapd_iface
+
+set_freq_done was decleared static in
+hostapd_setup_interface_complete_sync function.
+this caused some problems when disable and enable the iface
+and also when using single hostapd for both radio's.
+
+fixed it by moving this value to hostapd_iface struct.
+
+Signed-off-by: sdinkinx <simonx.dinkin@intel.com>
+---
+ src/ap/hostapd.c | 8 ++++----
+ src/ap/hostapd.h | 2 ++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index c54dbfc..b4a0e09 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -449,6 +449,7 @@ static void hostapd_cleanup_iface_partial(struct hostapd_iface *iface)
+ 	iface->basic_rates = NULL;
+ 	ap_list_deinit(iface);
+ 	sta_track_deinit(iface);
++	iface->set_freq_done = 0;
+ }
+ 
+ 
+@@ -1754,7 +1755,6 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+ 	size_t j;
+ 	u8 *prev_addr;
+ 	int res_dfs_offload = 0;
+-	static int set_freq_done = 0;
+ 	struct hostapd_channel_data *channel;
+ 
+ 	if (err)
+@@ -1815,11 +1815,11 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+ 	  channel = hostapd_hw_get_channel_data(iface, iface->freq);
+ 	  if (!channel)
+ 	    goto fail;
+-		if (!set_freq_done || ((channel->flag & HOSTAPD_CHAN_RADAR) &&
++		if (!iface->set_freq_done || ((channel->flag & HOSTAPD_CHAN_RADAR) &&
+       ((channel->flag & HOSTAPD_CHAN_DFS_MASK) != HOSTAPD_CHAN_DFS_AVAILABLE))) {
+ 		  /* For DFS channels only hostapd_set_freq may be used, because
+ 		   * hostapd_switch_channel triggers CSA */
+-      for (j = 0; j < (set_freq_done ? iface->num_bss : 1); j++) {
++      for (j = 0; j < (iface->set_freq_done ? iface->num_bss : 1); j++) {
+         hapd = iface->bss[j];
+         if (hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
+                  hapd->iconf->channel,
+@@ -1835,7 +1835,7 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+         }
+       }
+       hapd = iface->bss[0];
+-      set_freq_done = 1;
++      iface->set_freq_done = 1;
+ 		} else {
+       struct csa_settings settings;
+ 
+diff --git a/src/ap/hostapd.h b/src/ap/hostapd.h
+index 338d65d..e23904f 100644
+--- a/src/ap/hostapd.h
++++ b/src/ap/hostapd.h
+@@ -490,6 +490,8 @@ struct hostapd_iface {
+ 	u32 atf_sta_has_quota[2048/32]; // One bit per aid
+ 
+ 	int block_tx; /* Is TX block on or off */
++
++	int set_freq_done;
+ };
+ 
+ /* hostapd.c */
+-- 
+2.10.1
+

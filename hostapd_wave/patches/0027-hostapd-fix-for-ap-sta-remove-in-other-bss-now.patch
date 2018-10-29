@@ -1,0 +1,48 @@
+From bb66a27f5383f279945771248bd0a48a23a4206c Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:21 +0300
+Subject: [PATCH] hostapd: fix for ap sta remove in other bss now
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/ieee802_11.c | 11 +----------
+ src/ap/sta_info.c   |  1 +
+ 2 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 62f8243..a8fe3f0 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -1406,16 +1406,7 @@ static void ap_sta_remove_in_other_bss_now(struct hostapd_data *hapd, struct sta
+ 		wpa_printf(MSG_DEBUG, "Removing station " MACSTR
+ 				   " with AID=%d from kernel driver.", MAC2STR(sta2->addr), sta2->aid);
+ 
+-		if (hostapd_drv_sta_remove(bss, sta2->addr))
+-			wpa_printf(MSG_DEBUG, "Could not remove station " MACSTR
+-					   " from kernel driver.", MAC2STR(sta2->addr));
+-
+-		if (sta2->aid > 0) {
+-			if (bss->driver->free_aid)
+-				(*bss->driver->free_aid)(bss->drv_priv, &sta2->aid);
+-		}
+-		else
+-			wpa_printf(MSG_DEBUG, "Can't remove AID, (AID=%d)", sta2->aid);
++		ap_free_sta(bss, sta2);
+ 	}
+ }
+ 
+diff --git a/src/ap/sta_info.c b/src/ap/sta_info.c
+index 3028d9e..613b91f 100644
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -158,6 +158,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
+ {
+ 	int set_beacon = 0;
+ 
++	wpa_printf(MSG_MSGDUMP, "ap_free_sta");
+ 	accounting_sta_stop(hapd, sta);
+ 
+ 	/* just in case */
+-- 
+2.10.1
+

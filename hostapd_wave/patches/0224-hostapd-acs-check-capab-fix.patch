@@ -1,0 +1,44 @@
+From 54076e9ca402e2765e8083f148b72214dca51332 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 17:19:57 +0200
+Subject: [PATCH] hostapd-acs-check-capab-fix
+
+---
+ src/ap/hw_features.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/src/ap/hw_features.c b/src/ap/hw_features.c
+index 6bd615c..5611d9d 100644
+--- a/src/ap/hw_features.c
++++ b/src/ap/hw_features.c
+@@ -752,6 +752,12 @@ static int ieee80211n_check_40mhz(struct hostapd_iface *iface)
+ 	if (iface->conf->ignore_40_mhz_intolerant)
+ 		return 0;
+ 
++#ifdef CONFIG_ACS
++	/* ACS smart already includes these checks */
++	if (iface->conf->acs_algo == ACS_ALGO_SMART && iface->conf->acs_init_done)
++		return 0;
++#endif /* CONFIG_ACS */
++
+ 	hostapd_set_state(iface, HAPD_IFACE_HT_SCAN);
+ 	wpa_printf(MSG_DEBUG, "Scan for neighboring BSSes prior to enabling "
+ 		   "40 MHz channel");
+@@ -1218,11 +1224,9 @@ int hostapd_acs_completed(struct hostapd_iface *iface, int err)
+ 		goto out;
+ 	}
+ 
+-  if (iface->conf->acs_algo != ACS_ALGO_SMART) {
+-    ret = hostapd_check_ht_capab(iface);
+-    if (ret < 0)
+-      goto out;
+-  } else ret = 0;
++	ret = hostapd_check_ht_capab(iface);
++	if (ret < 0)
++		goto out;
+ 
+ 	if (ret == 1) {
+ 		wpa_printf(MSG_DEBUG, "Interface initialization will be completed in a callback");
+-- 
+2.10.1
+

@@ -1,0 +1,48 @@
+From bfb914fbaae6a8dbbb21e4be484b8c895d3060e4 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 15:53:24 +0200
+Subject: [PATCH] 
+ hostapd-include-mbo-capabilities-in-beacon-in-case-of-disallow
+
+---
+ src/ap/ieee802_11_shared.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/src/ap/ieee802_11_shared.c b/src/ap/ieee802_11_shared.c
+index 29957ae..160dce1 100644
+--- a/src/ap/ieee802_11_shared.c
++++ b/src/ap/ieee802_11_shared.c
+@@ -556,8 +556,7 @@ u8 * hostapd_eid_bss_max_idle_period(struct hostapd_data *hapd, u8 *eid)
+ 
+ #ifdef CONFIG_MBO
+ 
+-u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len)
+-{
++u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len) {
+ 	u8 mbo[6], *mbo_pos = mbo;
+ 	u8 *pos = eid;
+ 
+@@ -572,14 +571,13 @@ u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len)
+ 		*mbo_pos++ = MBO_ATTR_ID_ASSOC_DISALLOW;
+ 		*mbo_pos++ = 1;
+ 		*mbo_pos++ = hapd->mbo_bss_assoc_disallow;
+-	} else {
+-		*mbo_pos++ = MBO_ATTR_ID_AP_CAPA_IND;
+-		*mbo_pos++ = 1;
+-		if (hapd->conf->mbo_cell_aware)
+-			*mbo_pos++ = MBO_AP_CAPA_CELL_AWARE;
+-		else
+-			*mbo_pos++ = 0; /* Not Cellular aware */
+ 	}
++	*mbo_pos++ = MBO_ATTR_ID_AP_CAPA_IND;
++	*mbo_pos++ = 1;
++	if (hapd->conf->mbo_cell_aware)
++		*mbo_pos++ = MBO_AP_CAPA_CELL_AWARE;
++	else
++		*mbo_pos++ = 0; /* Not Cellular aware */
+ 
+ 	pos += mbo_add_ie(pos, len, mbo, mbo_pos - mbo);
+ 
+-- 
+2.10.1
+

@@ -1,0 +1,274 @@
+From 66b43b9a12c664373790829a45f0d425a69e8657 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:10:17 +0200
+Subject: [PATCH] wpa_supplicant-add-band-and-radio-mode-to-scan-results
+
+---
+ src/drivers/driver.h        |   6 ++
+ src/utils/common.h          |   3 +
+ wpa_supplicant/bss.c        |   2 +
+ wpa_supplicant/bss.h        |   4 ++
+ wpa_supplicant/ctrl_iface.c |  10 +++
+ wpa_supplicant/scan.c       | 152 ++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 177 insertions(+)
+
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index efb74ec..6497954 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -468,6 +468,10 @@ struct hostapd_hw_modes {
+  * @est_throughput: Estimated throughput in kbps (this is calculated during
+  * scan result processing if left zero by the driver wrapper)
+  * @snr: Signal-to-noise ratio in dB (calculated during scan result processing)
++ * @freqband: frequency band of BSS/IBSS (i.e. "2G", "5G", etc.,
++ * calculated during scan result processing)
++ * @netmode: network mode of BSS/IBSS (i.e., "bgn", "anac", etc.,
++ * calculated during scan result processing)
+  * @ie_len: length of the following IE field in octets
+  * @beacon_ie_len: length of the following Beacon IE field in octets
+  *
+@@ -498,6 +502,8 @@ struct wpa_scan_res {
+ 	unsigned int age;
+ 	unsigned int est_throughput;
+ 	int snr;
++	char freqband[FREQBAND_MAX_LEN];
++	char netmode[NETMODE_MAX_LEN];
+ 	size_t ie_len;
+ 	size_t beacon_ie_len;
+ 	/* Followed by ie_len + beacon_ie_len octets of IE data */
+diff --git a/src/utils/common.h b/src/utils/common.h
+index 5a6ad58..1da6818 100644
+--- a/src/utils/common.h
++++ b/src/utils/common.h
+@@ -456,6 +456,9 @@ struct wpa_ssid_value {
+ 	size_t ssid_len;
+ };
+ 
++#define FREQBAND_MAX_LEN	4
++#define NETMODE_MAX_LEN 	8
++
+ int hwaddr_aton(const char *txt, u8 *addr);
+ int hwaddr_masked_aton(const char *txt, u8 *addr, u8 *mask, u8 maskable);
+ int hwaddr_compact_aton(const char *txt, u8 *addr);
+diff --git a/wpa_supplicant/bss.c b/wpa_supplicant/bss.c
+index cef0bf6..ac26b21 100644
+--- a/wpa_supplicant/bss.c
++++ b/wpa_supplicant/bss.c
+@@ -299,6 +299,8 @@ static void wpa_bss_copy_res(struct wpa_bss *dst, struct wpa_scan_res *src,
+ 	dst->tsf = src->tsf;
+ 	dst->est_throughput = src->est_throughput;
+ 	dst->snr = src->snr;
++	os_memcpy(dst->freqband, src->freqband, FREQBAND_MAX_LEN);
++	os_memcpy(dst->netmode, src->netmode, NETMODE_MAX_LEN);
+ 
+ 	calculate_update_time(fetch_time, src->age, &dst->last_update);
+ }
+diff --git a/wpa_supplicant/bss.h b/wpa_supplicant/bss.h
+index 84e8fb0..108befb 100644
+--- a/wpa_supplicant/bss.h
++++ b/wpa_supplicant/bss.h
+@@ -99,6 +99,10 @@ struct wpa_bss {
+ 	unsigned int est_throughput;
+ 	/** Signal-to-noise ratio in dB */
+ 	int snr;
++	/** Frequency band of BSS/IBSS */
++	char freqband[FREQBAND_MAX_LEN];
++	/** Network mode of BSS/IBSS */
++	char netmode[NETMODE_MAX_LEN];
+ 	/** ANQP data */
+ 	struct wpa_bss_anqp *anqp;
+ 	/** Length of the following IE field in octets (from Probe Response) */
+diff --git a/wpa_supplicant/ctrl_iface.c b/wpa_supplicant/ctrl_iface.c
+index ad3dc16..3b33846 100644
+--- a/wpa_supplicant/ctrl_iface.c
++++ b/wpa_supplicant/ctrl_iface.c
+@@ -2625,6 +2625,16 @@ static int wpa_supplicant_ctrl_iface_scan_result(
+ 		return -1;
+ 	pos += ret;
+ 
++	ret = os_snprintf(pos, end - pos, " freqband=%s", bss->freqband);
++	if (os_snprintf_error(end - pos, ret))
++		return -1;
++	pos += ret;
++
++	ret = os_snprintf(pos, end - pos, " netmode=%s", bss->netmode);
++	if (os_snprintf_error(end - pos, ret))
++		return -1;
++	pos += ret;
++
+ 	ret = os_snprintf(pos, end - pos, "\n");
+ 	if (os_snprintf_error(end - pos, ret))
+ 		return -1;
+diff --git a/wpa_supplicant/scan.c b/wpa_supplicant/scan.c
+index de1c3a4..5c3ab32 100644
+--- a/wpa_supplicant/scan.c
++++ b/wpa_supplicant/scan.c
+@@ -2136,6 +2136,156 @@ void scan_est_throughput(struct wpa_supplicant *wpa_s,
+ }
+ 
+ 
++static void scan_freqband(struct wpa_supplicant *wpa_s,
++		struct wpa_scan_res *res)
++{
++	int ret;
++	char *pos, *end;
++	enum wpa_radio_work_band band = wpas_freq_to_band(res->freq);
++
++	pos = res->freqband;
++	end = &res->freqband[FREQBAND_MAX_LEN];
++
++	if (BAND_2_4_GHZ == band) {
++		ret = os_snprintf(pos, end - pos, "2G");
++		if (os_snprintf_error(end - pos, ret))
++			goto failed;
++		pos += ret;
++	}
++	else if (BAND_5_GHZ == band) {
++		ret = os_snprintf(pos, end - pos, "5G");
++		if (os_snprintf_error(end - pos, ret))
++			goto failed;
++		pos += ret;
++	}
++	else if (BAND_60_GHZ == band) {
++		ret = os_snprintf(pos, end - pos, "60G");
++		if (os_snprintf_error(end - pos, ret))
++			goto failed;
++		pos += ret;
++	}
++	else {
++		goto failed;
++	}
++	return;
++
++failed:
++	wpa_dbg(wpa_s, MSG_DEBUG, "Failed to calculate network mode");
++	pos = res->freqband;
++	end = &res->freqband[FREQBAND_MAX_LEN];
++	os_memset(res->freqband, 0, FREQBAND_MAX_LEN);
++	os_snprintf(pos, end - pos, "?");
++}
++
++
++static Boolean is_rate_exists_in_buff(const u8 *rates_buf, u8 rates_num, u8 rate_ref)
++{
++	u8 i;
++	for (i =0; i < rates_num; i++) {
++		/* Exclude flag Basic Rate and convert to Mbps */
++		if (rate_ref == ((rates_buf[i] & 0x7F) >> 1))
++			return TRUE;
++	}
++	return FALSE;
++}
++
++
++static Boolean is_rate_exists(struct wpa_scan_res *res, u8 rate_ref)
++{
++	const u8 *ie;
++
++	/* Get IE Supported Rates */
++	ie = wpa_scan_get_ie(res, WLAN_EID_SUPP_RATES);
++	if (ie && is_rate_exists_in_buff(&ie[2], ie[1], rate_ref)) {
++		return TRUE;
++	}
++	else {
++		/* Get IE Extended Supported Rates */
++		ie = wpa_scan_get_ie(res, WLAN_EID_EXT_SUPP_RATES);
++		if (ie && is_rate_exists_in_buff(&ie[2], ie[1], rate_ref))
++			return TRUE;
++	}
++	return FALSE;
++}
++
++
++static void scan_netmode(struct wpa_supplicant *wpa_s,
++		struct wpa_scan_res *res)
++{
++	const u8 *ie;
++	int ret;
++	char *pos, *end;
++	enum wpa_radio_work_band band = wpas_freq_to_band(res->freq);
++
++	pos = res->netmode;
++	end = &res->netmode[NETMODE_MAX_LEN];
++
++	/* Check frequency band */
++	if (BAND_2_4_GHZ == band) {
++		/* Check if network mode B (11Mbps) is supported */
++		if (is_rate_exists(res, 11)) {
++			ret = os_snprintf(pos, end - pos, "b");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++		/* Check if network mode G (54Mbps) is supported */
++		if (is_rate_exists(res, 54)) {
++			ret = os_snprintf(pos, end - pos, "g");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++		/* Get IE HT Capabilities */
++		ie = wpa_scan_get_ie(res, WLAN_EID_HT_CAP);
++		/* and if IE HT Capabilities is available then HT-mode is supported */
++		if (ie && ie[1]) {
++			ret = os_snprintf(pos, end - pos, "n");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++	}
++	else if (BAND_5_GHZ == band) {
++		if (is_rate_exists(res, 54)) {
++			ret = os_snprintf(pos, end - pos, "a");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++		/* Get IE HT Capabilities */
++		ie = wpa_scan_get_ie(res, WLAN_EID_HT_CAP);
++		/* and if IE HT Capabilities is available then HT-mode is supported */
++		if (ie && ie[1]) {
++			ret = os_snprintf(pos, end - pos, "n");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++		/* Get IE VHT Capabilities */
++		ie = wpa_scan_get_ie(res, WLAN_EID_VHT_CAP);
++		/* and if IE HT Capabilities is available then VHT-mode is supported */
++		if (ie && ie[1]) {
++			ret = os_snprintf(pos, end - pos, "ac");
++			if (os_snprintf_error(end - pos, ret))
++				goto failed;
++			pos += ret;
++		}
++	}
++	else {
++		goto failed;
++	}
++	return;
++
++failed:
++	wpa_dbg(wpa_s, MSG_DEBUG, "Failed to calculate network mode");
++	pos = res->netmode;
++	end = &res->netmode[NETMODE_MAX_LEN];
++	os_memset(res->netmode, 0, NETMODE_MAX_LEN);
++	os_snprintf(pos, end - pos, "?");
++}
++
++
+ /**
+  * wpa_supplicant_get_scan_results - Get scan results
+  * @wpa_s: Pointer to wpa_supplicant data
+@@ -2174,6 +2324,8 @@ wpa_supplicant_get_scan_results(struct wpa_supplicant *wpa_s,
+ 
+ 		scan_snr(scan_res_item);
+ 		scan_est_throughput(wpa_s, scan_res_item);
++		scan_freqband(wpa_s, scan_res_item);
++		scan_netmode(wpa_s, scan_res_item);
+ 	}
+ 
+ #ifdef CONFIG_WPS
+-- 
+2.10.1
+

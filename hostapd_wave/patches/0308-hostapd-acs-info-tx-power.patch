@@ -1,0 +1,50 @@
+From d864c85b1be37e9b9346677b782accbd4fcaa8cd Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 20 Feb 2018 14:25:24 +0200
+Subject: [PATCH] hostapd-acs-info-tx-power
+
+---
+ src/ap/acs.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index ae73a21..1be6324 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -2395,7 +2395,7 @@ void acs_print_info_header(int level)
+ 
+ void acs_print_info_header_file(FILE *fp)
+ {
+-  fprintf(fp, "\n #  1y  2y freq BW R#     NF load bss pri cal aff rdr ovl40 ovl80 priOvl int40 cwi dyn20 dyn40 dyn80 RSSI SNR RXevt extSTA skip\n");
++  fprintf(fp, "\n #  1y  2y freq BW R#     NF load bss pri cal aff rdr ovl40 ovl80 priOvl int40 cwi dyn20 dyn40 dyn80 RSSI SNR RXevt extSTA txp skip\n");
+ }
+ 
+ void acs_print_cand_no(int level, struct hostapd_hw_modes *mode, int i)
+@@ -2430,7 +2430,7 @@ void acs_print_cand_no(int level, struct hostapd_hw_modes *mode, int i)
+ 
+ void acs_print_cand_no_file(FILE *fp, struct hostapd_hw_modes *mode, int i)
+ {
+-  fprintf(fp, "%2d %3d %3d %4d %2d %5d %4d %3d %2d  %2d   %c  %2d  %2d   %2d    %2d    %2d     %2d  %4d %2d     %2d    %2d   %4d %3d  %2d    %2d    %c\n",
++  fprintf(fp, "%2d %3d %3d %4d %2d %5d %4d %3d %2d  %2d   %c  %2d  %2d   %2d    %2d    %2d     %2d  %4d %2d     %2d    %2d   %4d %3d  %2d    %2d   %3d  %c\n",
+     i,
+     mode->candidates[i].primary,
+     mode->candidates[i].secondary,
+@@ -2457,6 +2457,7 @@ void acs_print_cand_no_file(FILE *fp, struct hostapd_hw_modes *mode, int i)
+     mode->candidates[i].snr,
+     mode->candidates[i].not_80211_rx_evt,
+     mode->candidates[i].not_my_sta_low_rssi,
++    mode->candidates[i].tx_power,
+     mode->candidates[i].exclude_reason);
+ }
+ 
+@@ -2487,6 +2488,7 @@ void acs_print_info_legend(FILE *fp)
+               "       SNR = average SNR in channel. Value in dB\n" \
+               "     RXevt = number of non 802.11 Rx events\n" \
+               "    extSTA = number of packets received from stations not connected to this AP\n" \
++              "       txp = TX power\n"
+               "      skip = reason, why this channel candidate was excluded from ranking/selection: r = radar, i = intolerant, o = overlap40, p = primary overlap, c = CWI noise\n");
+ }
+ 
+-- 
+2.10.1
+

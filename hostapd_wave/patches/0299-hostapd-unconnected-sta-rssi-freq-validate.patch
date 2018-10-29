@@ -1,0 +1,116 @@
+From 96e163842d594b741ec370420b2f3c381935a087 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:19:40 +0200
+Subject: [PATCH] hostapd-unconnected-sta-rssi-freq-validate
+
+---
+ hostapd/ctrl_iface.c | 52 +++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 37 insertions(+), 15 deletions(-)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 612d7f0..9bd16b9 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -5715,10 +5715,33 @@ static int hostapd_ctrl_iface_remove_neighbor_per_vap(struct hostapd_data *hapd,
+ 	return hostapd_neighbor_remove(hapd, bssid, &ssid);
+ }
+ 
++static int
++hostapd_is_chandef_valid (struct hostapd_iface *iface, unsigned int center_freq, unsigned int bandwidth)
++{
++  int valid = 0;
++  unsigned int cur_freq;
++  unsigned int low_freq, high_freq;
++
++  if (!iface->current_mode)
++    return 0;
++
++  low_freq  = center_freq - bandwidth/2 + 10;
++  high_freq = center_freq + bandwidth/2 - 10;
++
++  for (cur_freq = low_freq; cur_freq <= high_freq; cur_freq += 20) {
++    if (!hostapd_get_mode_channel(iface, cur_freq))
++      return 0;
++
++    valid = 1;
++  }
++  return valid;
++}
++
+ int hostapd_ctrl_iface_unconnected_sta(struct hostapd_data *hapd, const char *cmd)
+ {
+   struct hostapd_unconnected_sta_req_params req;
+   char *pos;
++  unsigned int bandwidth;
+   struct sta_info *sta;
+ 
+   os_memset(&req, 0, sizeof(req));
+@@ -5730,7 +5753,7 @@ int hostapd_ctrl_iface_unconnected_sta(struct hostapd_data *hapd, const char *cm
+   if (pos) {
+     pos++;
+     req.freq = atoi(pos);
+-    if (req.freq == 0){
++    if (!hostapd_is_chandef_valid(hapd->iface, req.freq, 20)){
+       wpa_printf(MSG_ERROR, "unconnected_sta: invalid freq provided");
+       return -1;
+     }
+@@ -5743,10 +5766,6 @@ int hostapd_ctrl_iface_unconnected_sta(struct hostapd_data *hapd, const char *cm
+   if (pos) {
+     pos += strlen("center_freq1=");
+     req.center_freq1 = atoi(pos);
+-    if (req.center_freq1 == 0){
+-      wpa_printf(MSG_ERROR, "unconnected_sta: invalid center_freq1 provided");
+-      return -1;
+-    }
+   } else {
+     wpa_printf(MSG_ERROR, "unconnected_sta: center_freq1 not specified");
+     return -1;
+@@ -5756,25 +5775,17 @@ int hostapd_ctrl_iface_unconnected_sta(struct hostapd_data *hapd, const char *cm
+   if (pos) {
+     pos += strlen("center_freq2=");
+     req.center_freq2 = atoi(pos);
+-    if (req.center_freq2 == 0){
+-      wpa_printf(MSG_ERROR, "unconnected_sta: invalid center_freq2 provided");
+-      return -1;
+-    }
+   }
+ 
+   pos = os_strstr(cmd, "bandwidth=");
+   if (pos) {
+     pos += strlen("bandwidth=");
+-    req.bandwidth = atoi(pos);
+-    if (req.bandwidth == 0){
+-      wpa_printf(MSG_ERROR, "unconnected_sta: invalid bandwidth provided");
+-      return -1;
+-    }
++    bandwidth = atoi(pos);
+   } else {
+     wpa_printf(MSG_ERROR, "unconnected_sta: bandwidth not specified");
+     return -1;
+   }
+-  switch (req.bandwidth) {
++  switch (bandwidth) {
+   case 20:
+     req.bandwidth = NL80211_CHAN_WIDTH_20;
+     break;
+@@ -5795,6 +5806,17 @@ int hostapd_ctrl_iface_unconnected_sta(struct hostapd_data *hapd, const char *cm
+     return -1;
+   }
+ 
++  if (!hostapd_is_chandef_valid(hapd->iface, req.center_freq1, bandwidth)) {
++    wpa_printf(MSG_ERROR, "unconnected_sta: invalid center_freq1 provided");
++    return -1;
++  }
++
++  if (req.center_freq2 &&
++      !hostapd_is_chandef_valid(hapd->iface, req.center_freq2, bandwidth)) {
++    wpa_printf(MSG_ERROR, "unconnected_sta: invalid center_freq2 provided");
++    return -1;
++  }
++
+   sta = ap_get_sta(hapd, req.addr);
+   if (sta) {
+     wpa_printf(MSG_ERROR, "unconnected_sta: disconnect STA "MACSTR" first",
+-- 
+2.10.1
+

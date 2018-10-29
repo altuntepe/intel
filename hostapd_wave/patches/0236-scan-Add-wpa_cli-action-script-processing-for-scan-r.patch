@@ -1,0 +1,27 @@
+From c4d3a337ce5d62bc95940596801188ac7624cf5f Mon Sep 17 00:00:00 2001
+From: Ido Reis <ido.reis@tandemg.com>
+Date: Wed, 21 Jun 2017 14:51:21 +0300
+Subject: [PATCH] scan: Add wpa_cli action script processing for scan results
+ event
+
+Signed-off-by: Ido Reis <ido.reis@tandemg.com>
+---
+ wpa_supplicant/wpa_cli.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/wpa_supplicant/wpa_cli.c b/wpa_supplicant/wpa_cli.c
+index fc46c9e..405bb3b 100644
+--- a/wpa_supplicant/wpa_cli.c
++++ b/wpa_supplicant/wpa_cli.c
+@@ -3692,6 +3692,8 @@ static void wpa_cli_action_process(const char *msg)
+ 	} else if (str_starts(pos, WPA_EVENT_TERMINATING)) {
+ 		printf("wpa_supplicant is terminating - stop monitoring\n");
+ 		wpa_cli_quit = 1;
++	} else if (str_starts(pos, WPA_EVENT_SCAN_RESULTS)) {
++		wpa_cli_exec(action_file, ifname, pos);
+ 	}
+ }
+ 
+-- 
+2.10.1
+

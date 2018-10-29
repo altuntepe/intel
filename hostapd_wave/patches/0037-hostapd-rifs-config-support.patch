@@ -1,0 +1,53 @@
+From b927c326befebc27cab8a35af733999f40639fc9 Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:21 +0300
+Subject: [PATCH] hostapd: rifs config support
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ hostapd/config_file.c  | 2 ++
+ src/ap/ap_config.h     | 1 +
+ src/ap/ieee802_11_ht.c | 2 ++
+ 3 files changed, 5 insertions(+)
+
+diff --git a/hostapd/config_file.c b/hostapd/config_file.c
+index 0a2a2f8..91daf3a 100644
+--- a/hostapd/config_file.c
++++ b/hostapd/config_file.c
+@@ -3112,6 +3112,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+ 				   line);
+ 			return 1;
+ 		}
++	} else if (os_strcmp(buf, "ht_rifs") == 0) {
++		conf->ht_rifs = atoi(pos);
+ 	} else if (os_strcmp(buf, "require_ht") == 0) {
+ 		conf->require_ht = atoi(pos);
+ 	} else if (os_strcmp(buf, "obss_interval") == 0) {
+diff --git a/src/ap/ap_config.h b/src/ap/ap_config.h
+index 10fac12..8427c1b 100644
+--- a/src/ap/ap_config.h
++++ b/src/ap/ap_config.h
+@@ -675,6 +675,7 @@ struct hostapd_config {
+ 	int ieee80211n;
+ 	int secondary_channel;
+ 	int no_pri_sec_switch;
++	int ht_rifs;
+ 	int require_ht;
+ 	int obss_interval;
+ 	u16 scan_passive_dwell;
+diff --git a/src/ap/ieee802_11_ht.c b/src/ap/ieee802_11_ht.c
+index b7603ff..e25df32 100644
+--- a/src/ap/ieee802_11_ht.c
++++ b/src/ap/ieee802_11_ht.c
+@@ -103,6 +103,8 @@ u8 * hostapd_eid_ht_operation(struct hostapd_data *hapd, u8 *eid)
+ 	if (hapd->iconf->secondary_channel == -1)
+ 		oper->ht_param |= HT_INFO_HT_PARAM_SECONDARY_CHNL_BELOW |
+ 			HT_INFO_HT_PARAM_STA_CHNL_WIDTH;
++	if (hapd->iconf->ht_rifs)
++		oper->ht_param |= HT_INFO_HT_PARAM_RIFS_MODE;
+ 
+ 	pos += sizeof(*oper);
+ 
+-- 
+2.10.1
+

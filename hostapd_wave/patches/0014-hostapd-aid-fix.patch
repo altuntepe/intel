@@ -1,0 +1,43 @@
+From 1027974cbbc234b2d75447087e4958c1cd689be6 Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:20 +0300
+Subject: [PATCH] hostapd: aid fix
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/ieee802_11.c | 3 +++
+ src/ap/sta_info.c   | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 98590d0..62f8243 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -2410,6 +2410,9 @@ static void handle_disassoc(struct hostapd_data *hapd,
+ 	hostapd_drv_sta_remove(hapd, sta->addr);
+ 	sta->added_unassoc = 0;
+ 
++	if (sta->aid > 0 && hapd->driver->free_aid)
++		(*hapd->driver->free_aid)(hapd->drv_priv, &sta->aid);
++
+ 	if (sta->timeout_next == STA_NULLFUNC ||
+ 	    sta->timeout_next == STA_DISASSOC) {
+ 		sta->timeout_next = STA_DEAUTH;
+diff --git a/src/ap/sta_info.c b/src/ap/sta_info.c
+index df57698..e573107 100644
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -741,6 +741,10 @@ static int ap_sta_remove(struct hostapd_data *hapd, struct sta_info *sta)
+ 		return -1;
+ 	}
+ 	sta->added_unassoc = 0;
++
++	if (sta->aid > 0 && hapd->driver->free_aid)
++		(*hapd->driver->free_aid)(hapd->drv_priv, &sta->aid);
++
+ 	return 0;
+ }
+ 
+-- 
+2.10.1
+

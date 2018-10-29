@@ -1,0 +1,39 @@
+From faa4afa46cad4822bdb75b27cc1e258366aff4ad Mon Sep 17 00:00:00 2001
+From: "Yang, Jack" <jack.yang@intel.com>
+Date: Wed, 15 Aug 2018 16:21:40 +0800
+Subject: [PATCH] hostapd-multi-ap-vendor-elems-cli-cmd-beacon-update
+
+---
+ hostapd/ctrl_iface.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 7acff90..5fcd34f 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -6570,6 +6570,10 @@ static int hostapd_ctrl_iface_set_elements (struct hostapd_data *hapd, const cha
+ 		/* No elements specified */
+ 		wpabuf_free(*p_elements);
+ 		*p_elements = NULL;
++		/* remove Beacon/Probe resp IE */
++		if (elem_type == VENDOR_ELEM_TYPE)
++			if (ieee802_11_set_beacon(hapd))
++				return -1;
+ 		return 0;
+ 	}
+ 	cmd++;
+@@ -6581,6 +6585,11 @@ static int hostapd_ctrl_iface_set_elements (struct hostapd_data *hapd, const cha
+ 	}
+ 	wpabuf_free(*p_elements);
+ 	*p_elements = new_elements;
++	
++	/* update Beacon/Probe resp IE only */
++	if (elem_type == VENDOR_ELEM_TYPE)
++		if (ieee802_11_set_beacon(hapd))
++			return -1;
+ 
+ 	return 0;
+ }
+-- 
+2.10.1
+

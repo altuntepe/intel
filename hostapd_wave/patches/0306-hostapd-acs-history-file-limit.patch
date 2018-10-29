@@ -1,0 +1,129 @@
+From fc22ed869e65ddac8f199ec05c2352b8764b4318 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 20 Feb 2018 14:19:54 +0200
+Subject: [PATCH] hostapd ACS history file limit
+
+---
+ src/ap/acs.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 64 insertions(+), 6 deletions(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index ea8971d..ae73a21 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -252,6 +252,64 @@ static int acs_survey_is_sufficient(struct freq_survey *survey);
+ static u32 acs_get_center_chan_index(struct hostapd_iface *iface);
+ 
+ 
++/* Open file for writing/appending. If opened for appending and it is bigger
++ * than 10K, file is saved with filename .0 at the end and a new empty file is
++ * created. */
++static FILE * acs_write_file(const char *name, Boolean append)
++{
++#define ACS_MAX_LOG_SIZE	10240 /* 10K */
++
++	FILE *fp;
++	long int sz;
++	int res;
++	char *bak_file;
++	size_t new_size;
++
++	if (!append)
++		return fopen(name, "w");
++	fp = fopen(name, "a+");
++	if (!fp) {
++		wpa_printf(MSG_ERROR, "ACS: cannot open file [%s]. %s", name,
++			strerror(errno));
++		return fp;
++	}
++	res = fseek(fp, 0L, SEEK_END);
++	if (res == -1) {
++		wpa_printf(MSG_ERROR, "ACS: cannot set file position indicator of file [%s]. %s",
++			name, strerror(errno));
++		fclose(fp);
++		return NULL;
++	}
++	sz = ftell(fp);
++	if (sz == -1) {
++		wpa_printf(MSG_ERROR, "ACS: cannot tell size of file [%s]. %s", name,
++			strerror(errno));
++		fclose(fp);
++		return NULL;
++	}
++	if (sz > ACS_MAX_LOG_SIZE) {
++		fclose(fp);
++		new_size = strlen(name) + 3;
++		bak_file = os_malloc(new_size);
++		if (bak_file == NULL)
++			return NULL;
++		os_snprintf(bak_file, new_size, "%s.0", name);
++		remove(bak_file);
++		res = rename(name, bak_file);
++		os_free(bak_file);
++		if (res == -1)
++			wpa_printf(MSG_WARNING, "ACS: making backup of file [%s] failed. %s", name,
++				strerror(errno));
++		fp = fopen(name, "w");
++		if (!fp) {
++			wpa_printf(MSG_ERROR, "ACS: cannot open file [%s]. %s", name,
++				strerror(errno));
++		}
++	}
++	return fp;
++}
++
++
+ static void acs_clean_chan_surveys(struct hostapd_channel_data *chan)
+ {
+ 	struct freq_survey *survey, *tmp;
+@@ -1435,9 +1493,9 @@ static void acs_find_min_badness(struct hostapd_iface *iface, FILE *fp)
+ 	acs_numbss_adjust_vht_center_freq(iface, prim_chan_idx);
+ }
+ 
+-static FILE* acs_fopen(const char *fname, const char *mode, const char *name)
++static FILE* acs_fopen(const char *fname, Boolean append, const char *name)
+ {
+-	FILE *fp = fopen(fname, mode);
++	FILE *fp = acs_write_file(fname, append);
+ 
+ 	if (!fp) {
+ 		wpa_printf(MSG_ERROR, "Error opening the %s '%s': %s",
+@@ -1457,7 +1515,7 @@ static void acs_fclose(FILE *fp, const char *name)
+ 
+ static void acs_count_bsses(struct hostapd_iface *iface, struct wpa_scan_results *scan_res)
+ {
+-	FILE *fp = acs_fopen(iface->conf->acs_numbss_info_file, "w", "ACS NUMBSS info file");
++	FILE *fp = acs_fopen(iface->conf->acs_numbss_info_file, FALSE, "ACS NUMBSS info file");
+ 
+ 	acs_record_bsses(iface, scan_res, fp);
+ 
+@@ -1668,7 +1726,7 @@ void acs_smart_record_bsses(struct hostapd_iface *iface, struct wpa_scan_results
+ 
+ static void acs_smart_process_bsses(struct hostapd_iface *iface, struct wpa_scan_results *scan_res)
+ {
+-  FILE *fp = acs_fopen(iface->conf->acs_history_file, iface->conf->acs_init_done ? "a" : "w", "ACS history file");
++  FILE *fp = acs_fopen(iface->conf->acs_history_file, iface->conf->acs_init_done ? TRUE : FALSE, "ACS history file");
+ 
+   acs_smart_record_bsses(iface, scan_res, fp);
+ 
+@@ -1710,7 +1768,7 @@ static void acs_bg_scan_complete(struct hostapd_iface *iface)
+   }
+ 
+   wpa_printf(MSG_INFO, "BSS data from BG scan received");
+-  fp = acs_fopen(iface->conf->acs_history_file, "a", "ACS history file");
++  fp = acs_fopen(iface->conf->acs_history_file, TRUE, "ACS history file");
+ 
+   acs_smart_record_bsses(iface, scan_res, fp);
+   wpa_scan_results_free(scan_res);
+@@ -2575,7 +2633,7 @@ int acs_recalc_ranks_and_set_chan (struct hostapd_iface *iface, int switch_reaso
+     goto end;
+   }
+ 
+-  fp_hist = fopen(iface->conf->acs_history_file, "a");
++  fp_hist = acs_write_file(iface->conf->acs_history_file, TRUE);
+   if (!fp_hist) {
+     wpa_printf(MSG_ERROR, "ACS: cannot open history file");
+     goto end;
+-- 
+2.10.1
+

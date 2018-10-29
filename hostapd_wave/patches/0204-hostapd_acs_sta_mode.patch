@@ -1,0 +1,81 @@
+From 07a15e2435f881c7ff9ba678f67e6ac267292381 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 16:58:37 +0200
+Subject: [PATCH] hostapd_acs_sta_mode
+
+---
+ hostapd/config_file.c |  5 +++--
+ src/ap/ap_config.h    |  3 ++-
+ src/ap/hw_features.c  | 12 ++++++++++++
+ 3 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/hostapd/config_file.c b/hostapd/config_file.c
+index 65f4e3f..248f993 100644
+--- a/hostapd/config_file.c
++++ b/hostapd/config_file.c
+@@ -2835,7 +2835,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+ 		}
+ 	} else if (os_strcmp(buf, "channel") == 0) {
+ 		if (os_strcmp(pos, "acs_survey") == 0 || os_strcmp(pos, "acs_numbss") == 0 ||
+-                                             os_strcmp(pos, "acs_smart") == 0) {
++            os_strcmp(pos, "acs_smart") == 0 || os_strcmp(pos, "acs_sta_mode") == 0) {
+ #ifndef CONFIG_ACS
+ 			wpa_printf(MSG_ERROR, "Line %d: tries to enable ACS but CONFIG_ACS disabled",
+ 				   line);
+@@ -2845,7 +2845,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+ 			conf->channel = 0;
+ 			if (!os_strcmp(pos, "acs_numbss")) conf->acs_algo = ACS_ALGO_NUMBSS;
+ 			else if (!os_strcmp(pos, "acs_smart")) conf->acs_algo = ACS_ALGO_SMART;
+-				else conf->acs_algo = ACS_ALGO_SURVEY;
++			else if (!os_strcmp(pos, "acs_sta_mode")) conf->acs_algo = ACS_ALGO_STA;
++			else conf->acs_algo = ACS_ALGO_SURVEY;
+ #endif /* CONFIG_ACS */
+ 		} else {
+ 			conf->channel = atoi(pos);
+diff --git a/src/ap/ap_config.h b/src/ap/ap_config.h
+index a43da5e..238be50 100644
+--- a/src/ap/ap_config.h
++++ b/src/ap/ap_config.h
+@@ -739,7 +739,8 @@ struct hostapd_config {
+ 	enum {
+ 		ACS_ALGO_SURVEY = 0,
+ 		ACS_ALGO_NUMBSS = 1,
+-		ACS_ALGO_SMART  = 2
++		ACS_ALGO_SMART  = 2,
++		ACS_ALGO_STA    = 3
+ 	} acs_algo;
+ 	char *acs_numbss_info_file;
+ 	int *acs_numbss_coeflist;
+diff --git a/src/ap/hw_features.c b/src/ap/hw_features.c
+index 6346011..6bd615c 100644
+--- a/src/ap/hw_features.c
++++ b/src/ap/hw_features.c
+@@ -78,6 +78,7 @@ int hostapd_get_hw_features(struct hostapd_iface *iface)
+ 	int i, j;
+ 	u16 num_modes, flags;
+ 	struct hostapd_hw_modes *modes;
++	int acs_sta_chan_is_set = 0;
+ 
+ 	if (hostapd_drv_none(hapd))
+ 		return -1;
+@@ -135,6 +136,17 @@ int hostapd_get_hw_features(struct hostapd_iface *iface)
+ 				   feature->channels[j].freq,
+ 				   feature->channels[j].max_tx_power,
+ 				   dfs ? dfs_info(&feature->channels[j]) : "");
++
++			if (iface->conf->acs_algo == ACS_ALGO_STA &&
++			    iface->conf->hw_mode == feature->mode &&
++			    !acs_sta_chan_is_set && !dfs) {
++				iface->conf->channel = feature->channels[j].chan;
++				iface->conf->secondary_channel = 0;
++				iface->conf->vht_oper_chwidth = VHT_CHANWIDTH_USE_HT;
++				iface->conf->vht_oper_centr_freq_seg0_idx = 0;
++				iface->conf->ignore_40_mhz_intolerant = 1;
++				acs_sta_chan_is_set = 1;
++			}
+ 		}
+ 	}
+ 
+-- 
+2.10.1
+

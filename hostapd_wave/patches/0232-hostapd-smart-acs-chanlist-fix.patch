@@ -1,0 +1,27 @@
+From 47992277bb7e56eebf03dc7d1744e103ed018110 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:55:02 +0200
+Subject: [PATCH] hostapd-smart-acs-chanlist-fix
+
+---
+ src/ap/acs.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index 593d035..b87aca0 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -2047,6 +2047,10 @@ static void acs_init_candidate_table(struct hostapd_iface *iface)
+   for (i = 0; i < mode->num_channels; i++) {
+     struct hostapd_channel_data *chan = &mode->channels[i];
+     if (chan->flag & HOSTAPD_CHAN_DISABLED) continue;
++
++    if (!is_in_chanlist(iface, chan))
++     continue;
++
+     if (chan->flag & HOSTAPD_CHAN_RADAR) mode->candidates[mode->num_candidates].radar_affected = TRUE;
+ 
+     mode->candidates[mode->num_candidates].freq = chan->freq;
+-- 
+2.10.1
+

@@ -1,0 +1,26 @@
+From 8be6cb1bc12383d0413064b43b1bfdcc5227f242 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:10:46 +0200
+Subject: [PATCH] hostapd-interferer-fix
+
+---
+ src/ap/acs.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index 4046a27..c70c818 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -2887,7 +2887,8 @@ void hostapd_ltq_update_channel_data(struct hostapd_iface *iface, const u8 *data
+   {
+     if (!(ch_data->filled_mask & CHDATA_SCAN_MODE))
+     {
+-      if (ch_data->cwi_noise + 128 > iface->conf->acs_to_degradation[D_CWI])
++      if ((ch_data->primary == iface->conf->channel) &&
++          (ch_data->cwi_noise + 128 > iface->conf->acs_to_degradation[D_CWI]))
+       {
+         acs_chandef orig_chan;
+         int ret = 0;
+-- 
+2.10.1
+

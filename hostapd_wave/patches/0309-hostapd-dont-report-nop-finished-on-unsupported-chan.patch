@@ -1,0 +1,41 @@
+From 4e5769a6ffbaed2d1623742cfe52b932e9ad8ac6 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 20 Feb 2018 14:25:24 +0200
+Subject: [PATCH] hostapd-dont-report-nop-finished-on-unsupported-chan
+
+---
+ src/ap/dfs.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/ap/dfs.c b/src/ap/dfs.c
+index c73471e..2d594fb 100644
+--- a/src/ap/dfs.c
++++ b/src/ap/dfs.c
+@@ -1790,18 +1790,20 @@ int hostapd_dfs_nop_finished(struct hostapd_iface *iface, int freq,
+ 			     int ht_enabled, int chan_offset, int chan_width,
+ 			     int cf1, int cf2)
+ {
+-	wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, DFS_EVENT_NOP_FINISHED
+-		"freq=%d ht_enabled=%d chan_offset=%d chan_width=%d cf1=%d cf2=%d",
+-		freq, ht_enabled, chan_offset, chan_width, cf1, cf2);
++	int ret;
+ 
+ 	/* Proceed only if DFS is not offloaded to the driver */
+ 	if (iface->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD)
+ 		return 0;
+ 
+ 	/* TODO add correct implementation here */
+-	set_dfs_state(iface, freq, ht_enabled, chan_offset, chan_width,
++	ret = set_dfs_state(iface, freq, ht_enabled, chan_offset, chan_width,
+ 		      cf1, cf2, 0, HOSTAPD_CHAN_DFS_USABLE);
+ 
++	if (ret > 0)
++		wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, DFS_EVENT_NOP_FINISHED
++			"freq=%d ht_enabled=%d chan_offset=%d chan_width=%d cf1=%d cf2=%d",
++			freq, ht_enabled, chan_offset, chan_width, cf1, cf2);
+ #ifdef CONFIG_ACS
+   if (iface->conf->acs_init_done)
+     acs_update_radar(iface);
+-- 
+2.10.1
+

@@ -1,0 +1,29 @@
+From 50816b7a8ff4b65ce9c27069e3a98652bce499bf Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:10:46 +0200
+Subject: [PATCH] hostapd-acs-obss-rssi-threshold
+
+---
+ src/ap/acs.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index c70c818..c2f2458 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -1633,8 +1633,10 @@ void acs_smart_record_bsses(struct hostapd_iface *iface, struct wpa_scan_results
+               (acs_chan_to_freq(candidates[j].secondary) != bss_sec_freq))) ||
+             (!bss_sec_freq && acs_chan_to_freq(candidates[j].primary) != bss->freq))
+           { /* primary channel must be the same as the operating channel of all 20MHz BSSs */
+-            candidates[j].overlap40++;
+-            os_get_reltime(&candidates[j].ts_overlap40);
++            if (iface->conf->obss_beacon_rssi_threshold < bss->level) {
++              candidates[j].overlap40++;
++              os_get_reltime(&candidates[j].ts_overlap40);
++            }
+           }
+         }
+ 
+-- 
+2.10.1
+

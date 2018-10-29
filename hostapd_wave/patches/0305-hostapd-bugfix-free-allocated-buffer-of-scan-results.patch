@@ -1,0 +1,77 @@
+From fe301283e3637635a7eaaebbaec88495a91dcb20 Mon Sep 17 00:00:00 2001
+From: sdinkinx <simonx.dinkin@intel.com>
+Date: Sun, 21 Jan 2018 13:50:26 +0200
+Subject: [PATCH] bugfix: free allocated buffer of scan results
+
+the scan results buffer was not free'd in multiple places
+which caused to memory leak and eventually
+hostapd is crashing after many scans attempts.
+
+Signed-off-by: sdinkinx <simonx.dinkin@intel.com>
+---
+ src/ap/acs.c | 4 ++++
+ src/ap/rrm.c | 3 +++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index d6aa34d..ea8971d 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -1713,6 +1713,7 @@ static void acs_bg_scan_complete(struct hostapd_iface *iface)
+   fp = acs_fopen(iface->conf->acs_history_file, "a", "ACS history file");
+ 
+   acs_smart_record_bsses(iface, scan_res, fp);
++  wpa_scan_results_free(scan_res);
+ 
+   acs_fclose(fp, "ACS history file");
+ 
+@@ -1760,6 +1761,7 @@ static void acs_scan_complete(struct hostapd_iface *iface)
+ 			goto fail;
+ 		}
+ 
++		wpa_scan_results_free(scan_res);
+ 		return;
+ 	}
+ 
+@@ -1781,8 +1783,10 @@ static void acs_scan_complete(struct hostapd_iface *iface)
+       wpa_printf(MSG_ERROR, "ACS: unknown algo");
+ 	}
+ 
++	wpa_scan_results_free(scan_res);
+ 	return;
+ fail:
++	wpa_scan_results_free(scan_res);
+ 	hostapd_acs_completed(iface, 1);
+ 	acs_fail(iface);
+ }
+diff --git a/src/ap/rrm.c b/src/ap/rrm.c
+index faff839..f237dde 100644
+--- a/src/ap/rrm.c
++++ b/src/ap/rrm.c
+@@ -144,6 +144,7 @@ int hostapd_handle_self_beacon_report_scan_results(struct hostapd_data *hapd)
+ 					" measurement_rep_mode=%d op_class=%d channel=%d start_time=%d duration=%d frame_info=%d rcpi=%d rsni=%d bssid=" MACSTR " antenna_id=%d parent_tsf=%d",
+ 					MAC2STR(hapd->own_addr), 0, op_class, channel,
+ 					0, 0, phy_type, 0, 0, MAC2STR(bssid), 0, 0);
++		wpa_scan_results_free(scan_res);
+ 		return 0;
+ 	}
+ 
+@@ -166,6 +167,7 @@ int hostapd_handle_self_beacon_report_scan_results(struct hostapd_data *hapd)
+ 					MAC2STR(hapd->own_addr), 0, op_class, channel,
+ 					0, 0, phy_type, 0, 0, MAC2STR(bssid), 0, 0);
+ 
++	wpa_scan_results_free(scan_res);
+ 	return 0;
+ }
+ 
+@@ -241,6 +243,7 @@ void hostapd_handle_sta_beacon_report_scan_results(struct hostapd_iface *iface)
+ 				0, 0, MAC2STR(bssid), 0, 0);
+ 	}
+ 
++	wpa_scan_results_free(scan_res);
+ 	wpabuf_free(buf);
+ }
+ 
+-- 
+2.10.1
+

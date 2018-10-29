@@ -1,0 +1,69 @@
+From 88fc5cc6cfb46df0b89b50cbe4a0c0e370385119 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 15:39:53 +0200
+Subject: [PATCH] hostapd_VHT_2.4GHz
+
+---
+ src/ap/ieee802_11_vht.c        | 17 ++++++++++++++++-
+ src/common/ieee802_11_common.c |  3 ++-
+ src/common/ieee802_11_defs.h   |  1 +
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/src/ap/ieee802_11_vht.c b/src/ap/ieee802_11_vht.c
+index 460c55e..c84fe30 100644
+--- a/src/ap/ieee802_11_vht.c
++++ b/src/ap/ieee802_11_vht.c
+@@ -531,8 +531,23 @@ void hostapd_get_vht_capab(struct hostapd_data *hapd,
+ 	/* mask out supported MCS set vs our own MCS set */
+ 	{
+ 		u16 our_mcs_set[4];
++		struct hostapd_hw_modes *mode = hapd->iface->current_mode;
++
++		if (mode->mode == HOSTAPD_MODE_IEEE80211G && hapd->conf->vendor_vht &&
++		    mode->vht_capab == 0 && hapd->iface->hw_features) {
++			int i;
++
++			for (i = 0; i < hapd->iface->num_hw_features; i++) {
++				if (hapd->iface->hw_features[i].mode ==
++				    HOSTAPD_MODE_IEEE80211A) {
++					mode = &hapd->iface->hw_features[i];
++					break;
++				}
++			}
++		}
++
++		os_memcpy(our_mcs_set, mode->vht_mcs_set, sizeof(our_mcs_set));
+ 
+-		os_memcpy(our_mcs_set, hapd->iface->current_mode->vht_mcs_set, sizeof(our_mcs_set));
+ 		/* RX highest vs our TX highest*/
+ 		neg_vht_cap->vht_supported_mcs_set.rx_highest =
+ 			limit_rx_tx_highest(neg_vht_cap->vht_supported_mcs_set.rx_highest, our_mcs_set[3]);
+diff --git a/src/common/ieee802_11_common.c b/src/common/ieee802_11_common.c
+index b6bc449..2ab9b4c 100644
+--- a/src/common/ieee802_11_common.c
++++ b/src/common/ieee802_11_common.c
+@@ -138,7 +138,8 @@ static int ieee802_11_parse_vendor_specific(const u8 *pos, size_t elen,
+ 		case VENDOR_VHT_TYPE:
+ 			if (elen > 4 &&
+ 			    (pos[4] == VENDOR_VHT_SUBTYPE ||
+-			     pos[4] == VENDOR_VHT_SUBTYPE2)) {
++			     pos[4] == VENDOR_VHT_SUBTYPE2 ||
++			     pos[4] == VENDOR_VHT_SUBTYPE3)) {
+ 				elems->vendor_vht = pos;
+ 				elems->vendor_vht_len = elen;
+ 			} else
+diff --git a/src/common/ieee802_11_defs.h b/src/common/ieee802_11_defs.h
+index 7656a37..12c9f52 100644
+--- a/src/common/ieee802_11_defs.h
++++ b/src/common/ieee802_11_defs.h
+@@ -1383,6 +1383,7 @@ enum plink_action_field {
+ #define VENDOR_VHT_TYPE		0x04
+ #define VENDOR_VHT_SUBTYPE	0x08
+ #define VENDOR_VHT_SUBTYPE2	0x00
++#define VENDOR_VHT_SUBTYPE3	0x18
+ 
+ #define VENDOR_HT_CAPAB_OUI_TYPE 0x33 /* 00-90-4c:0x33 */
+ 
+-- 
+2.10.1
+

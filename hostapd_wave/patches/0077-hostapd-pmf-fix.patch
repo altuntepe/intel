@@ -1,0 +1,43 @@
+From 043a6a7bb7ede058acf45bbab1bd6120bcee9804 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 15:39:53 +0200
+Subject: [PATCH] hostapd-pmf-fix
+
+---
+ src/ap/ieee802_11.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 2e00d81..054dd4a 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -1732,6 +1732,11 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
+ 			ap_check_sa_query_timeout(hapd, sta);
+ 		if ((sta->flags & WLAN_STA_MFP) && !sta->sa_query_timed_out &&
+ 		    (!reassoc || sta->auth_alg != WLAN_AUTH_FT)) {
++
++			if (!wpa_auth_pairwise_set(sta->wpa_sm)) {
++				return WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID;
++			}
++
+ 			/*
+ 			 * STA has already been associated with MFP and SA
+ 			 * Query timeout has not been reached. Reject the
+@@ -2273,6 +2278,14 @@ static void handle_assoc(struct hostapd_data *hapd,
+ 	/* followed by SSID and Supported rates; and HT capabilities if 802.11n
+ 	 * is used */
+ 	resp = check_assoc_ies(hapd, sta, pos, left, reassoc);
++
++	if (resp == WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID) {
++		wpa_printf(MSG_INFO, "Pairwise key is not set. Send Deauth");
++		ap_sta_disconnect(hapd, sta, sta->addr, resp);
++		ap_free_sta(hapd, sta);
++		return;
++	}
++
+ 	if (resp != WLAN_STATUS_SUCCESS)
+ 		goto fail;
+ 
+-- 
+2.10.1
+

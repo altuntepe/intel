@@ -1,0 +1,29 @@
+From 209dd2f10f3ca728ef56914134a52cdea6d8ed28 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:14:15 +0200
+Subject: [PATCH] wpa-supplicant-enable-ht-vht-overrides
+
+---
+ wpa_supplicant/.config | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/wpa_supplicant/.config b/wpa_supplicant/.config
+index 8a03b2d..0e204c6 100644
+--- a/wpa_supplicant/.config
++++ b/wpa_supplicant/.config
+@@ -179,10 +179,10 @@ CONFIG_SMARTCARD=y
+ #CONFIG_PCSC=y
+ 
+ # Support HT overrides (disable HT/HT40, mask MCS rates, etc.)
+-#CONFIG_HT_OVERRIDES=y
++CONFIG_HT_OVERRIDES=y
+ 
+ # Support VHT overrides (disable VHT, mask MCS rates, etc.)
+-#CONFIG_VHT_OVERRIDES=y
++CONFIG_VHT_OVERRIDES=y
+ 
+ # Development testing
+ #CONFIG_EAPOL_TEST=y
+-- 
+2.10.1
+

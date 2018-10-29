@@ -1,0 +1,53 @@
+From e4f581b5b6861aa23a218fd33f0479b014b331ab Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 17:27:12 +0300
+Subject: [PATCH] bypass vlan bug (squalsh)
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/sta_info.c            | 5 +++--
+ src/drivers/driver_nl80211.c | 4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/src/ap/sta_info.c b/src/ap/sta_info.c
+index bafc98f..f2b92c8 100644
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -1033,7 +1033,8 @@ int ap_sta_bind_vlan(struct hostapd_data *hapd, struct sta_info *sta)
+ 	 * have been called before.
+ 	 */
+ 	if (sta->vlan_id == old_vlanid)
+-		goto skip_counting;
++		//goto skip_counting;
++		return 0;
+ 
+ 	if (sta->vlan_id > 0 && vlan == NULL) {
+ 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+@@ -1054,7 +1055,7 @@ int ap_sta_bind_vlan(struct hostapd_data *hapd, struct sta_info *sta)
+ 	/* ref counters have been increased, so mark the station */
+ 	sta->vlan_id_bound = sta->vlan_id;
+ 
+-skip_counting:
++//skip_counting:
+ 	hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+ 		       HOSTAPD_LEVEL_DEBUG, "binding station to interface "
+ 		       "'%s'", iface);
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 77978d9..0362ba8 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -5952,9 +5952,9 @@ static int i802_set_sta_vlan(struct i802_bss *bss, const u8 *addr,
+ 	int ret;
+ 
+ 	wpa_printf(MSG_DEBUG, "nl80211: %s[%d]: set_sta_vlan(" MACSTR
+-		   ", ifname=%s[%d], vlan_id=%d)",
++		   ", ifname=%s[%d], vlan_id=%d), bss->ifindex = %d",
+ 		   bss->ifname, if_nametoindex(bss->ifname),
+-		   MAC2STR(addr), ifname, if_nametoindex(ifname), vlan_id);
++		   MAC2STR(addr), ifname, if_nametoindex(ifname), vlan_id, bss->ifindex);
+ 	if (!(msg = nl80211_bss_msg(bss, 0, NL80211_CMD_SET_STATION)) ||
+ 	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr) ||
+ 	    nla_put_u32(msg, NL80211_ATTR_STA_VLAN, if_nametoindex(ifname))) {
+-- 
+2.10.1
+

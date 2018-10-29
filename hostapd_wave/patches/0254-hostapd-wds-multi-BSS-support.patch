@@ -1,0 +1,52 @@
+From 65c898e2f73a7abd0c0c10dfb158bb61b323990f Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:10:46 +0200
+Subject: [PATCH] hostapd-wds-multi-BSS-support
+
+---
+ src/ap/drv_callbacks.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/src/ap/drv_callbacks.c b/src/ap/drv_callbacks.c
+index ae84fe1..2837eb3 100644
+--- a/src/ap/drv_callbacks.c
++++ b/src/ap/drv_callbacks.c
+@@ -42,6 +42,7 @@
+ /* Must be aligned with drivers wv_wds_sta_info structure */
+ struct wv_wds_sta_info
+ {
++  char        ifname[IFNAMSIZ + 1];
+   u32         max_rssi;
+   u32         sta_flags_mask;
+   u32         sta_flags_set;
+@@ -1235,6 +1236,13 @@ static void hostapd_event_ltq_wds_connect_rx(struct hostapd_data *hapd,
+ 		return;
+ 	}
+ 
++	hapd = get_bss_index(wds_sta->ifname, hapd->iface);
++
++	if (hapd == NULL) {
++		wpa_printf(MSG_ERROR, "Hostapd BSS with name %s not found", wds_sta->ifname);
++		return;
++	}
++
+ 	wpa_printf(MSG_DEBUG, "hostapd_wds_sta_connect " MACSTR, MAC2STR(wds_sta->mac_addr));
+ 
+ 	sta = ap_sta_add(hapd, wds_sta->mac_addr);
+@@ -1380,6 +1388,13 @@ static void hostapd_event_ltq_wds_disconnect_rx(struct hostapd_data *hapd,
+ 		return;
+ 	}
+ 
++	hapd = get_bss_index(wds_sta->ifname, hapd->iface);
++
++	if (hapd == NULL) {
++		wpa_printf(MSG_ERROR, "Hostapd BSS with name %s not found", wds_sta->ifname);
++		return;
++	}
++
+ 	hostapd_notif_disassoc(hapd, wds_sta->mac_addr);
+ }
+ 
+-- 
+2.10.1
+

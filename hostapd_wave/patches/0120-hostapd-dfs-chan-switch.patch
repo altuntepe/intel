@@ -1,0 +1,79 @@
+From 11dacd3aefa2c5c8e332498b0856887a56fc12c1 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 16:20:31 +0200
+Subject: [PATCH] hostapd-dfs-chan-switch
+
+---
+ src/ap/hostapd.c | 33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index 0662002..3e3a6c0 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -942,7 +942,7 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
+ 	u8 ssid[SSID_MAX_LEN + 1];
+ 	int ssid_len, set_ssid;
+ 	char force_ifname[IFNAMSIZ];
+-	u8 if_addr[ETH_ALEN];
++	u8 if_addr[ETH_ALEN] = {0};
+ 	int flush_old_stations = 1;
+ 
+ 	wpa_printf(MSG_DEBUG, "%s(hapd=%p (%s), first=%d)",
+@@ -986,17 +986,16 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
+ 			} while (mac_in_conf(hapd->iconf, hapd->own_addr));
+ 		}
+ 
+-		hapd->interface_added = 1;
+-		if (hostapd_if_add(hapd->iface->bss[0], WPA_IF_AP_BSS,
++		if (!hapd->interface_added && hostapd_if_add(hapd->iface->bss[0], WPA_IF_AP_BSS,
+ 				   conf->iface, addr, hapd,
+ 				   &hapd->drv_priv, force_ifname, if_addr,
+ 				   conf->bridge[0] ? conf->bridge : NULL,
+ 				   first == -1)) {
+ 			wpa_printf(MSG_ERROR, "Failed to add BSS (BSSID="
+ 				   MACSTR ")", MAC2STR(hapd->own_addr));
+-			hapd->interface_added = 0;
+ 			return -1;
+ 		}
++		hapd->interface_added = 1;
+ 
+ 		if (!addr)
+ 			os_memcpy(hapd->own_addr, if_addr, ETH_ALEN);
+@@ -1790,18 +1789,22 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+ 		if (!set_freq_done || (channel->flag & HOSTAPD_CHAN_RADAR)) {
+ 		  /* For DFS channels only hostapd_set_freq may be used, because
+ 		   * hostapd_switch_channel triggers CSA */
+-      if (hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
+-               hapd->iconf->channel,
+-               hapd->iconf->ieee80211n,
+-               hapd->iconf->ieee80211ac,
+-               hapd->iconf->secondary_channel,
+-               hapd->iconf->vht_oper_chwidth,
+-               hapd->iconf->vht_oper_centr_freq_seg0_idx,
+-               hapd->iconf->vht_oper_centr_freq_seg1_idx)) {
+-        wpa_printf(MSG_ERROR, "Could not set channel for "
+-             "kernel driver");
+-        goto fail;
++      for (j = 0; j < (set_freq_done ? iface->num_bss : 1); j++) {
++        hapd = iface->bss[j];
++        if (hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
++                 hapd->iconf->channel,
++                 hapd->iconf->ieee80211n,
++                 hapd->iconf->ieee80211ac,
++                 hapd->iconf->secondary_channel,
++                 hapd->iconf->vht_oper_chwidth,
++                 hapd->iconf->vht_oper_centr_freq_seg0_idx,
++                 hapd->iconf->vht_oper_centr_freq_seg1_idx)) {
++          wpa_printf(MSG_ERROR, "Could not set channel for "
++               "kernel driver");
++          goto fail;
++        }
+       }
++      hapd = iface->bss[0];
+       set_freq_done = 1;
+ 		} else {
+       struct csa_settings settings;
+-- 
+2.10.1
+

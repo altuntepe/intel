@@ -1,0 +1,67 @@
+From 7695d543ea9ca4d8e5ebb6d23dcb83c2a537f705 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 16:21:34 +0200
+Subject: [PATCH] hostapd-acs-while-up
+
+---
+ src/ap/hostapd.c | 36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index 3e3a6c0..151e8fa 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -1786,7 +1786,8 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+ 	  channel = hostapd_hw_get_channel_data(iface, iface->freq);
+ 	  if (!channel)
+ 	    goto fail;
+-		if (!set_freq_done || (channel->flag & HOSTAPD_CHAN_RADAR)) {
++		if (!set_freq_done || ((channel->flag & HOSTAPD_CHAN_RADAR) &&
++      ((channel->flag & HOSTAPD_CHAN_DFS_MASK) != HOSTAPD_CHAN_DFS_AVAILABLE))) {
+ 		  /* For DFS channels only hostapd_set_freq may be used, because
+ 		   * hostapd_switch_channel triggers CSA */
+       for (j = 0; j < (set_freq_done ? iface->num_bss : 1); j++) {
+@@ -1839,21 +1840,26 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
+       }
+       settings.cs_count = 5;
+ 
+-      res = hostapd_switch_channel(hapd, &settings);
+-      if (res) {
+-        wpa_printf(MSG_ERROR, "hostapd_switch_channel failed: freq=%i, "
+-             "ht_enabled=%i, vht_enabled=%i, "
+-             "sec_channel_offset=%i, vht_open_cwidth=%i, "
+-             "center_freq1=%i, center_freq2=%i",
+-             settings.freq_params.freq,
+-             settings.freq_params.ht_enabled,
+-             settings.freq_params.vht_enabled,
+-             settings.freq_params.sec_channel_offset,
+-             settings.freq_params.bandwidth,
+-             settings.freq_params.center_freq1,
+-             settings.freq_params.center_freq2);
+-          goto fail;
++      for (j = 0; j < iface->num_bss; j++) {
++        hapd = iface->bss[j];
++        res = hostapd_switch_channel(hapd, &settings);
++        if (res) {
++          wpa_printf(MSG_ERROR, "hostapd_switch_channel failed: freq=%i, "
++               "ht_enabled=%i, vht_enabled=%i, "
++               "sec_channel_offset=%i, vht_open_cwidth=%i, "
++               "center_freq1=%i, center_freq2=%i",
++               settings.freq_params.freq,
++               settings.freq_params.ht_enabled,
++               settings.freq_params.vht_enabled,
++               settings.freq_params.sec_channel_offset,
++               settings.freq_params.bandwidth,
++               settings.freq_params.center_freq1,
++               settings.freq_params.center_freq2);
++            goto fail;
++        }
++        wpa_msg(hapd->msg_ctx, MSG_INFO, AP_EVENT_ENABLED);
+       }
++      hostapd_set_state(iface, HAPD_IFACE_ENABLED);
+       /* After calling hostapd_switch_channel
+        * hostapd_setup_bss/ieee802_11_set_beacon will fail with:
+        * "Cannot set beacons during CSA period", because hostapd_switch_channel
+-- 
+2.10.1
+

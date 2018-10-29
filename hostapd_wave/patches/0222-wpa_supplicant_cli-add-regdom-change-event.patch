@@ -1,0 +1,25 @@
+From f8f4b09120765590e2ab2de5da8464b9d7ad87c8 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 17:19:57 +0200
+Subject: [PATCH] wpa_supplicant_cli-add-regdom-change-event
+
+---
+ wpa_supplicant/wpa_cli.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/wpa_supplicant/wpa_cli.c b/wpa_supplicant/wpa_cli.c
+index 253c2c5..fc46c9e 100644
+--- a/wpa_supplicant/wpa_cli.c
++++ b/wpa_supplicant/wpa_cli.c
+@@ -3651,6 +3651,8 @@ static void wpa_cli_action_process(const char *msg)
+ 			wpa_cli_connected = 0;
+ 			wpa_cli_exec(action_file, ifname, "DISCONNECTED");
+ 		}
++	} else if (str_starts(pos, WPA_EVENT_REGDOM_CHANGE)) {
++	  wpa_cli_exec(action_file, ctrl_ifname, pos);
+ 	} else if (str_starts(pos, AP_EVENT_ENABLED)) {
+ 		wpa_cli_exec(action_file, ctrl_ifname, pos);
+ 	} else if (str_starts(pos, AP_EVENT_DISABLED)) {
+-- 
+2.10.1
+

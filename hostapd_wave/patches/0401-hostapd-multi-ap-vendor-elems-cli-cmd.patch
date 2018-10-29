@@ -1,0 +1,263 @@
+From b79c839b197cdf75cba9135ae9142b3ad3a0686a Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Thu, 17 May 2018 16:13:39 +0300
+Subject: [PATCH] hostapd-multi-ap-vendor-elems-cli-cmd
+
+---
+ hostapd/ctrl_iface.c  | 124 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ hostapd/hostapd_cli.c |  90 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 214 insertions(+)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 6592c4e..7acff90 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -6479,6 +6479,112 @@ static int hostapd_ctrl_iface_set_mesh_mode (struct hostapd_data *hapd, const ch
+ 	return ret;
+ }
+ 
++enum elem_type_e {
++	VENDOR_ELEM_TYPE,
++	AUTHRESP_ELEM_TYPE,
++	ASSOCRESP_ELEM_TYPE,
++	LAST_ELEM_TYPE
++};
++
++struct elem_type_item_t {
++	const char *param_name_prefix;
++	const char *cmd_prefix;
++};
++
++static const struct elem_type_item_t elem_types[LAST_ELEM_TYPE] = {
++	{ "vendor", "VENDOR" },
++	{ "authresp", "AUTHRESP" },
++	{ "assocresp", "ASSOCRESP" }
++};
++
++static int hostapd_ctrl_iface_get_elements (struct hostapd_data *hapd, const char *cmd,
++	char *buf, size_t buflen, enum elem_type_e elem_type)
++{
++	int ret, len = 0;
++	struct wpabuf *elements;
++
++	if (elem_type >= LAST_ELEM_TYPE)
++		return 0;
++
++	hapd = get_bss_index(cmd, hapd->iface);
++	if (hapd == NULL) {
++		ret = os_snprintf(buf, buflen, "CTRL: GET_%s_ELEMENTS - there is no iface with the given name\n",
++			elem_types[elem_type].cmd_prefix);
++		if (os_snprintf_error(buflen, ret))
++			return 0;
++		return ret;
++	}
++
++	switch (elem_type) {
++		case VENDOR_ELEM_TYPE:    elements = hapd->conf->vendor_elements;    break;
++		case AUTHRESP_ELEM_TYPE:  elements = hapd->conf->authresp_elements;  break;
++		case ASSOCRESP_ELEM_TYPE: elements = hapd->conf->assocresp_elements; break;
++		default: return 0;
++	}
++
++	ret = os_snprintf(buf + len, buflen - len, "%s_elements=", elem_types[elem_type].param_name_prefix);
++	if (os_snprintf_error(buflen - len, ret))
++		return len;
++	len += ret;
++
++	if (elements) {
++		ret = wpa_snprintf_hex_uppercase(buf + len, buflen - len,
++			wpabuf_head_u8(elements), wpabuf_len(elements));
++		if (os_snprintf_error(buflen - len, ret))
++			return len;
++		len += ret;
++	}
++
++	ret = os_snprintf(buf + len, buflen - len, "\n");
++	if (os_snprintf_error(buflen - len, ret))
++		return len;
++	len += ret;
++
++	return len;
++}
++
++static int hostapd_ctrl_iface_set_elements (struct hostapd_data *hapd, const char *cmd, enum elem_type_e elem_type)
++{
++	struct wpabuf *new_elements;
++	struct wpabuf **p_elements;
++
++	if (elem_type >= LAST_ELEM_TYPE)
++		return -1;
++
++	hapd = get_bss_index(cmd, hapd->iface);
++	if (NULL == hapd) {
++		wpa_printf(MSG_INFO, "CTRL: %s_ELEMENTS - there is no iface with the given name",
++			elem_types[elem_type].cmd_prefix);
++		return -1;
++	}
++
++	switch (elem_type) {
++		case VENDOR_ELEM_TYPE:    p_elements = &hapd->conf->vendor_elements;    break;
++		case AUTHRESP_ELEM_TYPE:  p_elements = &hapd->conf->authresp_elements;  break;
++		case ASSOCRESP_ELEM_TYPE: p_elements = &hapd->conf->assocresp_elements; break;
++		default: return -1;
++	}
++
++	cmd = os_strchr(cmd, ' ');
++	if (!cmd) {
++		/* No elements specified */
++		wpabuf_free(*p_elements);
++		*p_elements = NULL;
++		return 0;
++	}
++	cmd++;
++
++	new_elements = wpabuf_parse_bin(cmd);
++	if (!new_elements) {
++		wpa_printf(MSG_ERROR, "Invalid hex line '%s'", cmd);
++		return -1;
++	}
++	wpabuf_free(*p_elements);
++	*p_elements = new_elements;
++
++	return 0;
++}
++
+ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 					      char *buf, char *reply,
+ 					      int reply_size,
+@@ -6861,6 +6967,24 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 	} else if (os_strncmp(buf, "MESH_MODE ", sizeof("MESH_MODE ")-1) == 0) {
+ 		if (hostapd_ctrl_iface_set_mesh_mode(hapd, buf + sizeof("MESH_MODE ")-1))
+ 			reply_len = -1;
++	} else if (os_strncmp(buf, "GET_VENDOR_ELEMENTS ", sizeof("GET_VENDOR_ELEMENTS ")-1) == 0) {
++		reply_len = hostapd_ctrl_iface_get_elements(hapd, buf + sizeof("GET_VENDOR_ELEMENTS ")-1,
++			  reply, reply_size, VENDOR_ELEM_TYPE);
++	} else if (os_strncmp(buf, "VENDOR_ELEMENTS ", sizeof("VENDOR_ELEMENTS ")-1) == 0) {
++		if (hostapd_ctrl_iface_set_elements(hapd, buf + sizeof("VENDOR_ELEMENTS ")-1, VENDOR_ELEM_TYPE))
++			reply_len = -1;
++	} else if (os_strncmp(buf, "GET_AUTHRESP_ELEMENTS ", sizeof("GET_AUTHRESP_ELEMENTS ")-1) == 0) {
++		reply_len = hostapd_ctrl_iface_get_elements(hapd, buf + sizeof("GET_AUTHRESP_ELEMENTS ")-1,
++			  reply, reply_size, AUTHRESP_ELEM_TYPE);
++	} else if (os_strncmp(buf, "AUTHRESP_ELEMENTS ", sizeof("AUTHRESP_ELEMENTS ")-1) == 0) {
++		if (hostapd_ctrl_iface_set_elements(hapd, buf + sizeof("AUTHRESP_ELEMENTS ")-1, AUTHRESP_ELEM_TYPE))
++			reply_len = -1;
++	} else if (os_strncmp(buf, "GET_ASSOCRESP_ELEMENTS ", sizeof("GET_ASSOCRESP_ELEMENTS ")-1) == 0) {
++		reply_len = hostapd_ctrl_iface_get_elements(hapd, buf + sizeof("GET_ASSOCRESP_ELEMENTS ")-1,
++			  reply, reply_size, ASSOCRESP_ELEM_TYPE);
++	} else if (os_strncmp(buf, "ASSOCRESP_ELEMENTS ", sizeof("ASSOCRESP_ELEMENTS ")-1) == 0) {
++		if (hostapd_ctrl_iface_set_elements(hapd, buf + sizeof("ASSOCRESP_ELEMENTS ")-1, ASSOCRESP_ELEM_TYPE))
++			reply_len = -1;
+ 	} else {
+ 		os_memcpy(reply, "UNKNOWN COMMAND\n", 16);
+ 		reply_len = 16;
+diff --git a/hostapd/hostapd_cli.c b/hostapd/hostapd_cli.c
+index d0c364b..02dc3cb 100644
+--- a/hostapd/hostapd_cli.c
++++ b/hostapd/hostapd_cli.c
+@@ -2052,6 +2052,80 @@ static int hostapd_cli_cmd_get_mesh_mode(struct wpa_ctrl *ctrl, int argc,
+ 	return wpa_ctrl_command(ctrl, cmd);
+ }
+ 
++static int _hostapd_cli_cmd_set_elements(struct wpa_ctrl *ctrl, int argc,
++		char *argv[], const char *cli_cmd_prefix, const char *ctlr_cmd_prefix)
++{
++	char cmd[128]; /* Extra space for HEX strings */
++	int res;
++
++	if ((argc != 1) && (argc != 2)) {
++		printf("Invalid '%s_elements' command - two arguments: "
++				"BSS name (is required) and %s elements (optional).\n", cli_cmd_prefix, cli_cmd_prefix);
++		return -1;
++	}
++
++	if (argc == 1)
++		res = os_snprintf(cmd, sizeof(cmd), "%s_ELEMENTS %s", ctlr_cmd_prefix, argv[0]);
++	else
++		res = os_snprintf(cmd, sizeof(cmd), "%s_ELEMENTS %s %s", ctlr_cmd_prefix, argv[0], argv[1]);
++	if (os_snprintf_error(sizeof(cmd), res)) {
++		printf("Too long %s_ELEMENTS command.\n", ctlr_cmd_prefix);
++		return -1;
++	}
++	return wpa_ctrl_command(ctrl, cmd);
++}
++
++static int _hostapd_cli_cmd_get_elements(struct wpa_ctrl *ctrl, int argc,
++		char *argv[], const char *cli_cmd_prefix, const char *ctlr_cmd_prefix)
++{
++	char cmd[128]; /* Extra space for HEX strings */
++	int res;
++
++	if (argc != 1) {
++		printf("Invalid 'get_%s_elements' command: needs one argument:\n"
++				"- BSS name for which VAP to get %s_elements\n", cli_cmd_prefix, cli_cmd_prefix);
++		return -1;
++	}
++
++	res = os_snprintf(cmd, sizeof(cmd), "GET_%s_ELEMENTS %s", ctlr_cmd_prefix, argv[0]);
++	if (os_snprintf_error(sizeof(cmd), res)) {
++		printf("Too long GET_%s_ELEMENTS command.\n", ctlr_cmd_prefix);
++		return -1;
++	}
++
++	return wpa_ctrl_command(ctrl, cmd);
++}
++
++static int hostapd_cli_cmd_set_vendor_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_set_elements(ctrl, argc, argv, "vendor", "VENDOR");
++}
++
++static int hostapd_cli_cmd_get_vendor_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_get_elements(ctrl, argc, argv, "vendor", "VENDOR");
++}
++
++static int hostapd_cli_cmd_set_authresp_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_set_elements(ctrl, argc, argv, "authresp", "AUTHRESP");
++}
++
++static int hostapd_cli_cmd_get_authresp_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_get_elements(ctrl, argc, argv, "authresp", "AUTHRESP");
++}
++
++static int hostapd_cli_cmd_set_assocresp_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_set_elements(ctrl, argc, argv, "assocresp", "ASSOCRESP");
++}
++
++static int hostapd_cli_cmd_get_assocresp_elements(struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	return _hostapd_cli_cmd_get_elements(ctrl, argc, argv, "assocresp", "ASSOCRESP");
++}
++
+ struct hostapd_cli_cmd {
+ 	const char *cmd;
+ 	int (*handler)(struct wpa_ctrl *ctrl, int argc, char *argv[]);
+@@ -2236,6 +2310,22 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
+ 	  "<BSS_name> <mode> = set mesh mode (fAP,0:Fronthaul AP; bAP,1:Backhaul AP; hybrid,2:Hybrid mode; reserved,3:Reserved)" },
+ 	{ "get_mesh_mode", hostapd_cli_cmd_get_mesh_mode, NULL,
+ 	  "<BSS_name> = get mesh mode" },
++
++	{ "vendor_elements", hostapd_cli_cmd_set_vendor_elements, NULL,
++	  "<BSS_name> [vendor_elements] = set vendor elements" },
++	{ "get_vendor_elements", hostapd_cli_cmd_get_vendor_elements, NULL,
++	  "<BSS_name> = get vendor elements" },
++
++	{ "authresp_elements", hostapd_cli_cmd_set_authresp_elements, NULL,
++	  "<BSS_name> [authresp_elements] = set authresp elements" },
++	{ "get_authresp_elements", hostapd_cli_cmd_get_authresp_elements, NULL,
++	  "<BSS_name> = get authresp elements" },
++
++	{ "assocresp_elements", hostapd_cli_cmd_set_assocresp_elements, NULL,
++	  "<BSS_name> [assocresp_elements] = set assocresp elements" },
++	{ "get_assocresp_elements", hostapd_cli_cmd_get_assocresp_elements, NULL,
++	  "<BSS_name> = get assocresp elements" },
++
+ 	{ NULL, NULL, NULL, NULL }
+ };
+ 
+-- 
+2.10.1
+

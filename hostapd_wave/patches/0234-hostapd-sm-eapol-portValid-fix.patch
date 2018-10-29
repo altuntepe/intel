@@ -1,0 +1,24 @@
+From caaf8a2203ddd3749e778281a350ab32360dc290 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:55:02 +0200
+Subject: [PATCH] hostapd-sm-eapol-portValid-fix
+
+---
+ src/ap/wpa_auth.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/ap/wpa_auth.c b/src/ap/wpa_auth.c
+index 9378fa3..2d76560 100644
+--- a/src/ap/wpa_auth.c
++++ b/src/ap/wpa_auth.c
+@@ -1872,7 +1872,6 @@ SM_STATE(WPA_PTK, AUTHENTICATION2)
+ {
+ 	SM_ENTRY_MA(WPA_PTK, AUTHENTICATION2, wpa_ptk);
+ 
+-	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_portValid, 0);
+ 	wpa_group_ensure_init(sm->wpa_auth, sm->group);
+ 	sm->ReAuthenticationRequest = FALSE;
+ 
+-- 
+2.10.1
+

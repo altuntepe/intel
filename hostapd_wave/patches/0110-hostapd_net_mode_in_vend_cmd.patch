@@ -1,0 +1,73 @@
+From e2c53c375978af416304f5b1ccf1aa060ace2a59 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 16:19:15 +0200
+Subject: [PATCH] hostapd_net_mode_in_vend_cmd
+
+---
+ src/ap/hostapd.c             | 18 ++++++++++++++++++
+ src/drivers/driver_nl80211.c |  3 ---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index 5239f09..0662002 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -12,6 +12,7 @@
+ #include "utils/eloop.h"
+ #include "common/ieee802_11_defs.h"
+ #include "common/wpa_ctrl.h"
++#include "common/ltq-vendor.h"
+ #include "common/hw_features_common.h"
+ #include "drivers/driver.h"
+ #include "radius/radius_client.h"
+@@ -1340,9 +1341,19 @@ void hostapd_channel_list_updated(struct hostapd_iface *iface, int initiator)
+ }
+ 
+ 
++/* Must be aligned with drivers struct for vendor country command */
++#define COUNTRY_CODE_MAX_LEN 3
++typedef struct mtlk_country_code_data
++{
++	char	alpha2[COUNTRY_CODE_MAX_LEN];
++	u8	is_11b;
++} mtlk_country_code_data_t;
++
++
+ static int setup_interface(struct hostapd_iface *iface)
+ {
+ 	struct hostapd_data *hapd = iface->bss[0];
++	mtlk_country_code_data_t cc_data;
+ 	size_t i;
+ 
+ 	/*
+@@ -1396,6 +1407,13 @@ static int setup_interface(struct hostapd_iface *iface)
+ 			return -1;
+ 		}
+ 
++		os_memset(&cc_data, 0, sizeof(cc_data));
++		os_memcpy(cc_data.alpha2, country, 2); /* third char will not be sent */
++		cc_data.is_11b = (HOSTAPD_MODE_IEEE80211B == hapd->iconf->hw_mode);
++		if (hostapd_drv_vendor_cmd(hapd, OUI_LTQ, LTQ_NL80211_VENDOR_SUBCMD_COUNTRY_CODE,
++							(const u8*)&cc_data, sizeof(cc_data), NULL))
++			wpa_printf(MSG_INFO, "Failed to send driver vendor command LTQ_NL80211_VENDOR_SUBCMD_COUNTRY_CODE");
++
+ 		wpa_printf(MSG_DEBUG, "Previous country code %s, new country code %s",
+ 			   previous_country, country);
+ 
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 56b17a9..39705e8 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -1392,9 +1392,6 @@ static int wpa_driver_nl80211_set_country(void *priv, const char *alpha2_arg)
+ 	alpha2[1] = alpha2_arg[1];
+ 	alpha2[2] = '\0';
+ 
+-	nl80211_vendor_cmd(priv, OUI_LTQ, LTQ_NL80211_VENDOR_SUBCMD_COUNTRY_CODE,
+-						(const u8*)alpha2, sizeof(alpha2), NULL);
+-
+ 	if (!nl80211_cmd(drv, msg, 0, NL80211_CMD_REQ_SET_REG) ||
+ 	    nla_put_string(msg, NL80211_ATTR_REG_ALPHA2, alpha2)) {
+ 		nlmsg_free(msg);
+-- 
+2.10.1
+

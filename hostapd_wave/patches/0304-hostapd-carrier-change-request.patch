@@ -1,0 +1,217 @@
+From 5d11ff08fd8e52f8c9bc914daebf9c313aa2584f Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 27 Mar 2018 20:32:33 +0300
+Subject: [PATCH] hostapd-carrier-change-request
+
+---
+ src/ap/ap_drv_ops.c          |  6 ++++++
+ src/ap/ap_drv_ops.h          |  9 +++++++++
+ src/ap/beacon.c              |  5 +++++
+ src/drivers/driver.h         |  9 ++++++++-
+ src/drivers/driver_nl80211.c | 16 ++++++++++++++--
+ src/drivers/netlink.c        | 45 ++++++++++++++++++++++++++++++++++++++++++++
+ src/drivers/netlink.h        |  2 ++
+ src/drivers/priv_netlink.h   |  3 +++
+ 8 files changed, 92 insertions(+), 3 deletions(-)
+
+diff --git a/src/ap/ap_drv_ops.c b/src/ap/ap_drv_ops.c
+index c4354eb..ce3e611 100644
+--- a/src/ap/ap_drv_ops.c
++++ b/src/ap/ap_drv_ops.c
+@@ -759,6 +759,12 @@ int hostapd_start_dfs_cac(struct hostapd_iface *iface,
+ 		return -1;
+ 	}
+ 
++	res = hostapd_drv_set_carrier(hapd, 0);
++	if (res) {
++		wpa_printf(MSG_ERROR, "Can't disable carrier");
++		return res;
++	}
++
+ 	res = hapd->driver->start_dfs_cac(hapd->drv_priv, &data);
+ 	if (!res) {
+ 		iface->cac_started = 1;
+diff --git a/src/ap/ap_drv_ops.h b/src/ap/ap_drv_ops.h
+index 8e2ea24..fdba22a 100644
+--- a/src/ap/ap_drv_ops.h
++++ b/src/ap/ap_drv_ops.h
+@@ -494,4 +494,13 @@ static inline int hostapd_drv_set_disable_dgaf(struct hostapd_data *hapd,
+ 
+   return hapd->driver->set_disable_dgaf(hapd->drv_priv, disable_dgaf);
+ }
++
++static inline int hostapd_drv_set_carrier(struct hostapd_data *hapd, int state)
++{
++  if (hapd->driver == NULL || hapd->driver->set_carrier == NULL)
++    return -ENOTSUP;
++
++  return hapd->driver->set_carrier(hapd->drv_priv, state);
++}
++
+ #endif /* AP_DRV_OPS */
+diff --git a/src/ap/beacon.c b/src/ap/beacon.c
+index ac8f90f..ad1a721 100644
+--- a/src/ap/beacon.c
++++ b/src/ap/beacon.c
+@@ -1356,6 +1356,11 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
+   ret = hostapd_drv_set_disable_dgaf(hapd, params.disable_dgaf);
+   if (ret)
+     wpa_printf(MSG_ERROR, "Failed to set disable_dgaf");
++
++	ret = hostapd_drv_set_carrier(hapd, 1);
++	if (ret)
++		wpa_printf(MSG_ERROR, "Failed to Enable carrier");
++
+ fail:
+ 	ieee802_11_free_ap_params(&params);
+ 	return ret;
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index 0d1420c..2cee364 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -4179,6 +4179,14 @@ struct wpa_driver_ops {
+    * Returns: 0 on success, -1 on failure
+    */
+   int (*set_disable_dgaf)(void *priv, int set_disable_dgaf);
++
++	/**
++	 * set_carrier - Carrier change request to driver
++	 * @priv: Private driver interface data
++	 * @state: Carrier state, 0 - OFF, 1 - ON
++	 * Returns: 0 on success, -1 on failure
++	 */
++	int (*set_carrier)(void *priv, int state);
+ };
+ 
+ /**
+@@ -4189,7 +4197,6 @@ struct wpa_driver_ops {
+  */
+ int (*get_radio_info)(void *priv, mtlk_radio_info_t *radio_info);
+ 
+-
+ /**
+  * enum wpa_event_type - Event type for wpa_supplicant_event() calls
+  */
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 48aab73..ff27c25 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -5415,14 +5415,25 @@ static int wpa_driver_nl80211_set_operstate(void *priv, int state)
+ 	struct wpa_driver_nl80211_data *drv = bss->drv;
+ 
+ 	wpa_printf(MSG_DEBUG, "nl80211: Set %s operstate %d->%d (%s)",
+-		   bss->ifname, drv->operstate, state,
+-		   state ? "UP" : "DORMANT");
++		    bss->ifname, drv->operstate, state,
++		    state ? "UP" : "DORMANT");
+ 	bss->if_enabled = state;
+ 	drv->operstate = state;
+ 	return netlink_send_oper_ifla(drv->global->netlink, drv->ifindex, -1,
+ 				      state ? IF_OPER_UP : IF_OPER_DORMANT);
+ }
+ 
++static int wpa_driver_nl80211_set_carrier(void *priv, int state)
++{
++	struct i802_bss *bss = priv;
++	struct wpa_driver_nl80211_data *drv = bss->drv;
++
++	wpa_printf(MSG_DEBUG, "nl80211: Set %s carrier %d (%s)",
++		    bss->ifname, state, state ? "ON" : "OFF");
++
++  return netlink_send_carrier_ifla(drv->global->netlink, drv->ifindex, state);
++}
++
+ 
+ static int wpa_driver_nl80211_set_supp_port(void *priv, int authorized)
+ {
+@@ -9965,4 +9976,5 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
+ 	.set_disable_dgaf = nl80211_set_disable_dgaf,
+ #endif
+ 	.block_tx = nl80211_block_tx,
++  .set_carrier = wpa_driver_nl80211_set_carrier,
+ };
+diff --git a/src/drivers/netlink.c b/src/drivers/netlink.c
+index 0e960f4..caadbbb 100644
+--- a/src/drivers/netlink.c
++++ b/src/drivers/netlink.c
+@@ -165,6 +165,51 @@ static const char * operstate_str(int state)
+ 	return "?";
+ }
+ 
++int netlink_send_carrier_ifla(struct netlink_data *netlink, int ifindex,
++			   int carrier)
++{
++	struct {
++		struct nlmsghdr hdr;
++		struct ifinfomsg ifinfo;
++		char opts[16];
++	} req;
++	struct rtattr *rta;
++	static int nl_seq;
++	ssize_t ret;
++
++	os_memset(&req, 0, sizeof(req));
++
++	req.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
++	req.hdr.nlmsg_type = RTM_SETLINK;
++	req.hdr.nlmsg_flags = NLM_F_REQUEST;
++	req.hdr.nlmsg_seq = ++nl_seq;
++	req.hdr.nlmsg_pid = 0;
++
++	req.ifinfo.ifi_family = AF_UNSPEC;
++	req.ifinfo.ifi_type = 0;
++	req.ifinfo.ifi_index = ifindex;
++	req.ifinfo.ifi_flags = 0;
++	req.ifinfo.ifi_change = 0;
++
++	rta = aliasing_hide_typecast(
++		((char *) &req + NLMSG_ALIGN(req.hdr.nlmsg_len)),
++		struct rtattr);
++	rta->rta_type = IFLA_CARRIER;
++	rta->rta_len = RTA_LENGTH(sizeof(char));
++	*((char *) RTA_DATA(rta)) = carrier;
++	req.hdr.nlmsg_len += RTA_SPACE(sizeof(char));
++
++	wpa_printf(MSG_DEBUG, "netlink: Carrier %d (%s)",
++		   carrier, carrier ? "On" : "Off");
++
++	ret = send(netlink->sock, &req, req.hdr.nlmsg_len, 0);
++	if (ret < 0) {
++		wpa_printf(MSG_DEBUG, "netlink: Sending carrier IFLA "
++			   "failed: %s", strerror(errno));
++	}
++
++	return ret < 0 ? -1 : 0;
++}
+ 
+ int netlink_send_oper_ifla(struct netlink_data *netlink, int ifindex,
+ 			   int linkmode, int operstate)
+diff --git a/src/drivers/netlink.h b/src/drivers/netlink.h
+index 3a7340e..38a1ba8 100644
+--- a/src/drivers/netlink.h
++++ b/src/drivers/netlink.h
+@@ -24,5 +24,7 @@ struct netlink_data * netlink_init(struct netlink_config *cfg);
+ void netlink_deinit(struct netlink_data *netlink);
+ int netlink_send_oper_ifla(struct netlink_data *netlink, int ifindex,
+ 			   int linkmode, int operstate);
++int netlink_send_carrier_ifla(struct netlink_data *netlink, int ifindex,
++			   int carrier);
+ 
+ #endif /* NETLINK_H */
+diff --git a/src/drivers/priv_netlink.h b/src/drivers/priv_netlink.h
+index d3f091c..831d94b 100644
+--- a/src/drivers/priv_netlink.h
++++ b/src/drivers/priv_netlink.h
+@@ -32,6 +32,9 @@
+ #endif
+ #ifndef IFLA_LINKMODE
+ #define IFLA_LINKMODE 17
++#ifndef IFLA_CARRIER
++#define IFLA_CARRIER 33
++#endif
+ #define IF_OPER_DORMANT 5
+ #define IF_OPER_UP 6
+ #endif
+-- 
+2.10.1
+

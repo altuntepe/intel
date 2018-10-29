@@ -1,0 +1,33 @@
+From 438590b4a940832707d80a8f9c18a546d8a426f7 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:55:02 +0200
+Subject: [PATCH] hostapd-flush_stas-fix
+
+---
+ src/ap/hostapd.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index f7771e7..5a3598f 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -522,6 +522,7 @@ static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason)
+ 	if (hostapd_drv_none(hapd) || hapd->drv_priv == NULL)
+ 		return 0;
+ 
++#if 0 /* Will be removed in hostapd_free_stas() */
+ 	if (!hapd->iface->driver_ap_teardown) {
+ 		wpa_dbg(hapd->msg_ctx, MSG_DEBUG,
+ 			"Flushing old station entries");
+@@ -532,6 +533,8 @@ static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason)
+ 			ret = -1;
+ 		}
+ 	}
++#endif
++
+ 	wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "Deauthenticate all stations");
+ 	hostapd_atf_clean_stations(hapd);
+ 	os_memset(addr, 0xff, ETH_ALEN);
+-- 
+2.10.1
+

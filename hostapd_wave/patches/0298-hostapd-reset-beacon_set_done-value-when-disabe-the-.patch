@@ -1,0 +1,29 @@
+From 121e105aefab649f8bba3b5c4d0416f752be7f82 Mon Sep 17 00:00:00 2001
+From: sdinkinx <simonx.dinkin@intel.com>
+Date: Wed, 15 Nov 2017 16:05:19 +0200
+Subject: [PATCH] hostapd: reset beacon_set_done value when disabe the iface
+
+without resetting this value to 0 upon disabling the iface,
+the ieee802_11_set_beacon was called twice when enabling
+the iface again.
+
+Signed-off-by: sdinkinx <simonx.dinkin@intel.com>
+---
+ src/ap/hostapd.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index b4a0e09..af1bbc1 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -332,6 +332,7 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
+ 		return;
+ 	}
+ 	hapd->started = 0;
++	hapd->beacon_set_done = 0;
+ 
+ 	wpa_printf(MSG_DEBUG, "%s(%s)", __func__, hapd->conf->iface);
+ #ifdef CONFIG_WDS_WPA
+-- 
+2.10.1
+

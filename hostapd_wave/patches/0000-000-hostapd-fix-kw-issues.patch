@@ -1,0 +1,1814 @@
+From 6dd6e047ebf585835e041b52a54b9395f7d6bac8 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Wed, 28 Feb 2018 16:17:46 +0200
+Subject: [PATCH] hostapd: fix KW issues
+
+Thsi patch fixes klocwork issues in original code
+---
+ hostapd/config_file.c                       |  2 +-
+ hostapd/ctrl_iface.c                        |  4 ++
+ hostapd/main.c                              | 36 +++++++++++-----
+ src/ap/accounting.c                         |  2 +-
+ src/ap/beacon.c                             |  4 +-
+ src/ap/ctrl_iface_ap.c                      |  4 +-
+ src/ap/drv_callbacks.c                      |  2 +-
+ src/ap/ieee802_11.c                         |  9 ++++
+ src/ap/ieee802_1x.c                         |  4 +-
+ src/ap/ndisc_snoop.c                        |  2 +-
+ src/ap/neighbor_db.c                        |  2 +-
+ src/ap/wpa_auth_ie.c                        |  2 +
+ src/common/cli.c                            |  2 +-
+ src/common/ctrl_iface_common.c              |  2 +-
+ src/drivers/driver.h                        | 64 ++++++++++++++---------------
+ src/drivers/driver_bsd.c                    |  4 +-
+ src/drivers/driver_nl80211.c                | 20 ++++-----
+ src/drivers/driver_nl80211_capa.c           |  4 +-
+ src/eap_peer/eap.c                          |  2 +-
+ src/fst/fst.c                               |  2 +-
+ src/fst/fst_group.c                         |  4 +-
+ src/fst/fst_session.c                       |  2 +-
+ src/p2p/p2p.c                               |  2 +-
+ src/pae/ieee802_1x_kay.c                    | 20 ++++-----
+ src/radius/radius.c                         |  2 +-
+ src/radius/radius_client.c                  |  8 +++-
+ src/radius/radius_server.c                  |  2 +-
+ src/rsn_supp/preauth.c                      |  4 +-
+ src/utils/common.c                          | 40 +++++++++---------
+ src/utils/edit.c                            |  4 +-
+ src/utils/eloop.c                           |  4 +-
+ src/utils/eloop_win.c                       |  4 +-
+ src/utils/list.h                            | 20 +++++++++
+ src/utils/os.h                              |  2 +-
+ src/utils/os_unix.c                         |  2 +-
+ src/utils/trace.c                           |  2 +-
+ src/utils/wpa_debug.c                       | 22 +++++-----
+ src/wps/wps_common.c                        |  2 +-
+ src/wps/wps_er.c                            |  8 ++--
+ src/wps/wps_registrar.c                     |  6 +--
+ src/wps/wps_upnp.c                          |  8 ++--
+ src/wps/wps_upnp_event.c                    |  6 ++-
+ src/wps/wps_upnp_ssdp.c                     |  2 +-
+ src/wps/wps_upnp_web.c                      |  2 +-
+ tests/test-list.c                           |  6 +--
+ wlantest/bss.c                              |  4 +-
+ wlantest/ctrl.c                             |  2 +-
+ wlantest/rx_tdls.c                          |  2 +-
+ wlantest/sta.c                              |  2 +-
+ wlantest/wired.c                            |  4 +-
+ wlantest/wlantest.c                         | 10 ++---
+ wpa_supplicant/bgscan_learn.c               |  4 +-
+ wpa_supplicant/bss.c                        |  8 ++--
+ wpa_supplicant/config.c                     |  2 +-
+ wpa_supplicant/ctrl_iface_unix.c            |  2 +-
+ wpa_supplicant/dbus/dbus_new_handlers_p2p.c |  2 +-
+ wpa_supplicant/dbus/dbus_new_introspect.c   |  2 +-
+ wpa_supplicant/gas_query.c                  |  2 +-
+ wpa_supplicant/hs20_supplicant.c            |  2 +-
+ wpa_supplicant/interworking.c               |  2 +-
+ wpa_supplicant/p2p_supplicant.c             |  4 +-
+ wpa_supplicant/p2p_supplicant_sd.c          |  4 +-
+ wpa_supplicant/wmm_ac.c                     | 19 ++++++++-
+ wpa_supplicant/wpa_supplicant.c             | 11 ++---
+ 64 files changed, 260 insertions(+), 185 deletions(-)
+
+diff --git a/hostapd/config_file.c b/hostapd/config_file.c
+index 5079f69..2260ac4 100644
+--- a/hostapd/config_file.c
++++ b/hostapd/config_file.c
+@@ -1565,7 +1565,7 @@ static int parse_anqp_elem(struct hostapd_bss_config *bss, char *buf, int line)
+ 	}
+ 	elem->infoid = infoid;
+ 	elem->payload = payload;
+-	dl_list_add(&bss->anqp_elem, &elem->list);
++	DL_LIST_ADD(&bss->anqp_elem, elem, list);
+ 
+ 	return 0;
+ }
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index d7db4a7..b522087 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -1017,6 +1017,7 @@ static int hostapd_ctrl_iface_bss_tm_req(struct hostapd_data *hapd,
+ 		if (ret != 3) {
+ 			wpa_printf(MSG_DEBUG,
+ 				   "MBO requires three arguments: mbo=<reason>:<reassoc_delay>:<cell_pref>");
++			os_free(url);
+ 			return -1;
+ 		}
+ 
+@@ -1024,6 +1025,7 @@ static int hostapd_ctrl_iface_bss_tm_req(struct hostapd_data *hapd,
+ 			wpa_printf(MSG_DEBUG,
+ 				   "Invalid MBO transition reason code %u",
+ 				   mbo_reason);
++			os_free(url);
+ 			return -1;
+ 		}
+ 
+@@ -1032,6 +1034,7 @@ static int hostapd_ctrl_iface_bss_tm_req(struct hostapd_data *hapd,
+ 			wpa_printf(MSG_DEBUG,
+ 				   "Invalid MBO cellular capability %u",
+ 				   cell_pref);
++			os_free(url);
+ 			return -1;
+ 		}
+ 
+@@ -1040,6 +1043,7 @@ static int hostapd_ctrl_iface_bss_tm_req(struct hostapd_data *hapd,
+ 		     !(req_mode & WNM_BSS_TM_REQ_DISASSOC_IMMINENT))) {
+ 			wpa_printf(MSG_DEBUG,
+ 				   "MBO: Assoc retry delay is only valid in disassoc imminent mode");
++			os_free(url);
+ 			return -1;
+ 		}
+ 
+diff --git a/hostapd/main.c b/hostapd/main.c
+index 2c8dbd3..ca04107 100644
+--- a/hostapd/main.c
++++ b/hostapd/main.c
+@@ -702,12 +702,16 @@ int main(int argc, char *argv[])
+ 			exit(1);
+ 			break;
+ 		case 'g':
+-			if (hostapd_get_global_ctrl_iface(&interfaces, optarg))
+-				return -1;
++			if (hostapd_get_global_ctrl_iface(&interfaces, optarg)) {
++				ret = -1;
++				goto out;
++			}
+ 			break;
+ 		case 'G':
+-			if (hostapd_get_ctrl_iface_group(&interfaces, optarg))
+-				return -1;
++			if (hostapd_get_ctrl_iface_group(&interfaces, optarg)) {
++				ret = -1;
++				goto out;
++			}
+ 			break;
+ 		case 'b':
+ 			tmp_bss = os_realloc_array(bss_config,
+@@ -723,7 +727,9 @@ int main(int argc, char *argv[])
+ 			break;
+ #ifdef CONFIG_WPS
+ 		case 'u':
+-			return gen_uuid(optarg);
++			ret = gen_uuid(optarg);
++			goto out;
++			break;
+ #endif /* CONFIG_WPS */
+ 		case 'i':
+ 			if (hostapd_get_interface_names(&if_names,
+@@ -751,7 +757,8 @@ int main(int argc, char *argv[])
+ 		int tret = wpa_debug_open_linux_tracing();
+ 		if (tret) {
+ 			wpa_printf(MSG_ERROR, "Failed to enable trace logging");
+-			return -1;
++			ret = -1;
++			goto out;
+ 		}
+ 	}
+ #endif /* CONFIG_DEBUG_LINUX_TRACING */
+@@ -762,13 +769,15 @@ int main(int argc, char *argv[])
+ 					     sizeof(struct hostapd_iface *));
+ 		if (interfaces.iface == NULL) {
+ 			wpa_printf(MSG_ERROR, "malloc failed");
+-			return -1;
++			ret = -1;
++			goto out;
+ 		}
+ 	}
+ 
+ 	if (hostapd_global_init(&interfaces, entropy_file)) {
+ 		wpa_printf(MSG_ERROR, "Failed to initialize global context");
+-		return -1;
++		ret = -1;
++		goto out;
+ 	}
+ 
+ 	eloop_register_timeout(HOSTAPD_CLEANUP_INTERVAL, 0,
+@@ -808,6 +817,7 @@ int main(int argc, char *argv[])
+ 	for (i = 0; i < num_bss_configs; i++) {
+ 		struct hostapd_iface *iface;
+ 		char *fname;
++		int found = 0;
+ 
+ 		wpa_printf(MSG_INFO, "BSS config: %s", bss_config[i]);
+ 		fname = os_strchr(bss_config[i], ':');
+@@ -823,10 +833,11 @@ int main(int argc, char *argv[])
+ 		if (iface == NULL)
+ 			goto out;
+ 		for (j = 0; j < interfaces.count; j++) {
+-			if (interfaces.iface[j] == iface)
+-				break;
++			if (interfaces.iface[j] == iface) {
++				found = 1; break;
++			}
+ 		}
+-		if (j == interfaces.count) {
++		if (!found) {
+ 			struct hostapd_iface **tmp;
+ 			tmp = os_realloc_array(interfaces.iface,
+ 					       interfaces.count + 1,
+@@ -867,6 +878,8 @@ int main(int argc, char *argv[])
+  out:
+ 	hostapd_global_ctrl_iface_deinit(&interfaces);
+ 	/* Deinitialize all interfaces */
++
++	if (NULL == interfaces.iface) goto no_ifaces;
+ 	for (i = 0; i < interfaces.count; i++) {
+ 		if (!interfaces.iface[i])
+ 			continue;
+@@ -877,6 +890,7 @@ int main(int argc, char *argv[])
+ 	}
+ 	os_free(interfaces.iface);
+ 
++no_ifaces:
+ 	if (interfaces.eloop_initialized)
+ 		eloop_cancel_timeout(hostapd_periodic, &interfaces, NULL);
+ 	hostapd_global_deinit(pid_file, interfaces.eloop_initialized);
+diff --git a/src/ap/accounting.c b/src/ap/accounting.c
+index 0aacc3c..6916937 100644
+--- a/src/ap/accounting.c
++++ b/src/ap/accounting.c
+@@ -36,7 +36,7 @@ static struct radius_msg * accounting_msg(struct hostapd_data *hapd,
+ 					  int status_type)
+ {
+ 	struct radius_msg *msg;
+-	char buf[128];
++	char buf[RADIUS_MAX_ATTR_LEN];
+ 	u8 *val;
+ 	size_t len;
+ 	int i;
+diff --git a/src/ap/beacon.c b/src/ap/beacon.c
+index 233320d..795114d 100644
+--- a/src/ap/beacon.c
++++ b/src/ap/beacon.c
+@@ -626,7 +626,7 @@ void sta_track_add(struct hostapd_iface *iface, const u8 *addr)
+ 	if (info) {
+ 		/* Move the most recent entry to the end of the list */
+ 		dl_list_del(&info->list);
+-		dl_list_add_tail(&iface->sta_seen, &info->list);
++		DL_LIST_ADD_TAIL(&iface->sta_seen, info, list);
+ 		os_get_reltime(&info->last_seen);
+ 		return;
+ 	}
+@@ -645,7 +645,7 @@ void sta_track_add(struct hostapd_iface *iface, const u8 *addr)
+ 
+ 	wpa_printf(MSG_MSGDUMP, "%s: Add STA tracking entry for "
+ 		   MACSTR, iface->bss[0]->conf->iface, MAC2STR(addr));
+-	dl_list_add_tail(&iface->sta_seen, &info->list);
++	DL_LIST_ADD_TAIL(&iface->sta_seen, info, list);
+ 	iface->num_sta_seen++;
+ }
+ 
+diff --git a/src/ap/ctrl_iface_ap.c b/src/ap/ctrl_iface_ap.c
+index 3680fda..625e1b2 100644
+--- a/src/ap/ctrl_iface_ap.c
++++ b/src/ap/ctrl_iface_ap.c
+@@ -278,11 +278,11 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
+ 	if (stype == WLAN_FC_STYPE_DEAUTH) {
+ 		mgmt->u.deauth.reason_code =
+ 			host_to_le16(WLAN_REASON_PREV_AUTH_NOT_VALID);
+-		pos = (u8 *) (&mgmt->u.deauth.reason_code + 1);
++		pos = (u8 *) &mgmt->u.deauth.variable;
+ 	} else {
+ 		mgmt->u.disassoc.reason_code =
+ 			host_to_le16(WLAN_REASON_PREV_AUTH_NOT_VALID);
+-		pos = (u8 *) (&mgmt->u.disassoc.reason_code + 1);
++		pos = (u8 *) &mgmt->u.disassoc.variable;
+ 	}
+ 
+ 	*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+diff --git a/src/ap/drv_callbacks.c b/src/ap/drv_callbacks.c
+index 3552b3e..12db25f 100644
+--- a/src/ap/drv_callbacks.c
++++ b/src/ap/drv_callbacks.c
+@@ -1086,7 +1086,7 @@ void hostapd_event_get_survey(struct hostapd_iface *iface,
+ 			continue;
+ 
+ 		dl_list_del(&survey->list);
+-		dl_list_add_tail(&chan->survey_list, &survey->list);
++		DL_LIST_ADD_TAIL(&chan->survey_list, survey, list);
+ 
+ 		hostapd_update_nf(iface, chan, survey);
+ 
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 4e04169..e10d4dd 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -1157,6 +1157,8 @@ static void handle_auth(struct hostapd_data *hapd,
+ 		/* Authentication code will re-send the authentication frame
+ 		 * after it has received (and cached) information from the
+ 		 * external source. */
++		os_free(identity);
++		os_free(radius_cui);
+ 		return;
+ 	}
+ 
+@@ -1171,6 +1173,8 @@ static void handle_auth(struct hostapd_data *hapd,
+ 				       HOSTAPD_LEVEL_DEBUG,
+ 				       "Drop repeated authentication frame seq_ctrl=0x%x",
+ 				       seq_ctrl);
++			os_free(identity);
++			os_free(radius_cui);
+ 			return;
+ 		}
+ #ifdef CONFIG_MESH
+@@ -1179,6 +1183,8 @@ static void handle_auth(struct hostapd_data *hapd,
+ 			wpa_printf(MSG_DEBUG, "Mesh peer " MACSTR
+ 				   " is blocked - drop Authentication frame",
+ 				   MAC2STR(mgmt->sa));
++			os_free(identity);
++			os_free(radius_cui);
+ 			return;
+ 		}
+ #endif /* CONFIG_MESH */
+@@ -1197,6 +1203,9 @@ static void handle_auth(struct hostapd_data *hapd,
+ 			wpabuf_free(hapd->mesh_pending_auth);
+ 			hapd->mesh_pending_auth = wpabuf_alloc_copy(mgmt, len);
+ 			os_get_reltime(&hapd->mesh_pending_auth_time);
++
++			os_free(identity);
++			os_free(radius_cui);
+ 			return;
+ 		}
+ #endif /* CONFIG_MESH */
+diff --git a/src/ap/ieee802_1x.c b/src/ap/ieee802_1x.c
+index 80ff996..78b093a 100644
+--- a/src/ap/ieee802_1x.c
++++ b/src/ap/ieee802_1x.c
+@@ -500,7 +500,7 @@ int add_common_radius_attr(struct hostapd_data *hapd,
+ 			   struct sta_info *sta,
+ 			   struct radius_msg *msg)
+ {
+-	char buf[128];
++	char buf[RADIUS_MAX_ATTR_LEN];
+ 	struct hostapd_radius_attr *attr;
+ 	int len;
+ 
+@@ -2160,7 +2160,7 @@ static int ieee802_1x_erp_add_key(void *ctx, struct eap_server_erp_key *erp)
+ {
+ 	struct hostapd_data *hapd = ctx;
+ 
+-	dl_list_add(&hapd->erp_keys, &erp->list);
++	DL_LIST_ADD(&hapd->erp_keys, erp, list);
+ 	return 0;
+ }
+ 
+diff --git a/src/ap/ndisc_snoop.c b/src/ap/ndisc_snoop.c
+index 3c086bf..5971336 100644
+--- a/src/ap/ndisc_snoop.c
++++ b/src/ap/ndisc_snoop.c
+@@ -48,7 +48,7 @@ static int sta_ip6addr_add(struct sta_info *sta, struct in6_addr *addr)
+ 
+ 	os_memcpy(&ip6addr->addr, addr, sizeof(*addr));
+ 
+-	dl_list_add_tail(&sta->ip6addr, &ip6addr->list);
++	DL_LIST_ADD_TAIL(&sta->ip6addr, ip6addr, list);
+ 
+ 	return 0;
+ }
+diff --git a/src/ap/neighbor_db.c b/src/ap/neighbor_db.c
+index a2efff6..f65afff 100644
+--- a/src/ap/neighbor_db.c
++++ b/src/ap/neighbor_db.c
+@@ -55,7 +55,7 @@ hostapd_neighbor_add(struct hostapd_data *hapd)
+ 	if (!nr)
+ 		return NULL;
+ 
+-	dl_list_add(&hapd->nr_db, &nr->list);
++	DL_LIST_ADD(&hapd->nr_db, nr, list);
+ 
+ 	return nr;
+ }
+diff --git a/src/ap/wpa_auth_ie.c b/src/ap/wpa_auth_ie.c
+index f79783b..8f25c12 100644
+--- a/src/ap/wpa_auth_ie.c
++++ b/src/ap/wpa_auth_ie.c
+@@ -378,6 +378,8 @@ int wpa_auth_gen_wpa_ie(struct wpa_authenticator *wpa_auth)
+ 	u8 *pos, buf[128];
+ 	int res;
+ 
++	memset(buf, 0, sizeof(buf));
++
+ #ifdef CONFIG_TESTING_OPTIONS
+ 	if (wpa_auth->conf.own_ie_override_len) {
+ 		wpa_hexdump(MSG_DEBUG, "WPA: Forced own IE(s) for testing",
+diff --git a/src/common/cli.c b/src/common/cli.c
+index b583d1c..d0a7426 100644
+--- a/src/common/cli.c
++++ b/src/common/cli.c
+@@ -132,7 +132,7 @@ int cli_txt_list_add(struct dl_list *txt_list, const char *txt)
+ 		os_free(e);
+ 		return -1;
+ 	}
+-	dl_list_add(txt_list, &e->list);
++	DL_LIST_ADD(txt_list, e, list);
+ 	return 0;
+ }
+ 
+diff --git a/src/common/ctrl_iface_common.c b/src/common/ctrl_iface_common.c
+index ebbe6ff..04246c0 100644
+--- a/src/common/ctrl_iface_common.c
++++ b/src/common/ctrl_iface_common.c
+@@ -124,7 +124,7 @@ int ctrl_iface_attach(struct dl_list *ctrl_dst, struct sockaddr_storage *from,
+ 	os_memcpy(&dst->addr, from, fromlen);
+ 	dst->addrlen = fromlen;
+ 	dst->debug_level = MSG_INFO;
+-	dl_list_add(ctrl_dst, &dst->list);
++	DL_LIST_ADD(ctrl_dst, dst, list);
+ 
+ 	sockaddr_print(MSG_DEBUG, "CTRL_IFACE monitor attached", from, fromlen);
+ 	return 0;
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index a449cc9..cfa8378 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -1190,82 +1190,82 @@ struct wpa_driver_capa {
+ 	unsigned int auth;
+ 
+ /** Driver generated WPA/RSN IE */
+-#define WPA_DRIVER_FLAGS_DRIVER_IE	0x00000001
++#define WPA_DRIVER_FLAGS_DRIVER_IE	0x00000001ULL
+ /** Driver needs static WEP key setup after association command */
+-#define WPA_DRIVER_FLAGS_SET_KEYS_AFTER_ASSOC 0x00000002
++#define WPA_DRIVER_FLAGS_SET_KEYS_AFTER_ASSOC 0x00000002ULL
+ /** Driver takes care of all DFS operations */
+-#define WPA_DRIVER_FLAGS_DFS_OFFLOAD			0x00000004
++#define WPA_DRIVER_FLAGS_DFS_OFFLOAD			0x00000004ULL
+ /** Driver takes care of RSN 4-way handshake internally; PMK is configured with
+  * struct wpa_driver_ops::set_key using alg = WPA_ALG_PMK */
+-#define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE 0x00000008
++#define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE 0x00000008ULL
+ /** Driver is for a wired Ethernet interface */
+-#define WPA_DRIVER_FLAGS_WIRED		0x00000010
++#define WPA_DRIVER_FLAGS_WIRED		0x00000010ULL
+ /** Driver provides separate commands for authentication and association (SME in
+  * wpa_supplicant). */
+-#define WPA_DRIVER_FLAGS_SME		0x00000020
++#define WPA_DRIVER_FLAGS_SME		0x00000020ULL
+ /** Driver supports AP mode */
+-#define WPA_DRIVER_FLAGS_AP		0x00000040
++#define WPA_DRIVER_FLAGS_AP		0x00000040ULL
+ /** Driver needs static WEP key setup after association has been completed */
+-#define WPA_DRIVER_FLAGS_SET_KEYS_AFTER_ASSOC_DONE	0x00000080
++#define WPA_DRIVER_FLAGS_SET_KEYS_AFTER_ASSOC_DONE	0x00000080ULL
+ /** Driver supports dynamic HT 20/40 MHz channel changes during BSS lifetime */
+-#define WPA_DRIVER_FLAGS_HT_2040_COEX			0x00000100
++#define WPA_DRIVER_FLAGS_HT_2040_COEX			0x00000100ULL
+ /** Driver supports concurrent P2P operations */
+-#define WPA_DRIVER_FLAGS_P2P_CONCURRENT	0x00000200
++#define WPA_DRIVER_FLAGS_P2P_CONCURRENT	0x00000200ULL
+ /**
+  * Driver uses the initial interface as a dedicated management interface, i.e.,
+  * it cannot be used for P2P group operations or non-P2P purposes.
+  */
+-#define WPA_DRIVER_FLAGS_P2P_DEDICATED_INTERFACE	0x00000400
++#define WPA_DRIVER_FLAGS_P2P_DEDICATED_INTERFACE	0x00000400ULL
+ /** This interface is P2P capable (P2P GO or P2P Client) */
+-#define WPA_DRIVER_FLAGS_P2P_CAPABLE	0x00000800
++#define WPA_DRIVER_FLAGS_P2P_CAPABLE	0x00000800ULL
+ /** Driver supports station and key removal when stopping an AP */
+-#define WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT		0x00001000
++#define WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT		0x00001000ULL
+ /**
+  * Driver uses the initial interface for P2P management interface and non-P2P
+  * purposes (e.g., connect to infra AP), but this interface cannot be used for
+  * P2P group operations.
+  */
+-#define WPA_DRIVER_FLAGS_P2P_MGMT_AND_NON_P2P		0x00002000
++#define WPA_DRIVER_FLAGS_P2P_MGMT_AND_NON_P2P		0x00002000ULL
+ /**
+  * Driver is known to use sane error codes, i.e., when it indicates that
+  * something (e.g., association) fails, there was indeed a failure and the
+  * operation does not end up getting completed successfully later.
+  */
+-#define WPA_DRIVER_FLAGS_SANE_ERROR_CODES		0x00004000
++#define WPA_DRIVER_FLAGS_SANE_ERROR_CODES		0x00004000ULL
+ /** Driver supports off-channel TX */
+-#define WPA_DRIVER_FLAGS_OFFCHANNEL_TX			0x00008000
++#define WPA_DRIVER_FLAGS_OFFCHANNEL_TX			0x00008000ULL
+ /** Driver indicates TX status events for EAPOL Data frames */
+-#define WPA_DRIVER_FLAGS_EAPOL_TX_STATUS		0x00010000
++#define WPA_DRIVER_FLAGS_EAPOL_TX_STATUS		0x00010000ULL
+ /** Driver indicates TX status events for Deauth/Disassoc frames */
+-#define WPA_DRIVER_FLAGS_DEAUTH_TX_STATUS		0x00020000
++#define WPA_DRIVER_FLAGS_DEAUTH_TX_STATUS		0x00020000ULL
+ /** Driver supports roaming (BSS selection) in firmware */
+-#define WPA_DRIVER_FLAGS_BSS_SELECTION			0x00040000
++#define WPA_DRIVER_FLAGS_BSS_SELECTION			0x00040000ULL
+ /** Driver supports operating as a TDLS peer */
+-#define WPA_DRIVER_FLAGS_TDLS_SUPPORT			0x00080000
++#define WPA_DRIVER_FLAGS_TDLS_SUPPORT			0x00080000ULL
+ /** Driver requires external TDLS setup/teardown/discovery */
+-#define WPA_DRIVER_FLAGS_TDLS_EXTERNAL_SETUP		0x00100000
++#define WPA_DRIVER_FLAGS_TDLS_EXTERNAL_SETUP		0x00100000ULL
+ /** Driver indicates support for Probe Response offloading in AP mode */
+-#define WPA_DRIVER_FLAGS_PROBE_RESP_OFFLOAD		0x00200000
++#define WPA_DRIVER_FLAGS_PROBE_RESP_OFFLOAD		0x00200000ULL
+ /** Driver supports U-APSD in AP mode */
+-#define WPA_DRIVER_FLAGS_AP_UAPSD			0x00400000
++#define WPA_DRIVER_FLAGS_AP_UAPSD			0x00400000ULL
+ /** Driver supports inactivity timer in AP mode */
+-#define WPA_DRIVER_FLAGS_INACTIVITY_TIMER		0x00800000
++#define WPA_DRIVER_FLAGS_INACTIVITY_TIMER		0x00800000ULL
+ /** Driver expects user space implementation of MLME in AP mode */
+-#define WPA_DRIVER_FLAGS_AP_MLME			0x01000000
++#define WPA_DRIVER_FLAGS_AP_MLME			0x01000000ULL
+ /** Driver supports SAE with user space SME */
+-#define WPA_DRIVER_FLAGS_SAE				0x02000000
++#define WPA_DRIVER_FLAGS_SAE				0x02000000ULL
+ /** Driver makes use of OBSS scan mechanism in wpa_supplicant */
+-#define WPA_DRIVER_FLAGS_OBSS_SCAN			0x04000000
++#define WPA_DRIVER_FLAGS_OBSS_SCAN			0x04000000ULL
+ /** Driver supports IBSS (Ad-hoc) mode */
+-#define WPA_DRIVER_FLAGS_IBSS				0x08000000
++#define WPA_DRIVER_FLAGS_IBSS				0x08000000ULL
+ /** Driver supports radar detection */
+-#define WPA_DRIVER_FLAGS_RADAR				0x10000000
++#define WPA_DRIVER_FLAGS_RADAR				0x10000000ULL
+ /** Driver supports a dedicated interface for P2P Device */
+-#define WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE		0x20000000
++#define WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE		0x20000000ULL
+ /** Driver supports QoS Mapping */
+-#define WPA_DRIVER_FLAGS_QOS_MAPPING			0x40000000
++#define WPA_DRIVER_FLAGS_QOS_MAPPING			0x40000000ULL
+ /** Driver supports CSA in AP mode */
+-#define WPA_DRIVER_FLAGS_AP_CSA				0x80000000
++#define WPA_DRIVER_FLAGS_AP_CSA				0x80000000ULL
+ /** Driver supports mesh */
+ #define WPA_DRIVER_FLAGS_MESH			0x0000000100000000ULL
+ /** Driver support ACS offload */
+diff --git a/src/drivers/driver_bsd.c b/src/drivers/driver_bsd.c
+index 2afd7df..61bccde 100644
+--- a/src/drivers/driver_bsd.c
++++ b/src/drivers/driver_bsd.c
+@@ -885,7 +885,7 @@ bsd_init(struct hostapd_data *hapd, struct wpa_init_params *params)
+ 		goto bad;
+ 	}
+ 
+-	dl_list_add(&drv->global->ifaces, &drv->list);
++	DL_LIST_ADD(&drv->global->ifaces, drv, list);
+ 
+ 	return drv;
+ bad:
+@@ -1611,7 +1611,7 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
+ 		goto fail;
+ 
+ 	drv->opmode = get80211opmode(drv);
+-	dl_list_add(&drv->global->ifaces, &drv->list);
++	DL_LIST_ADD(&drv->global->ifaces, drv, list);
+ 
+ 	return drv;
+ fail:
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 1210d43..c54ac8b 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -335,7 +335,7 @@ static int send_and_recv(struct nl80211_global *global,
+ 			 void *valid_data)
+ {
+ 	struct nl_cb *cb;
+-	int err = -ENOMEM;
++	volatile int err = -ENOMEM;
+ 
+ 	if (!msg)
+ 		return -ENOMEM;
+@@ -350,9 +350,9 @@ static int send_and_recv(struct nl80211_global *global,
+ 
+ 	err = 1;
+ 
+-	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
+-	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err);
+-	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, &err);
++	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, (void*)&err);
++	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, (void*)&err);
++	nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, ack_handler, (void*)&err);
+ 
+ 	if (valid_handler)
+ 		nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM,
+@@ -716,7 +716,7 @@ nl80211_get_wiphy_data_ap(struct i802_bss *bss)
+ 
+ 	nl80211_register_eloop_read(&w->nl_beacons, nl80211_recv_beacons, w);
+ 
+-	dl_list_add(&nl80211_wiphys, &w->list);
++	DL_LIST_ADD(&nl80211_wiphys, w, list);
+ 
+ add:
+ 	/* drv entry for this bss already there? */
+@@ -728,9 +728,9 @@ add:
+ 	}
+ 	/* if not add it */
+ 	if (!found)
+-		dl_list_add(&w->drvs, &bss->drv->wiphy_list);
++		DL_LIST_ADD(&w->drvs, bss->drv, wiphy_list);
+ 
+-	dl_list_add(&w->bsss, &bss->wiphy_list);
++	DL_LIST_ADD(&w->bsss, bss, wiphy_list);
+ 	bss->wiphy_data = w;
+ 	return w;
+ }
+@@ -1790,7 +1790,7 @@ static void * wpa_driver_nl80211_drv_init(void *ctx, const char *ifname,
+ 
+ 	if (drv->global) {
+ 		nl80211_check_global(drv->global);
+-		dl_list_add(&drv->global->interfaces, &drv->list);
++		DL_LIST_ADD(&drv->global->interfaces, drv, list);
+ 		drv->in_interface_list = 1;
+ 	}
+ 
+@@ -7212,7 +7212,7 @@ static void add_survey(struct nlattr **sinfo, u32 ifidx,
+ 		   (unsigned long int) survey->channel_time_rx,
+ 		   survey->filled);
+ 
+-	dl_list_add_tail(survey_list, &survey->list);
++	DL_LIST_ADD_TAIL(survey_list, survey, list);
+ }
+ 
+ 
+@@ -8796,7 +8796,7 @@ static int linux_write_system_file(const char *path, unsigned int val)
+ 	int fd, len;
+ 
+ 	len = os_snprintf(buf, sizeof(buf), "%u\n", val);
+-	if (os_snprintf_error(sizeof(buf), len))
++	if (len < 0 || (unsigned int) len >= sizeof(buf))
+ 		return -1;
+ 
+ 	fd = open(path, O_WRONLY);
+diff --git a/src/drivers/driver_nl80211_capa.c b/src/drivers/driver_nl80211_capa.c
+index 6adc3f6..c2b3d03 100644
+--- a/src/drivers/driver_nl80211_capa.c
++++ b/src/drivers/driver_nl80211_capa.c
+@@ -1379,10 +1379,10 @@ wpa_driver_nl80211_postprocess_modes(struct hostapd_hw_modes *modes,
+ 	if (nmodes == NULL)
+ 		return modes; /* Could not add 802.11b mode */
+ 
+-	mode = &nmodes[*num_modes];
++	modes = nmodes;
++	mode = &modes[*num_modes];
+ 	os_memset(mode, 0, sizeof(*mode));
+ 	(*num_modes)++;
+-	modes = nmodes;
+ 
+ 	mode->mode = HOSTAPD_MODE_IEEE80211B;
+ 
+diff --git a/src/eap_peer/eap.c b/src/eap_peer/eap.c
+index 9110ca5..e2f2a46 100644
+--- a/src/eap_peer/eap.c
++++ b/src/eap_peer/eap.c
+@@ -560,7 +560,7 @@ static void eap_peer_erp_init(struct eap_sm *sm)
+ 	wpa_hexdump_key(MSG_DEBUG, "EAP: ERP rIK", erp->rIK, erp->rIK_len);
+ 
+ 	wpa_printf(MSG_DEBUG, "EAP: Stored ERP keys %s", erp->keyname_nai);
+-	dl_list_add(&sm->erp_keys, &erp->list);
++	DL_LIST_ADD(&sm->erp_keys, erp, list);
+ 	erp = NULL;
+ fail:
+ 	bin_clear_free(emsk, emsk_len);
+diff --git a/src/fst/fst.c b/src/fst/fst.c
+index 32cd941..1fa9d56 100644
+--- a/src/fst/fst.c
++++ b/src/fst/fst.c
+@@ -148,7 +148,7 @@ struct fst_ctrl_handle * fst_global_add_ctrl(const struct fst_ctrl *ctrl)
+ 	}
+ 
+ 	h->ctrl = *ctrl;
+-	dl_list_add_tail(&fst_global_ctrls_list, &h->global_ctrls_lentry);
++	DL_LIST_ADD_TAIL(&fst_global_ctrls_list, h, global_ctrls_lentry);
+ 
+ 	return h;
+ }
+diff --git a/src/fst/fst_group.c b/src/fst/fst_group.c
+index 321d40d..e16dbcb 100644
+--- a/src/fst/fst_group.c
++++ b/src/fst/fst_group.c
+@@ -443,7 +443,7 @@ struct fst_group * fst_group_create(const char *group_id)
+ 	dl_list_init(&g->ifaces);
+ 	os_strlcpy(g->group_id, group_id, sizeof(g->group_id));
+ 
+-	dl_list_add_tail(&fst_global_groups_list, &g->global_groups_lentry);
++	DL_LIST_ADD_TAIL(&fst_global_groups_list, g, global_groups_lentry);
+ 	fst_printf_group(g, MSG_DEBUG, "instance created");
+ 
+ 	foreach_fst_ctrl_call(on_group_created, g);
+@@ -469,7 +469,7 @@ void fst_group_attach_iface(struct fst_group *g, struct fst_iface *i)
+ 			break;
+ 		list = &f->group_lentry;
+ 	}
+-	dl_list_add(list, &i->group_lentry);
++	DL_LIST_ADD(list, i, group_lentry);
+ }
+ 
+ 
+diff --git a/src/fst/fst_session.c b/src/fst/fst_session.c
+index 76e2c78..70ff157 100644
+--- a/src/fst/fst_session.c
++++ b/src/fst/fst_session.c
+@@ -778,7 +778,7 @@ struct fst_session * fst_session_create(struct fst_group *g)
+ 
+ 	fst_printf(MSG_INFO, "Session %u created", s->id);
+ 
+-	dl_list_add_tail(&global_sessions_list, &s->global_sessions_lentry);
++	DL_LIST_ADD_TAIL(&global_sessions_list, s, global_sessions_lentry);
+ 
+ 	foreach_fst_ctrl_call(on_session_added, s);
+ 
+diff --git a/src/p2p/p2p.c b/src/p2p/p2p.c
+index 996b4e8..114d27d 100644
+--- a/src/p2p/p2p.c
++++ b/src/p2p/p2p.c
+@@ -436,7 +436,7 @@ static struct p2p_device * p2p_create_device(struct p2p_data *p2p,
+ 	dev = os_zalloc(sizeof(*dev));
+ 	if (dev == NULL)
+ 		return NULL;
+-	dl_list_add(&p2p->devices, &dev->list);
++	DL_LIST_ADD(&p2p->devices, dev, list);
+ 	os_memcpy(dev->info.p2p_device_addr, addr, ETH_ALEN);
+ 
+ 	return dev;
+diff --git a/src/pae/ieee802_1x_kay.c b/src/pae/ieee802_1x_kay.c
+index a8e7efc..93669a0 100644
+--- a/src/pae/ieee802_1x_kay.c
++++ b/src/pae/ieee802_1x_kay.c
+@@ -438,7 +438,7 @@ ieee802_1x_kay_init_receive_sa(struct receive_sc *psc, u8 an, u32 lowest_pn,
+ 	os_get_time(&psa->created_time);
+ 	psa->in_use = FALSE;
+ 
+-	dl_list_add(&psc->sa_list, &psa->list);
++	DL_LIST_ADD(&psc->sa_list, psa, list);
+ 	wpa_printf(MSG_DEBUG,
+ 		   "KaY: Create receive SA(AN: %hhu lowest_pn: %u of SC(channel: %d)",
+ 		   an, lowest_pn, psc->channel);
+@@ -569,8 +569,8 @@ ieee802_1x_kay_create_live_peer(struct ieee802_1x_mka_participant *participant,
+ 		return NULL;
+ 	}
+ 
+-	dl_list_add(&participant->live_peers, &peer->list);
+-	dl_list_add(&participant->rxsc_list, &rxsc->list);
++	DL_LIST_ADD(&participant->live_peers, peer, list);
++	DL_LIST_ADD(&participant->rxsc_list, rxsc, list);
+ 	secy_create_receive_sc(participant->kay, rxsc);
+ 
+ 	wpa_printf(MSG_DEBUG, "KaY: Live peer created");
+@@ -593,7 +593,7 @@ ieee802_1x_kay_create_potential_peer(
+ 	if (!peer)
+ 		return NULL;
+ 
+-	dl_list_add(&participant->potential_peers, &peer->list);
++	DL_LIST_ADD(&participant->potential_peers, peer, list);
+ 
+ 	wpa_printf(MSG_DEBUG, "KaY: potential peer created");
+ 	ieee802_1x_kay_dump_peer(peer);
+@@ -629,11 +629,11 @@ ieee802_1x_kay_move_live_peer(struct ieee802_1x_mka_participant *participant,
+ 	ieee802_1x_kay_dump_peer(peer);
+ 
+ 	dl_list_del(&peer->list);
+-	dl_list_add_tail(&participant->live_peers, &peer->list);
++	DL_LIST_ADD_TAIL(&participant->live_peers, peer, list);
+ 
+ 	secy_get_available_receive_sc(participant->kay, &sc_ch);
+ 
+-	dl_list_add(&participant->rxsc_list, &rxsc->list);
++	DL_LIST_ADD(&participant->rxsc_list, rxsc, list);
+ 	secy_create_receive_sc(participant->kay, rxsc);
+ 
+ 	return peer;
+@@ -1614,7 +1614,7 @@ ieee802_1x_mka_decode_dist_sak_body(
+ 	sa_key->an = body->dan;
+ 	ieee802_1x_kay_init_data_key(sa_key);
+ 
+-	dl_list_add(&participant->sak_list, &sa_key->list);
++	DL_LIST_ADD(&participant->sak_list, sa_key, list);
+ 
+ 	ieee802_1x_cp_set_ciphersuite(kay->cp, cs->id);
+ 	ieee802_1x_cp_sm_step(kay->cp);
+@@ -1996,7 +1996,7 @@ ieee802_1x_kay_generate_new_sak(struct ieee802_1x_mka_participant *participant)
+ 
+ 	participant->new_key = sa_key;
+ 
+-	dl_list_add(&participant->sak_list, &sa_key->list);
++	DL_LIST_ADD(&participant->sak_list, sa_key, list);
+ 	ieee802_1x_cp_set_ciphersuite(kay->cp, cs->id);
+ 	ieee802_1x_cp_sm_step(kay->cp);
+ 	ieee802_1x_cp_set_offset(kay->cp, kay->macsec_confidentiality);
+@@ -2436,7 +2436,7 @@ ieee802_1x_kay_init_transmit_sa(struct transmit_sc *psc, u8 an, u32 next_PN,
+ 	os_get_time(&psa->created_time);
+ 	psa->in_use = FALSE;
+ 
+-	dl_list_add(&psc->sa_list, &psa->list);
++	DL_LIST_ADD(&psc->sa_list, psa, list);
+ 	wpa_printf(MSG_DEBUG,
+ 		   "KaY: Create transmit SA(an: %hhu, next_PN: %u) of SC(channel: %d)",
+ 		   an, next_PN, psc->channel);
+@@ -3274,7 +3274,7 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay, struct mka_key_name *ckn,
+ 	wpa_hexdump_key(MSG_DEBUG, "KaY: Derived ICK",
+ 			participant->ick.key, participant->ick.len);
+ 
+-	dl_list_add(&kay->participant_list, &participant->list);
++	DL_LIST_ADD(&kay->participant_list, participant, list);
+ 	wpa_hexdump(MSG_DEBUG, "KaY: Participant created:",
+ 		    ckn->name, ckn->len);
+ 
+diff --git a/src/radius/radius.c b/src/radius/radius.c
+index 407e4f8..0193359 100644
+--- a/src/radius/radius.c
++++ b/src/radius/radius.c
+@@ -1340,7 +1340,7 @@ radius_msg_add_attr_user_password(struct radius_msg *msg,
+ 				  const u8 *data, size_t data_len,
+ 				  const u8 *secret, size_t secret_len)
+ {
+-	u8 buf[128];
++	u8 buf[RADIUS_MAX_ATTR_LEN];
+ 	int res;
+ 
+ 	res = radius_user_password_hide(msg, data, data_len,
+diff --git a/src/radius/radius_client.c b/src/radius/radius_client.c
+index 06c804d..2628865 100644
+--- a/src/radius/radius_client.c
++++ b/src/radius/radius_client.c
+@@ -1546,6 +1546,8 @@ static int radius_client_dump_auth_server(char *buf, size_t buflen,
+ 		}
+ 	}
+ 
++	abuf[0] = '\0'; hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf));
++
+ 	return os_snprintf(buf, buflen,
+ 			   "radiusAuthServerIndex=%d\n"
+ 			   "radiusAuthServerAddress=%s\n"
+@@ -1563,7 +1565,7 @@ static int radius_client_dump_auth_server(char *buf, size_t buflen,
+ 			   "radiusAuthClientUnknownTypes=%u\n"
+ 			   "radiusAuthClientPacketsDropped=%u\n",
+ 			   serv->index,
+-			   hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf)),
++			   abuf,
+ 			   serv->port,
+ 			   serv->round_trip_time,
+ 			   serv->requests,
+@@ -1596,6 +1598,8 @@ static int radius_client_dump_acct_server(char *buf, size_t buflen,
+ 		}
+ 	}
+ 
++	abuf[0] = '\0'; hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf));
++
+ 	return os_snprintf(buf, buflen,
+ 			   "radiusAccServerIndex=%d\n"
+ 			   "radiusAccServerAddress=%s\n"
+@@ -1611,7 +1615,7 @@ static int radius_client_dump_acct_server(char *buf, size_t buflen,
+ 			   "radiusAccClientUnknownTypes=%u\n"
+ 			   "radiusAccClientPacketsDropped=%u\n",
+ 			   serv->index,
+-			   hostapd_ip_txt(&serv->addr, abuf, sizeof(abuf)),
++			   abuf,
+ 			   serv->port,
+ 			   serv->round_trip_time,
+ 			   serv->requests,
+diff --git a/src/radius/radius_server.c b/src/radius/radius_server.c
+index 744283c..ceb3a23 100644
+--- a/src/radius/radius_server.c
++++ b/src/radius/radius_server.c
+@@ -2100,7 +2100,7 @@ static int radius_server_erp_add_key(void *ctx, struct eap_server_erp_key *erp)
+ 	struct radius_session *sess = ctx;
+ 	struct radius_server_data *data = sess->server;
+ 
+-	dl_list_add(&data->erp_keys, &erp->list);
++	DL_LIST_ADD(&data->erp_keys, erp, list);
+ 	return 0;
+ }
+ 
+diff --git a/src/rsn_supp/preauth.c b/src/rsn_supp/preauth.c
+index 4c9a4fb..638a30f 100644
+--- a/src/rsn_supp/preauth.c
++++ b/src/rsn_supp/preauth.c
+@@ -419,13 +419,13 @@ void pmksa_candidate_add(struct wpa_sm *sm, const u8 *bssid,
+ 				os_free(cand);
+ 				return;
+ 			}
+-			dl_list_add(pos->list.prev, &cand->list);
++			DL_LIST_ADD(pos->list.prev, cand, list);
+ 			cand = NULL;
+ 			break;
+ 		}
+ 	}
+ 	if (cand)
+-		dl_list_add_tail(&sm->pmksa_candidates, &cand->list);
++		DL_LIST_ADD_TAIL(&sm->pmksa_candidates, cand, list);
+ 
+ 	wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG, "RSN: added PMKSA cache "
+ 		"candidate " MACSTR " prio %d", MAC2STR(bssid), prio);
+diff --git a/src/utils/common.c b/src/utils/common.c
+index 04a533a..178a829 100644
+--- a/src/utils/common.c
++++ b/src/utils/common.c
+@@ -526,28 +526,28 @@ size_t printf_decode(u8 *buf, size_t maxlen, const char *str)
+ 			pos++;
+ 			switch (*pos) {
+ 			case '\\':
+-				buf[len++] = '\\';
+-				pos++;
++				*buf++ = '\\';
++				pos++; len++;
+ 				break;
+ 			case '"':
+-				buf[len++] = '"';
+-				pos++;
++				*buf++ = '"';
++				pos++; len++;
+ 				break;
+ 			case 'n':
+-				buf[len++] = '\n';
+-				pos++;
++				*buf++ = '\n';
++				pos++; len++;
+ 				break;
+ 			case 'r':
+-				buf[len++] = '\r';
+-				pos++;
++				*buf++ = '\r';
++				pos++; len++;
+ 				break;
+ 			case 't':
+-				buf[len++] = '\t';
+-				pos++;
++				*buf++ = '\t';
++				pos++; len++;
+ 				break;
+ 			case 'e':
+-				buf[len++] = '\033';
+-				pos++;
++				*buf++ = '\033';
++				pos++; len++;
+ 				break;
+ 			case 'x':
+ 				pos++;
+@@ -556,11 +556,11 @@ size_t printf_decode(u8 *buf, size_t maxlen, const char *str)
+ 					val = hex2num(*pos);
+ 					if (val < 0)
+ 						break;
+-					buf[len++] = val;
+-					pos++;
++					*buf++ = val;
++					pos++; len++;
+ 				} else {
+-					buf[len++] = val;
+-					pos += 2;
++					*buf++ = val;
++					pos += 2; len++;
+ 				}
+ 				break;
+ 			case '0':
+@@ -576,19 +576,21 @@ size_t printf_decode(u8 *buf, size_t maxlen, const char *str)
+ 					val = val * 8 + (*pos++ - '0');
+ 				if (*pos >= '0' && *pos <= '7')
+ 					val = val * 8 + (*pos++ - '0');
+-				buf[len++] = val;
++				*buf++ = val;
++				len++;
+ 				break;
+ 			default:
+ 				break;
+ 			}
+ 			break;
+ 		default:
+-			buf[len++] = *pos++;
++			*buf++ = *pos++;
++			len++;
+ 			break;
+ 		}
+ 	}
+ 	if (maxlen > len)
+-		buf[len] = '\0';
++		*buf = '\0';
+ 
+ 	return len;
+ }
+diff --git a/src/utils/edit.c b/src/utils/edit.c
+index d340bfa..6c49704 100644
+--- a/src/utils/edit.c
++++ b/src/utils/edit.c
+@@ -192,7 +192,7 @@ static void history_add(const char *str)
+ 
+ 	if (match) {
+ 		dl_list_del(&h->list);
+-		dl_list_add(&history_list, &h->list);
++		DL_LIST_ADD(&history_list, h, list);
+ 		history_curr = h;
+ 		return;
+ 	}
+@@ -206,7 +206,7 @@ static void history_add(const char *str)
+ 	h = os_zalloc(sizeof(*h) + len);
+ 	if (h == NULL)
+ 		return;
+-	dl_list_add(&history_list, &h->list);
++	DL_LIST_ADD(&history_list, h, list);
+ 	os_strlcpy(h->str, str, len + 1);
+ 	history_curr = h;
+ }
+diff --git a/src/utils/eloop.c b/src/utils/eloop.c
+index 436bc8c..8145fd7 100644
+--- a/src/utils/eloop.c
++++ b/src/utils/eloop.c
+@@ -800,11 +800,11 @@ int eloop_register_timeout(unsigned int secs, unsigned int usecs,
+ 	/* Maintain timeouts in order of increasing time */
+ 	dl_list_for_each(tmp, &eloop.timeout, struct eloop_timeout, list) {
+ 		if (os_reltime_before(&timeout->time, &tmp->time)) {
+-			dl_list_add(tmp->list.prev, &timeout->list);
++			DL_LIST_ADD(tmp->list.prev, timeout, list);
+ 			return 0;
+ 		}
+ 	}
+-	dl_list_add_tail(&eloop.timeout, &timeout->list);
++	DL_LIST_ADD_TAIL(&eloop.timeout, timeout, list);
+ 
+ 	return 0;
+ }
+diff --git a/src/utils/eloop_win.c b/src/utils/eloop_win.c
+index 9c8b12b..2401822 100644
+--- a/src/utils/eloop_win.c
++++ b/src/utils/eloop_win.c
+@@ -272,11 +272,11 @@ int eloop_register_timeout(unsigned int secs, unsigned int usecs,
+ 	/* Maintain timeouts in order of increasing time */
+ 	dl_list_for_each(tmp, &eloop.timeout, struct eloop_timeout, list) {
+ 		if (os_reltime_before(&timeout->time, &tmp->time)) {
+-			dl_list_add(tmp->list.prev, &timeout->list);
++			DL_LIST_ADD(tmp->list.prev, timeout, list);
+ 			return 0;
+ 		}
+ 	}
+-	dl_list_add_tail(&eloop.timeout, &timeout->list);
++	DL_LIST_ADD_TAIL(&eloop.timeout, timeout, list);
+ 
+ 	return 0;
+ }
+diff --git a/src/utils/list.h b/src/utils/list.h
+index ee2f485..faa4a8a 100644
+--- a/src/utils/list.h
++++ b/src/utils/list.h
+@@ -33,11 +33,31 @@ static inline void dl_list_add(struct dl_list *list, struct dl_list *item)
+ 	list->next = item;
+ }
+ 
++/* Helper function for correct Klocwork analysis.
++ * This function have to be added to KW database:
++ * __dl_list_add_obj - XMRF $2 : 0
++ */
++#define DL_LIST_ADD(list, obj, item)	__dl_list_add_obj(list, (obj), &(obj)->item)
++static inline void __dl_list_add_obj(struct dl_list *list, void *obj, struct dl_list *item)
++{
++	dl_list_add(list, item);
++}
++
+ static inline void dl_list_add_tail(struct dl_list *list, struct dl_list *item)
+ {
+ 	dl_list_add(list->prev, item);
+ }
+ 
++/* Helper function for correct Klocwork analysis.
++ * This function have to be added to KW database:
++ * __dl_list_add_tail_obj - XMRF $2 : 0
++ */
++#define DL_LIST_ADD_TAIL(list, obj, item)	__dl_list_add_tail_obj(list, (obj), &(obj)->item)
++static inline void __dl_list_add_tail_obj(struct dl_list *list, void *obj, struct dl_list *item)
++{
++	dl_list_add_tail(list, item);
++}
++
+ static inline void dl_list_del(struct dl_list *item)
+ {
+ 	item->next->prev = item->prev;
+diff --git a/src/utils/os.h b/src/utils/os.h
+index e8f0b79..0641fed 100644
+--- a/src/utils/os.h
++++ b/src/utils/os.h
+@@ -556,7 +556,7 @@ char * os_strdup(const char *s);
+ #endif /* OS_NO_C_LIB_DEFINES */
+ 
+ 
+-static inline int os_snprintf_error(size_t size, int res)
++static inline int os_snprintf_error(const size_t size, const int res)
+ {
+ 	return res < 0 || (unsigned int) res >= size;
+ }
+diff --git a/src/utils/os_unix.c b/src/utils/os_unix.c
+index 65c6fa4..92196bf 100644
+--- a/src/utils/os_unix.c
++++ b/src/utils/os_unix.c
+@@ -682,7 +682,7 @@ void * os_malloc(size_t size)
+ 	if (a == NULL)
+ 		return NULL;
+ 	a->magic = ALLOC_MAGIC;
+-	dl_list_add(&alloc_list, &a->list);
++	DL_LIST_ADD(&alloc_list, a, list);
+ 	a->len = size;
+ 	wpa_trace_record(a);
+ 	return a + 1;
+diff --git a/src/utils/trace.c b/src/utils/trace.c
+index d72cf60..03e986a 100644
+--- a/src/utils/trace.c
++++ b/src/utils/trace.c
+@@ -350,7 +350,7 @@ void wpa_trace_add_ref_func(struct wpa_trace_ref *ref, const void *addr)
+ 		return;
+ 	ref->addr = addr;
+ 	wpa_trace_record(ref);
+-	dl_list_add(&active_references, &ref->list);
++	DL_LIST_ADD(&active_references, ref, list);
+ }
+ 
+ 
+diff --git a/src/utils/wpa_debug.c b/src/utils/wpa_debug.c
+index f7acf6b..85fa664 100644
+--- a/src/utils/wpa_debug.c
++++ b/src/utils/wpa_debug.c
+@@ -252,7 +252,7 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 			 size_t len, int show)
+ {
+ 	size_t i;
+-
++	const u8 *tmp_buf;
+ #ifdef CONFIG_DEBUG_LINUX_TRACING
+ 	if (wpa_debug_tracing_file != NULL) {
+ 		fprintf(wpa_debug_tracing_file,
+@@ -263,9 +263,9 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 		} else if (!show) {
+ 			fprintf(wpa_debug_tracing_file, " [REMOVED]\n");
+ 		} else {
+-			for (i = 0; i < len; i++)
++			for (i = 0, tmp_buf = buf; i < len; i++, tmp_buf++)
+ 				fprintf(wpa_debug_tracing_file,
+-					" %02x", buf[i]);
++					" %02x", *tmp_buf);
+ 		}
+ 		fflush(wpa_debug_tracing_file);
+ 	}
+@@ -293,9 +293,9 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 				return;
+ 			}
+ 
+-			for (i = 0; i < slen; i++)
++			for (i = 0, tmp_buf = buf; i < slen; i++, tmp_buf++)
+ 				os_snprintf(&strbuf[i * 3], 4, " %02x",
+-					    buf[i]);
++					    *tmp_buf);
+ 
+ 			display = strbuf;
+ 		} else {
+@@ -328,9 +328,9 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 				return;
+ 			}
+ 
+-			for (i = 0; i < len; i++)
++			for (i = 0, tmp_buf = buf; i < len; i++, tmp_buf++)
+ 				os_snprintf(&strbuf[i * 3], 4, " %02x",
+-					    buf[i]);
++					    *tmp_buf);
+ 
+ 			display = strbuf;
+ 		} else {
+@@ -351,8 +351,8 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 		if (buf == NULL) {
+ 			fprintf(out_file, " [NULL]");
+ 		} else if (show) {
+-			for (i = 0; i < len; i++)
+-				fprintf(out_file, " %02x", buf[i]);
++			for (i = 0, tmp_buf = buf; i < len; i++, tmp_buf++)
++				fprintf(out_file, " %02x", *tmp_buf);
+ 		} else {
+ 			fprintf(out_file, " [REMOVED]");
+ 		}
+@@ -363,8 +363,8 @@ static void _wpa_hexdump(int level, const char *title, const u8 *buf,
+ 	if (buf == NULL) {
+ 		printf(" [NULL]");
+ 	} else if (show) {
+-		for (i = 0; i < len; i++)
+-			printf(" %02x", buf[i]);
++		for (i = 0, tmp_buf = buf; i < len; i++, tmp_buf++)
++			printf(" %02x", *tmp_buf);
+ 	} else {
+ 		printf(" [REMOVED]");
+ 	}
+diff --git a/src/wps/wps_common.c b/src/wps/wps_common.c
+index 2e34721..0899f61 100644
+--- a/src/wps/wps_common.c
++++ b/src/wps/wps_common.c
+@@ -491,7 +491,7 @@ char * wps_dev_type_bin2str(const u8 dev_type[WPS_DEV_TYPE_LEN], char *buf,
+ 			  WPA_GET_BE16(dev_type), WPA_GET_BE32(&dev_type[2]),
+ 			  WPA_GET_BE16(&dev_type[6]));
+ 	if (os_snprintf_error(buf_len, ret))
+-		return NULL;
++		buf[0] = '\0'; /* return empty string in case of error */
+ 
+ 	return buf;
+ }
+diff --git a/src/wps/wps_er.c b/src/wps/wps_er.c
+index b840acd..7cfa0ac 100644
+--- a/src/wps/wps_er.c
++++ b/src/wps/wps_er.c
+@@ -301,7 +301,7 @@ int wps_er_ap_cache_settings(struct wps_er *er, struct in_addr *addr)
+ 		if (settings == NULL)
+ 			return -1;
+ 		os_memcpy(settings->uuid, ap->uuid, WPS_UUID_LEN);
+-		dl_list_add(&er->ap_settings, &settings->list);
++		DL_LIST_ADD(&er->ap_settings, settings, list);
+ 	}
+ 	os_memcpy(&settings->ap_settings, ap->ap_settings,
+ 		  sizeof(struct wps_credential));
+@@ -348,7 +348,7 @@ static void wps_er_ap_remove_entry(struct wps_er *er, struct wps_er_ap *ap)
+ 
+ 	dl_list_del(&ap->list);
+ 	if (ap->subscribed) {
+-		dl_list_add(&er->ap_unsubscribing, &ap->list);
++		DL_LIST_ADD(&er->ap_unsubscribing, ap, list);
+ 		wps_er_ap_unsubscribe(er, ap);
+ 	} else
+ 		wps_er_ap_free(ap);
+@@ -659,7 +659,7 @@ void wps_er_ap_add(struct wps_er *er, const u8 *uuid, struct in_addr *addr,
+ 		os_free(ap);
+ 		return;
+ 	}
+-	dl_list_add(&er->ap, &ap->list);
++	DL_LIST_ADD(&er->ap, ap, list);
+ 
+ 	ap->addr.s_addr = addr->s_addr;
+ 	os_memcpy(ap->uuid, uuid, WPS_UUID_LEN);
+@@ -779,7 +779,7 @@ static struct wps_er_sta * wps_er_add_sta_data(struct wps_er_ap *ap,
+ 			return NULL;
+ 		os_memcpy(sta->addr, addr, ETH_ALEN);
+ 		sta->ap = ap;
+-		dl_list_add(&ap->sta, &sta->list);
++		DL_LIST_ADD(&ap->sta, sta, list);
+ 		new_sta = 1;
+ 	}
+ 
+diff --git a/src/wps/wps_registrar.c b/src/wps/wps_registrar.c
+index fac8bd8..9ac2293 100644
+--- a/src/wps/wps_registrar.c
++++ b/src/wps/wps_registrar.c
+@@ -765,7 +765,7 @@ int wps_registrar_add_pin(struct wps_registrar *reg, const u8 *addr,
+ 	if (p->wildcard_uuid)
+ 		wps_registrar_invalidate_unused(reg);
+ 
+-	dl_list_add(&reg->pins, &p->list);
++	DL_LIST_ADD(&reg->pins, p, list);
+ 
+ 	wpa_printf(MSG_DEBUG, "WPS: A new PIN configured (timeout=%d)",
+ 		   timeout);
+@@ -3423,7 +3423,7 @@ static void wps_registrar_sel_reg_add(struct wps_registrar *reg,
+ 		reg->sel_reg_dev_password_id_override = s->dev_password_id;
+ 	if (reg->sel_reg_config_methods_override == -1)
+ 		reg->sel_reg_config_methods_override = 0;
+-	reg->sel_reg_config_methods_override |= s->config_methods;
++	reg->sel_reg_config_methods_override |= (int)(unsigned)s->config_methods;
+ 	for (i = 0; i < WPS_MAX_AUTHORIZED_MACS; i++)
+ 		if (is_zero_ether_addr(reg->authorized_macs_union[i]))
+ 			break;
+@@ -3630,7 +3630,7 @@ int wps_registrar_add_nfc_pw_token(struct wps_registrar *reg,
+ 		token->dev_pw_len = dev_pw_len * 2;
+ 	}
+ 
+-	dl_list_add(&reg->nfc_pw_tokens, &token->list);
++	DL_LIST_ADD(&reg->nfc_pw_tokens, token, list);
+ 
+ 	reg->selected_registrar = 1;
+ 	reg->pbc = 0;
+diff --git a/src/wps/wps_upnp.c b/src/wps/wps_upnp.c
+index 0c458c6..492c97a 100644
+--- a/src/wps/wps_upnp.c
++++ b/src/wps/wps_upnp.c
+@@ -404,7 +404,7 @@ static void subscr_addr_add_url(struct subscription *s, const char *url,
+ 		os_memcpy(&a->saddr, rp->ai_addr, sizeof(a->saddr));
+ 		a->saddr.sin_port = htons(port);
+ 
+-		dl_list_add(&s->addr_list, &a->list);
++		DL_LIST_ADD(&s->addr_list, a, list);
+ 	}
+ 
+ fail:
+@@ -733,7 +733,7 @@ struct subscription * subscription_start(struct upnp_wps_device_sm *sm,
+ 	}
+ 
+ 	/* Add to end of list, since it has the highest expiration time */
+-	dl_list_add_tail(&sm->subscriptions, &s->list);
++	DL_LIST_ADD_TAIL(&sm->subscriptions, s, list);
+ 	/* Queue up immediate event message (our last event)
+ 	 * as required by UPnP spec.
+ 	 */
+@@ -767,7 +767,7 @@ struct subscription * subscription_renew(struct upnp_wps_device_sm *sm,
+ 	dl_list_del(&s->list);
+ 	s->timeout_time = expire;
+ 	/* add back to end of list, since it now has highest expiry */
+-	dl_list_add_tail(&sm->subscriptions, &s->list);
++	DL_LIST_ADD_TAIL(&sm->subscriptions, s, list);
+ 	return s;
+ }
+ 
+@@ -1175,7 +1175,7 @@ upnp_wps_device_init(struct upnp_wps_device_ctx *ctx, struct wps_context *wps,
+ 		start = 1;
+ 	}
+ 
+-	dl_list_add(&sm->interfaces, &iface->list);
++	DL_LIST_ADD(&sm->interfaces, iface, list);
+ 
+ 	if (start && upnp_wps_device_start(sm, net_if)) {
+ 		upnp_wps_device_deinit(sm, priv);
+diff --git a/src/wps/wps_upnp_event.c b/src/wps/wps_upnp_event.c
+index 94aae75..6a40b3f 100644
+--- a/src/wps/wps_upnp_event.c
++++ b/src/wps/wps_upnp_event.c
+@@ -137,7 +137,7 @@ static void event_retry(struct wps_event_ *e, int do_next_address)
+ 			event_send_all_later(s->sm);
+ 		return;
+ 	}
+-	dl_list_add(&s->event_queue, &e->list);
++	DL_LIST_ADD(&s->event_queue, e, list);
+ 	event_send_all_later(sm);
+ }
+ 
+@@ -282,6 +282,8 @@ static int event_send_start(struct subscription *s)
+ 		return -1;
+ 
+ 	s->current_event = e = event_dequeue(s);
++	if (e == NULL)
++		return -1;
+ 
+ 	/* Use address according to number of retries */
+ 	itry = 0;
+@@ -415,7 +417,7 @@ int event_add(struct subscription *s, const struct wpabuf *data, int probereq)
+ 		s->next_subscriber_sequence++;
+ 	wpa_printf(MSG_DEBUG, "WPS UPnP: Queue event %p for subscriber %p "
+ 		   "(queue len %u)", e, s, len + 1);
+-	dl_list_add_tail(&s->event_queue, &e->list);
++	DL_LIST_ADD_TAIL(&s->event_queue, e, list);
+ 	event_send_all_later(s->sm);
+ 	return 0;
+ }
+diff --git a/src/wps/wps_upnp_ssdp.c b/src/wps/wps_upnp_ssdp.c
+index a685ce4..f2d5c4b 100644
+--- a/src/wps/wps_upnp_ssdp.c
++++ b/src/wps/wps_upnp_ssdp.c
+@@ -479,7 +479,7 @@ static void msearchreply_state_machine_start(struct upnp_wps_device_sm *sm,
+ 		goto fail;
+ 	}
+ 	/* Remember for future cleanup */
+-	dl_list_add(&sm->msearch_replies, &a->list);
++	DL_LIST_ADD(&sm->msearch_replies, a, list);
+ 	return;
+ 
+ fail:
+diff --git a/src/wps/wps_upnp_web.c b/src/wps/wps_upnp_web.c
+index 7548e84..a5b082d 100644
+--- a/src/wps/wps_upnp_web.c
++++ b/src/wps/wps_upnp_web.c
+@@ -477,7 +477,7 @@ web_process_get_device_info(struct upnp_wps_device_sm *sm,
+ 			wps_upnp_peer_del(old);
+ 		}
+ 	}
+-	dl_list_add_tail(&iface->peers, &peer->list);
++	DL_LIST_ADD_TAIL(&iface->peers, peer, list);
+ 	/* TODO: Could schedule a timeout to free the entry */
+ 
+ 	*replyname = name;
+diff --git a/tests/test-list.c b/tests/test-list.c
+index 01bcbf6..a1377f2 100644
+--- a/tests/test-list.c
++++ b/tests/test-list.c
+@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
+ 		if (t == NULL)
+ 			return -1;
+ 		t->value = i;
+-		dl_list_add(&head, &t->list);
++		DL_LIST_ADD(&head, t, list);
+ 		dump_list(&head);
+ 	}
+ 
+@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
+ 		if (t == NULL)
+ 			return -1;
+ 		t->value = i;
+-		dl_list_add_tail(&head, &t->list);
++		DL_LIST_ADD_TAIL(&head, t, list);
+ 		dump_list(&head);
+ 	}
+ 
+@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
+ 			break;
+ 	printf("move: %d\n", t->value);
+ 	dl_list_del(&t->list);
+-	dl_list_add(&head, &t->list);
++	DL_LIST_ADD(&head, t, list);
+ 	dump_list(&head);
+ 
+ 	dl_list_for_each_safe(t, tmp, &head, struct test, list) {
+diff --git a/wlantest/bss.c b/wlantest/bss.c
+index f021956..d79d3f3 100644
+--- a/wlantest/bss.c
++++ b/wlantest/bss.c
+@@ -47,7 +47,7 @@ struct wlantest_bss * bss_get(struct wlantest *wt, const u8 *bssid)
+ 	dl_list_init(&bss->pmk);
+ 	dl_list_init(&bss->tdls);
+ 	os_memcpy(bss->bssid, bssid, ETH_ALEN);
+-	dl_list_add(&wt->bss, &bss->list);
++	DL_LIST_ADD(&wt->bss, bss, list);
+ 	wpa_printf(MSG_DEBUG, "Discovered new BSS - " MACSTR,
+ 		   MAC2STR(bss->bssid));
+ 	return bss;
+@@ -102,7 +102,7 @@ int bss_add_pmk_from_passphrase(struct wlantest_bss *bss,
+ 		   " based on passphrase '%s'",
+ 		   MAC2STR(bss->bssid), passphrase);
+ 	wpa_hexdump(MSG_DEBUG, "Possible PMK", pmk->pmk, sizeof(pmk->pmk));
+-	dl_list_add(&bss->pmk, &pmk->list);
++	DL_LIST_ADD(&bss->pmk, pmk, list);
+ 
+ 	return 0;
+ }
+diff --git a/wlantest/ctrl.c b/wlantest/ctrl.c
+index 7de0a8a..e83306d 100644
+--- a/wlantest/ctrl.c
++++ b/wlantest/ctrl.c
+@@ -842,7 +842,7 @@ static void ctrl_add_passphrase(struct wlantest *wt, int sock, u8 *cmd,
+ 
+ 	if (p) {
+ 		struct wlantest_bss *bss;
+-		dl_list_add(&wt->passphrase, &p->list);
++		DL_LIST_ADD(&wt->passphrase, p, list);
+ 		dl_list_for_each(bss, &wt->bss, struct wlantest_bss, list) {
+ 			if (bssid &&
+ 			    os_memcmp(p->bssid, bss->bssid, ETH_ALEN) != 0)
+diff --git a/wlantest/rx_tdls.c b/wlantest/rx_tdls.c
+index 0c012a9..4a00e9c 100644
+--- a/wlantest/rx_tdls.c
++++ b/wlantest/rx_tdls.c
+@@ -64,7 +64,7 @@ static struct wlantest_tdls * get_tdls(struct wlantest *wt, const u8 *linkid,
+ 		return NULL;
+ 	tdls->init = init;
+ 	tdls->resp = resp;
+-	dl_list_add(&bss->tdls, &tdls->list);
++	DL_LIST_ADD(&bss->tdls, tdls, list);
+ 	return tdls;
+ }
+ 
+diff --git a/wlantest/sta.c b/wlantest/sta.c
+index 1268b8a..c345870 100644
+--- a/wlantest/sta.c
++++ b/wlantest/sta.c
+@@ -46,7 +46,7 @@ struct wlantest_sta * sta_get(struct wlantest_bss *bss, const u8 *addr)
+ 	os_memset(sta->seq_ctrl_to_ap, 0xff, sizeof(sta->seq_ctrl_to_ap));
+ 	sta->bss = bss;
+ 	os_memcpy(sta->addr, addr, ETH_ALEN);
+-	dl_list_add(&bss->sta, &sta->list);
++	DL_LIST_ADD(&bss->sta, sta, list);
+ 	wpa_printf(MSG_DEBUG, "Discovered new STA " MACSTR " in BSS " MACSTR,
+ 		   MAC2STR(sta->addr), MAC2STR(bss->bssid));
+ 	return sta;
+diff --git a/wlantest/wired.c b/wlantest/wired.c
+index 77a395f..e87c934 100644
+--- a/wlantest/wired.c
++++ b/wlantest/wired.c
+@@ -32,7 +32,7 @@ static struct wlantest_radius * radius_get(struct wlantest *wt, u32 srv,
+ 
+ 	r->srv = srv;
+ 	r->cli = cli;
+-	dl_list_add(&wt->radius, &r->list);
++	DL_LIST_ADD(&wt->radius, r, list);
+ 
+ 	return r;
+ }
+@@ -95,7 +95,7 @@ static void wlantest_add_pmk(struct wlantest *wt, const u8 *pmk)
+ 	if (p == NULL)
+ 		return;
+ 	os_memcpy(p->pmk, pmk, 32);
+-	dl_list_add(&wt->pmk, &p->list);
++	DL_LIST_ADD(&wt->pmk, p, list);
+ 	wpa_hexdump(MSG_INFO, "Add PMK", pmk, 32);
+ }
+ 
+diff --git a/wlantest/wlantest.c b/wlantest/wlantest.c
+index abe97d1..ec8ca58 100644
+--- a/wlantest/wlantest.c
++++ b/wlantest/wlantest.c
+@@ -124,7 +124,7 @@ static void add_passphrase(struct wlantest *wt, const char *passphrase)
+ 	if (p == NULL)
+ 		return;
+ 	os_memcpy(p->passphrase, passphrase, len);
+-	dl_list_add(&wt->passphrase, &p->list);
++	DL_LIST_ADD(&wt->passphrase, p, list);
+ }
+ 
+ 
+@@ -139,7 +139,7 @@ static void add_secret(struct wlantest *wt, const char *secret)
+ 	if (s == NULL)
+ 		return;
+ 	os_memcpy(s->secret, secret, len);
+-	dl_list_add(&wt->secret, &s->list);
++	DL_LIST_ADD(&wt->secret, s, list);
+ }
+ 
+ 
+@@ -169,7 +169,7 @@ static int add_pmk_file(struct wlantest *wt, const char *pmk_file)
+ 		if (p == NULL)
+ 			break;
+ 		os_memcpy(p->pmk, pmk, 32);
+-		dl_list_add(&wt->pmk, &p->list);
++		DL_LIST_ADD(&wt->pmk, p, list);
+ 		wpa_hexdump(MSG_DEBUG, "Added PMK from file", pmk, 32);
+ 	}
+ 
+@@ -222,7 +222,7 @@ static int add_ptk_file(struct wlantest *wt, const char *ptk_file)
+ 			p->ptk.tk_len = ptk_len - 32;
+ 			p->ptk_len = ptk_len;
+ 		}
+-		dl_list_add(&wt->ptk, &p->list);
++		DL_LIST_ADD(&wt->ptk, p, list);
+ 		wpa_hexdump(MSG_DEBUG, "Added PTK from file", ptk, ptk_len);
+ 	}
+ 
+@@ -249,7 +249,7 @@ int add_wep(struct wlantest *wt, const char *key)
+ 		return -1;
+ 	}
+ 	w->key_len = len / 2;
+-	dl_list_add(&wt->wep, &w->list);
++	DL_LIST_ADD(&wt->wep, w, list);
+ 	return 0;
+ }
+ 
+diff --git a/wpa_supplicant/bgscan_learn.c b/wpa_supplicant/bgscan_learn.c
+index a320cc4..05919ab 100644
+--- a/wpa_supplicant/bgscan_learn.c
++++ b/wpa_supplicant/bgscan_learn.c
+@@ -132,7 +132,7 @@ static int bgscan_learn_load(struct bgscan_learn_data *data)
+ 				continue;
+ 			}
+ 			bss->freq = atoi(buf + 4 + 18);
+-			dl_list_add(&data->bss, &bss->list);
++			DL_LIST_ADD(&data->bss, bss, list);
+ 			wpa_printf(MSG_DEBUG, "bgscan learn: Loaded BSS "
+ 				   "entry: " MACSTR " freq=%d",
+ 				   MAC2STR(bss->bssid), bss->freq);
+@@ -531,7 +531,7 @@ static int bgscan_learn_notify_scan(void *priv,
+ 				continue;
+ 			os_memcpy(bss->bssid, res->bssid, ETH_ALEN);
+ 			bss->freq = res->freq;
+-			dl_list_add(&data->bss, &bss->list);
++			DL_LIST_ADD(&data->bss, bss, list);
+ 		}
+ 
+ 		for (j = 0; j < num_bssid; j++) {
+diff --git a/wpa_supplicant/bss.c b/wpa_supplicant/bss.c
+index 3a8778d..cef0bf6 100644
+--- a/wpa_supplicant/bss.c
++++ b/wpa_supplicant/bss.c
+@@ -447,8 +447,8 @@ static struct wpa_bss * wpa_bss_add(struct wpa_supplicant *wpa_s,
+ 		wpa_s->conf->bss_max_count = wpa_s->num_bss + 1;
+ 	}
+ 
+-	dl_list_add_tail(&wpa_s->bss, &bss->list);
+-	dl_list_add_tail(&wpa_s->bss_id, &bss->list_id);
++	DL_LIST_ADD_TAIL(&wpa_s->bss, bss, list);
++	DL_LIST_ADD_TAIL(&wpa_s->bss_id, bss, list_id);
+ 	wpa_s->num_bss++;
+ 	wpa_dbg(wpa_s, MSG_DEBUG, "BSS: Add new id %u BSSID " MACSTR
+ 		" SSID '%s' freq %d",
+@@ -648,11 +648,11 @@ wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
+ 			bss->ie_len = res->ie_len;
+ 			bss->beacon_ie_len = res->beacon_ie_len;
+ 		}
+-		dl_list_add(prev, &bss->list_id);
++		DL_LIST_ADD(prev, bss, list_id);
+ 	}
+ 	if (changes & WPA_BSS_IES_CHANGED_FLAG)
+ 		wpa_bss_set_hessid(bss);
+-	dl_list_add_tail(&wpa_s->bss, &bss->list);
++	DL_LIST_ADD_TAIL(&wpa_s->bss, bss, list);
+ 
+ 	notify_bss_changes(wpa_s, changes, bss);
+ 
+diff --git a/wpa_supplicant/config.c b/wpa_supplicant/config.c
+index dd922ca..a49c613 100644
+--- a/wpa_supplicant/config.c
++++ b/wpa_supplicant/config.c
+@@ -1761,7 +1761,7 @@ static int wpa_config_parse_psk_list(const struct parse_data *data,
+ 		return -1;
+ 	}
+ 
+-	dl_list_add(&ssid->psk_list, &p->list);
++	DL_LIST_ADD(&ssid->psk_list, p, list);
+ 
+ 	return 0;
+ }
+diff --git a/wpa_supplicant/ctrl_iface_unix.c b/wpa_supplicant/ctrl_iface_unix.c
+index 4db712f..87e0bc7 100644
+--- a/wpa_supplicant/ctrl_iface_unix.c
++++ b/wpa_supplicant/ctrl_iface_unix.c
+@@ -389,7 +389,7 @@ static void wpas_ctrl_msg_queue(struct dl_list *queue,
+ 	os_memcpy(msg + 1, txt, len);
+ 	msg->txt = (const char *) (msg + 1);
+ 	msg->len = len;
+-	dl_list_add_tail(queue, &msg->list);
++	DL_LIST_ADD_TAIL(queue, msg, list);
+ 	eloop_cancel_timeout(wpas_ctrl_msg_queue_timeout, wpa_s, NULL);
+ 	eloop_register_timeout(0, 0, wpas_ctrl_msg_queue_timeout, wpa_s, NULL);
+ }
+diff --git a/wpa_supplicant/dbus/dbus_new_handlers_p2p.c b/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
+index 73b9e20..a115d17 100644
+--- a/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
++++ b/wpa_supplicant/dbus/dbus_new_handlers_p2p.c
+@@ -1133,7 +1133,7 @@ dbus_bool_t wpas_dbus_getter_p2p_peers(
+ 			    "/" COMPACT_MACSTR,
+ 			    wpa_s->parent->parent->dbus_new_path,
+ 			    MAC2STR(addr));
+-		dl_list_add_tail(&peer_objpath_list, &node->list);
++		DL_LIST_ADD_TAIL(&peer_objpath_list, node, list);
+ 		num++;
+ 
+ 		peer_info = p2p_get_peer_found(p2p, addr, next);
+diff --git a/wpa_supplicant/dbus/dbus_new_introspect.c b/wpa_supplicant/dbus/dbus_new_introspect.c
+index aee105b..2162c69 100644
+--- a/wpa_supplicant/dbus/dbus_new_introspect.c
++++ b/wpa_supplicant/dbus/dbus_new_introspect.c
+@@ -46,7 +46,7 @@ static struct interfaces * add_interface(struct dl_list *list,
+ 		return NULL;
+ 	}
+ 	wpabuf_printf(iface->xml, "<interface name=\"%s\">", dbus_interface);
+-	dl_list_add_tail(list, &iface->list);
++	DL_LIST_ADD_TAIL(list, iface, list);
+ 	return iface;
+ }
+ 
+diff --git a/wpa_supplicant/gas_query.c b/wpa_supplicant/gas_query.c
+index 691de03..7bfc0a2 100644
+--- a/wpa_supplicant/gas_query.c
++++ b/wpa_supplicant/gas_query.c
+@@ -764,7 +764,7 @@ int gas_query_req(struct gas_query *gas, const u8 *dst, int freq,
+ 	query->cb = cb;
+ 	query->ctx = ctx;
+ 	query->req = req;
+-	dl_list_add(&gas->pending, &query->list);
++	DL_LIST_ADD(&gas->pending, query, list);
+ 
+ 	*(wpabuf_mhead_u8(req) + 2) = dialog_token;
+ 
+diff --git a/wpa_supplicant/hs20_supplicant.c b/wpa_supplicant/hs20_supplicant.c
+index e88f147..5aaed99 100644
+--- a/wpa_supplicant/hs20_supplicant.c
++++ b/wpa_supplicant/hs20_supplicant.c
+@@ -271,7 +271,7 @@ int hs20_anqp_send_req(struct wpa_supplicant *wpa_s, const u8 *dst, u32 stypes,
+ 		icon_entry->file_name[payload_len] = '\0';
+ 		icon_entry->dialog_token = res;
+ 
+-		dl_list_add(&wpa_s->icon_head, &icon_entry->list);
++		DL_LIST_ADD(&wpa_s->icon_head, icon_entry, list);
+ 	}
+ 
+ 	return ret;
+diff --git a/wpa_supplicant/interworking.c b/wpa_supplicant/interworking.c
+index 1fb40c7..9538b90 100644
+--- a/wpa_supplicant/interworking.c
++++ b/wpa_supplicant/interworking.c
+@@ -2783,7 +2783,7 @@ static void anqp_add_extra(struct wpa_supplicant *wpa_s,
+ 		if (!elem)
+ 			return;
+ 		elem->infoid = info_id;
+-		dl_list_add(&anqp->anqp_elems, &elem->list);
++		DL_LIST_ADD(&anqp->anqp_elems, elem, list);
+ 	} else {
+ 		wpabuf_free(elem->payload);
+ 	}
+diff --git a/wpa_supplicant/p2p_supplicant.c b/wpa_supplicant/p2p_supplicant.c
+index b1fdc28..cead9bd 100644
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -1156,7 +1156,7 @@ static int wpas_p2p_store_persistent_group(struct wpa_supplicant *wpa_s,
+ 		os_memcpy(s->ssid, ssid->ssid, s->ssid_len);
+ 	}
+ 	if (ssid->mode == WPAS_MODE_P2P_GO && wpa_s->global->add_psk) {
+-		dl_list_add(&s->psk_list, &wpa_s->global->add_psk->list);
++		DL_LIST_ADD(&s->psk_list, wpa_s->global->add_psk, list);
+ 		wpa_s->global->add_psk = NULL;
+ 		changed = 1;
+ 	}
+@@ -7988,7 +7988,7 @@ void wpas_p2p_new_psk_cb(struct wpa_supplicant *wpa_s, const u8 *mac_addr,
+ 		wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Add new PSK for addr=" MACSTR,
+ 			MAC2STR(mac_addr));
+ 	}
+-	dl_list_add(&persistent->psk_list, &p->list);
++	DL_LIST_ADD(&persistent->psk_list, p, list);
+ 
+ 	if (wpa_s->p2pdev->conf->update_config &&
+ 	    wpa_config_write(wpa_s->p2pdev->confname, wpa_s->p2pdev->conf))
+diff --git a/wpa_supplicant/p2p_supplicant_sd.c b/wpa_supplicant/p2p_supplicant_sd.c
+index f8675e6..4f2f9c1 100644
+--- a/wpa_supplicant/p2p_supplicant_sd.c
++++ b/wpa_supplicant/p2p_supplicant_sd.c
+@@ -1215,7 +1215,7 @@ int wpas_p2p_service_add_bonjour(struct wpa_supplicant *wpa_s,
+ 		return -1;
+ 	bsrv->query = query;
+ 	bsrv->resp = resp;
+-	dl_list_add(&wpa_s->global->p2p_srv_bonjour, &bsrv->list);
++	DL_LIST_ADD(&wpa_s->global->p2p_srv_bonjour, bsrv, list);
+ 
+ 	wpas_p2p_sd_service_update(wpa_s);
+ 	return 0;
+@@ -1252,7 +1252,7 @@ int wpas_p2p_service_add_upnp(struct wpa_supplicant *wpa_s, u8 version,
+ 		os_free(usrv);
+ 		return -1;
+ 	}
+-	dl_list_add(&wpa_s->global->p2p_srv_upnp, &usrv->list);
++	DL_LIST_ADD(&wpa_s->global->p2p_srv_upnp, usrv, list);
+ 
+ 	wpas_p2p_sd_service_update(wpa_s);
+ 	return 0;
+diff --git a/wpa_supplicant/wmm_ac.c b/wpa_supplicant/wmm_ac.c
+index 5625d36..42cd373 100644
+--- a/wpa_supplicant/wmm_ac.c
++++ b/wpa_supplicant/wmm_ac.c
+@@ -78,6 +78,11 @@ static int wmm_ac_add_ts(struct wpa_supplicant *wpa_s, const u8 *addr,
+ 	u8 tsid = wmm_ac_get_tsid(tspec);
+ 	enum ts_dir_idx idx = wmm_ac_direction_to_idx(dir);
+ 
++	if (ac >= WMM_AC_NUM) {
++		wpa_printf(MSG_ERROR,
++			   "WMM AC: (ac=%u) invalid value!", ac);
++		return -1;
++	}
+ 	/* should have been verified before, but double-check here */
+ 	if (wpa_s->tspecs[ac][idx]) {
+ 		wpa_printf(MSG_ERROR,
+@@ -270,8 +275,15 @@ wmm_ac_build_addts_req(struct wpa_supplicant *wpa_s,
+ 	struct wmm_ac_addts_request *addts_req;
+ 	struct wmm_tspec_element *tspec;
+ 	u8 ac = up_to_ac[params->user_priority];
+-	u8 uapsd = wpa_s->wmm_ac_assoc_info->ac_params[ac].uapsd;
++	u8 uapsd;
++
++	if (ac >= WMM_AC_NUM) {
++		wpa_printf(MSG_ERROR,
++			   "WMM AC: (ac=%u) invalid value!", ac);
++		return NULL;
++	}
+ 
++	uapsd = wpa_s->wmm_ac_assoc_info->ac_params[ac].uapsd;
+ 	addts_req = os_zalloc(sizeof(*addts_req));
+ 	if (!addts_req)
+ 		return NULL;
+@@ -676,6 +688,11 @@ static void wmm_ac_handle_addts_resp(struct wpa_supplicant *wpa_s, const u8 *sa,
+ 	dir = wmm_ac_get_direction(tspec);
+ 	up = wmm_ac_get_user_priority(tspec);
+ 	ac = up_to_ac[up];
++	if (ac >= WMM_AC_NUM) {
++		wpa_printf(MSG_ERROR,
++			   "WMM AC: (ac=%u) invalid value!", ac);
++		return;
++	}
+ 
+ 	/* make sure we have a matching addts request */
+ 	if (!req || req->dialog_token != resp_dialog_token) {
+diff --git a/wpa_supplicant/wpa_supplicant.c b/wpa_supplicant/wpa_supplicant.c
+index 7361ee9..756514b 100644
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -2124,6 +2124,7 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
+ 		return;
+ 	}
+ 
++	memset(wpa_ie, 0, sizeof(wpa_ie));
+ 	wpa_s->connect_work = work;
+ 
+ 	if (cwork->bss_removed || !wpas_valid_bss_ssid(wpa_s, bss, ssid) ||
+@@ -4245,7 +4246,7 @@ static struct wpa_radio * radio_add_interface(struct wpa_supplicant *wpa_s,
+ 		if (radio && os_strcmp(rn, radio->name) == 0) {
+ 			wpa_printf(MSG_DEBUG, "Add interface %s to existing radio %s",
+ 				   wpa_s->ifname, rn);
+-			dl_list_add(&radio->ifaces, &wpa_s->radio_list);
++			DL_LIST_ADD(&radio->ifaces, wpa_s, radio_list);
+ 			return radio;
+ 		}
+ 
+@@ -4262,7 +4263,7 @@ static struct wpa_radio * radio_add_interface(struct wpa_supplicant *wpa_s,
+ 		os_strlcpy(radio->name, rn, sizeof(radio->name));
+ 	dl_list_init(&radio->ifaces);
+ 	dl_list_init(&radio->work);
+-	dl_list_add(&radio->ifaces, &wpa_s->radio_list);
++	DL_LIST_ADD(&radio->ifaces, wpa_s, radio_list);
+ 
+ 	return radio;
+ }
+@@ -4567,9 +4568,9 @@ int radio_add_work(struct wpa_supplicant *wpa_s, unsigned int freq,
+ 
+ 	was_empty = dl_list_empty(&wpa_s->radio->work);
+ 	if (next)
+-		dl_list_add(&wpa_s->radio->work, &work->list);
++		DL_LIST_ADD(&wpa_s->radio->work, work, list);
+ 	else
+-		dl_list_add_tail(&wpa_s->radio->work, &work->list);
++		DL_LIST_ADD_TAIL(&wpa_s->radio->work, work, list);
+ 	if (was_empty) {
+ 		wpa_dbg(wpa_s, MSG_DEBUG, "First radio work item in the queue - schedule start immediately");
+ 		radio_work_check_next(wpa_s);
+@@ -6874,7 +6875,7 @@ void wpa_bss_tmp_disallow(struct wpa_supplicant *wpa_s, const u8 *bssid,
+ 
+ 	bss->disallowed_until = until;
+ 	os_memcpy(bss->bssid, bssid, ETH_ALEN);
+-	dl_list_add(&wpa_s->bss_tmp_disallowed, &bss->list);
++	DL_LIST_ADD(&wpa_s->bss_tmp_disallowed, bss, list);
+ }
+ 
+ 
+-- 
+2.10.1
+

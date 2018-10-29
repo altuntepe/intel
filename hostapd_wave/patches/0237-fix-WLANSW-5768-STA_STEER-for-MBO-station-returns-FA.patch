@@ -1,0 +1,26 @@
+From a605ebd2107065f1e8f88a298ec9757def05058c Mon Sep 17 00:00:00 2001
+From: omerefrx <omerx.efrat@intel.com>
+Date: Wed, 21 Jun 2017 17:52:15 +0300
+Subject: [PATCH] fix WLANSW-5768: STA_STEER for MBO station returns FAIL
+
+Signed-off-by: omerefrx <omerx.efrat@intel.com>
+---
+ hostapd/ctrl_iface.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 0420bbc..db72f1a 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -4860,6 +4860,8 @@ int hostapd_ctrl_iface_sta_steer(struct hostapd_data *hapd, const char *cmd)
+ 
+     ret = hostapd_ctrl_iface_bss_tm_req(hapd, buf, ret_buf, 32);
+ 
++    if (ret > 0)
++      ret = 0;
+   }
+ 
+   return ret;
+-- 
+2.10.1
+

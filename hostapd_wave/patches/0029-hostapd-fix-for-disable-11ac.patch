@@ -1,0 +1,41 @@
+From 65faa507e94123dd00b960433bf92914285b51d5 Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:21 +0300
+Subject: [PATCH] hostapd: fix for disable 11ac
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/ap_config.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/ap/ap_config.c b/src/ap/ap_config.c
+index b2ec9a8..3173410 100644
+--- a/src/ap/ap_config.c
++++ b/src/ap/ap_config.c
+@@ -862,6 +862,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
+ 	if (full_config && conf->ieee80211n &&
+ 	    conf->hw_mode == HOSTAPD_MODE_IEEE80211B) {
+ 		bss->disable_11n = 1;
++		bss->disable_11ac = 1;
+ 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) in 11b mode is not "
+ 			   "allowed, disabling HT capabilities");
+ 	}
+@@ -869,6 +870,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
+ 	if (full_config && conf->ieee80211n &&
+ 	    bss->ssid.security_policy == SECURITY_STATIC_WEP) {
+ 		bss->disable_11n = 1;
++		bss->disable_11ac = 1;
+ 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WEP is not "
+ 			   "allowed, disabling HT capabilities");
+ 	}
+@@ -879,6 +881,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
+ 				   WPA_CIPHER_CCMP_256 | WPA_CIPHER_GCMP_256)))
+ 	{
+ 		bss->disable_11n = 1;
++		bss->disable_11ac = 1;
+ 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WPA/WPA2 "
+ 			   "requires CCMP/GCMP to be enabled, disabling HT "
+ 			   "capabilities");
+-- 
+2.10.1
+

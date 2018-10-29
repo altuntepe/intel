@@ -1,0 +1,30 @@
+From d89218d8e8fb5d68a7cd7fea5002a93d0c0d059d Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:20 +0300
+Subject: [PATCH] hostapd: ap free sta-removed teardown check
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/sta_info.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/ap/sta_info.c b/src/ap/sta_info.c
+index e573107..3028d9e 100644
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -170,8 +170,12 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
+ 		hostapd_drv_br_delete_ip_neigh(hapd, 4, (u8 *) &sta->ipaddr);
+ 	ap_sta_ip6addr_del(hapd, sta);
+ 
++#if 0
+ 	if (!hapd->iface->driver_ap_teardown &&
+ 	    !(sta->flags & WLAN_STA_PREAUTH)) {
++#else
++	if (!(sta->flags & WLAN_STA_PREAUTH)) {
++#endif
+ 		hostapd_drv_sta_remove(hapd, sta->addr);
+ 		sta->added_unassoc = 0;
+ 	}
+-- 
+2.10.1
+

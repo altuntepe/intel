@@ -1,0 +1,1598 @@
+From f3a2bd59d0a37548ef82257dc3e8506a36fdbd24 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 15 May 2018 17:06:13 +0300
+Subject: [PATCH] hostapd-multi-ap
+
+---
+ hostapd/config_file.c          |  14 ++++
+ hostapd/ctrl_iface.c           | 183 ++++++++++++++++++++++++++++++++++++++---
+ hostapd/hostapd_cli.c          |  84 +++++++++++++++----
+ src/ap/ap_config.c             |   8 ++
+ src/ap/ap_config.h             |  11 +++
+ src/ap/ap_drv_ops.h            |  15 +++-
+ src/ap/drv_callbacks.c         |   2 +
+ src/ap/hostapd.c               |   7 ++
+ src/ap/hostapd.h               |   3 +
+ src/ap/ieee802_11.c            |  86 +++++++++++++++++--
+ src/ap/ieee802_11.h            |   4 +
+ src/ap/ieee802_11_auth.c       | 109 ++++++++++++++++++++++++
+ src/ap/ieee802_11_auth.h       |  14 +++-
+ src/ap/ieee802_11_shared.c     |  28 +++++++
+ src/ap/sta_info.c              |  44 ++++++++--
+ src/ap/sta_info.h              |   4 +
+ src/common/ieee802_11_common.c |  61 ++++++++++++++
+ src/common/ieee802_11_common.h |   7 ++
+ src/common/ieee802_11_defs.h   |  31 +++++++
+ src/common/ltq-vendor.h        |   1 +
+ src/drivers/driver.h           |  28 +++++--
+ src/drivers/driver_nl80211.c   |  35 +++++---
+ wpa_supplicant/ctrl_iface.c    |  42 +++++++++-
+ 23 files changed, 761 insertions(+), 60 deletions(-)
+
+diff --git a/hostapd/config_file.c b/hostapd/config_file.c
+index e2b357a..57eb6d4 100644
+--- a/hostapd/config_file.c
++++ b/hostapd/config_file.c
+@@ -3245,6 +3245,20 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+ 		}
+ 	} else if (os_strcmp(buf, "use_driver_iface_addr") == 0) {
+ 		conf->use_driver_iface_addr = atoi(pos);
++	} else if (os_strcmp(buf, "mesh_mode") == 0) {
++		int val;
++		if (os_strcmp(pos, "fAP") == 0) val = MESH_MODE_FRONTHAUL_AP;
++		else if (os_strcmp(pos, "bAP") == 0) val = MESH_MODE_BACKHAUL_AP;
++		else if (os_strcmp(pos, "hybrid") == 0) val = MESH_MODE_HYBRID;
++		else if (os_strcmp(pos, "reserved") == 0) val = MESH_MODE_RESERVED;
++		else {
++			val = atoi(pos);
++			if (val < 0 || val > MESH_MODE_RESERVED) {
++				wpa_printf(MSG_ERROR, "Line %d: invalid mesh_mode: %s", line, pos);
++				return 1;
++			}
++		}
++		bss->mesh_mode = val;
+ #ifdef CONFIG_IEEE80211W
+ 	} else if (os_strcmp(buf, "ieee80211w") == 0) {
+ 		bss->ieee80211w = atoi(pos);
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index f00354f..6592c4e 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -62,6 +62,7 @@
+ #include "ctrl_iface.h"
+ #include "drivers/nl80211_copy.h"
+ #include "ap/atf.h"
++#include "ap/ieee802_11_auth.h"
+ 
+ 
+ #define HOSTAPD_CLI_DUP_VALUE_MAX_LEN 256
+@@ -4864,13 +4865,14 @@ static int hostapd_ctrl_driver_flags(struct hostapd_iface *iface, char *buf,
+ 
+ int hostapd_ctrl_iface_deny_mac(struct hostapd_data *hapd, const char *cmd)
+ {
+-  u8 addr[ETH_ALEN];
+   const char *pos;
+   struct hostapd_iface *iface = hapd->iface;
+   u8 remove = 0;
+-  int ret, i;
++  int ret, i, status;
++  struct multi_ap_blacklist entry;
+ 
+-  if (hwaddr_aton(cmd, addr))
++  os_memset(&entry, 0, sizeof(entry));
++  if (hwaddr_aton(cmd, entry.addr))
+     return -1;
+ 
+   pos = os_strchr(cmd, ' ');
+@@ -4880,10 +4882,20 @@ int hostapd_ctrl_iface_deny_mac(struct hostapd_data *hapd, const char *cmd)
+       remove = 1;
+   }
+ 
++	pos = os_strstr(cmd, "reject_sta=");
++	if (pos) {
++		pos += sizeof("reject_sta=")-1;
++		status = atoi(pos);
++		if (status < 0) {
++			wpa_printf(MSG_ERROR, "deny_mac: invalid reject status code");
++			return -1;
++		}
++		entry.status = status;
++	}
+   for (i = 0; i < iface->num_bss; i++) {
+     struct hostapd_data *bss = iface->bss[i];
+ 
+-    ret = hostapd_drv_set_deny_mac(bss, addr, remove);
++    ret = ieee802_11_multi_ap_set_deny_mac(bss, &entry, remove);
+     if (ret < 0)
+       return ret;
+   }
+@@ -4896,10 +4908,12 @@ int hostapd_ctrl_iface_sta_steer(struct hostapd_data *hapd, const char *cmd)
+   const char *pos, *btm_parameters = NULL;
+   struct hostapd_iface *iface = hapd->iface;
+   struct sta_info *sta = NULL;
+-  int ret, i;
++  int ret, i, status;
++  struct multi_ap_blacklist entry;
+ 
+-  if (hwaddr_aton(cmd, sta_addr)){
+-    wpa_printf(MSG_DEBUG, "Steer STA, invalid station MAC Address.");
++  os_memset(&entry, 0, sizeof(entry));
++  if (hwaddr_aton(cmd, sta_addr) || is_zero_ether_addr(sta_addr)) {
++    wpa_printf(MSG_DEBUG, "sta_steer: invalid station MAC Address.");
+     return -1;
+   }
+ 
+@@ -4913,6 +4927,17 @@ int hostapd_ctrl_iface_sta_steer(struct hostapd_data *hapd, const char *cmd)
+       btm_parameters = os_strchr(pos + 1, ' ');
+     }
+     }
++
++  pos = os_strstr(cmd, "reject_sta=");
++  if (pos) {
++    pos += sizeof("reject_sta=")-1;
++    status = atoi(pos);
++    if (status < 0){
++      wpa_printf(MSG_ERROR, "sta_steer: invalid reject status code");
++      return -1;
++    }
++    entry.status = status;
++  }
+   for (i = 0; i < hapd->iface->num_bss; i++) {
+     sta = ap_get_sta(hapd->iface->bss[i], sta_addr);
+     if (sta) {
+@@ -4928,17 +4953,23 @@ int hostapd_ctrl_iface_sta_steer(struct hostapd_data *hapd, const char *cmd)
+     wpa_printf(MSG_DEBUG, "Steer STA " MACSTR " , station is not associated to BSS "
+          "or does not support BTM.", MAC2STR(sta_addr));
+ 
+-    ret = hostapd_drv_sta_steer(hapd, sta_addr, bssid);
++    os_memcpy(entry.addr, sta_addr, sizeof(entry.addr));
++    ret = hostapd_drv_sta_steer(hapd, &entry, bssid);
++    if (ret < 0)
++      return ret;
++    status = entry.status ? entry.status : WLAN_REASON_UNSPECIFIED;
+     for (i = 0; i < iface->num_bss; i++) {
+       struct hostapd_data *bss = iface->bss[i];
+ 
+       /* remove STA from all BSS, except the specified one */
+       if (os_memcmp(bss->own_addr, bssid, sizeof(bssid))) {
+-        hostapd_drv_sta_disassoc(bss, sta_addr, WLAN_REASON_UNSPECIFIED);
++        hostapd_drv_sta_disassoc(bss, sta_addr, status);
+         sta = ap_get_sta(bss, sta_addr);
+         if (sta)
+-          ap_sta_disassociate(bss, sta, WLAN_REASON_UNSPECIFIED);
+-      }
++          ap_sta_disassociate(bss, sta, status);
++        ieee802_11_multi_ap_blacklist_add(bss, &entry);
++      } else
++        ieee802_11_multi_ap_blacklist_remove(bss, &entry);
+     }
+   } else{
+     /* Station supports 802.11v BTM, send BSS Transition Management
+@@ -4980,10 +5011,11 @@ struct hostapd_data *get_bss_index(const char *cmd, struct hostapd_iface *iface)
+ int hostapd_ctrl_iface_sta_allow(struct hostapd_data *hapd, const char *cmd)
+ {
+   u8 sta_addr[ETH_ALEN];
+-  int i, ret = 0, count = 0;
++  int i, j, ret = 0, count = 0;
+   const char *pos;
+   struct hostapd_iface *iface = hapd->iface;
+   u8 *stations = NULL;
++  struct multi_ap_blacklist entry;
+ 
+     if (cmd[0] == ' ')
+       cmd++;
+@@ -5014,13 +5046,18 @@ int hostapd_ctrl_iface_sta_allow(struct hostapd_data *hapd, const char *cmd)
+       }
+     }
+ 
+-
++    os_memset(&entry, 0, sizeof(entry));
+     for (i = 0; i < iface->num_bss; i++) {
+       struct hostapd_data *bss = iface->bss[i];
+ 
+       ret = hostapd_drv_sta_allow(bss, stations, count);
+       if (ret < 0)
+         break;
++
++	  for (j = 0; j < count; j++) {
++		os_memcpy(entry.addr, &stations[ETH_ALEN * j], ETH_ALEN);
++		ieee802_11_multi_ap_blacklist_remove(bss, &entry);
++	  }
+     }
+ 
+   os_free(stations);
+@@ -5068,6 +5105,28 @@ int hostapd_ctrl_iface_set_bss_load(struct hostapd_data *hapd,
+   return 0;
+ }
+ 
++int hostapd_ctrl_iface_get_blacklist(struct hostapd_iface *iface,
++	char *buf, size_t buflen)
++{
++	int ret = 0, len = 0, i;
++
++	for (i = 0; i < iface->num_bss; i++) {
++		struct hostapd_data *bss = iface->bss[i];
++
++		ret = os_snprintf(buf + len, buflen - len, "%s\n", bss->conf->iface);
++		if (os_snprintf_error(buflen - len, ret))
++			break;
++		len += ret;
++
++		ret = ieee802_11_multi_ap_blacklist_print(bss, buf + len, buflen - len);
++		if (os_snprintf_error(buflen - len, ret))
++			break;
++		len += ret;
++	}
++
++	return len;
++}
++
+ int hostapd_ctrl_iface_get_sta_measurements(struct hostapd_data *hapd,
+   const char *cmd, char *buf, size_t buflen)
+ {
+@@ -6330,6 +6389,96 @@ static int hostapd_ctrl_iface_get_dfs_stats (struct hostapd_iface *iface, const
+ 	return len;
+ }
+ 
++static const char *cmd_mesh_modes[MESH_MODE_LAST] = {
++	"fAP",      /* MESH_MODE_FRONTHAUL_AP */
++	"bAP",      /* MESH_MODE_BACKHAUL_AP  */
++	"hybrid",   /* MESH_MODE_HYBRID       */
++	"reserved"  /* MESH_MODE_RESERVED     */
++};
++
++static mesh_mode_t hostapd_config_parse_mesh_mode(const char *str)
++{
++	mesh_mode_t mesh_mode;
++	char *pos;
++
++	for (mesh_mode = MESH_MODE_FRONTHAUL_AP; mesh_mode < MESH_MODE_LAST; mesh_mode++) {
++		if (os_strcmp(str, cmd_mesh_modes[mesh_mode]) == 0) {
++			return mesh_mode;
++		}
++	}
++
++	mesh_mode = strtoul(str, &pos, 10);
++	if (*pos != '\0') {
++		if (!isblank(*pos))
++			return MESH_MODE_LAST;
++	}
++
++	return mesh_mode;
++}
++
++static int hostapd_ctrl_iface_get_mesh_mode (struct hostapd_data *hapd, const char *cmd,
++	char *buf, size_t buflen)
++{
++	int ret, len = 0;
++
++	hapd = get_bss_index(cmd, hapd->iface);
++	if (hapd == NULL) {
++		ret = os_snprintf(buf, buflen, "CTRL: GET_MESH_MODE - there is no iface with the given name\n");
++		if (os_snprintf_error(buflen, ret))
++			return 0;
++		return ret;
++	}
++
++	if (hapd->conf->mesh_mode >= MESH_MODE_LAST)
++	  ret = os_snprintf(buf + len, buflen - len, "mesh_mode=unknown (%d)\n", hapd->conf->mesh_mode);
++	else
++	  ret = os_snprintf(buf + len, buflen - len, "mesh_mode=%s (%d)\n",
++			cmd_mesh_modes[hapd->conf->mesh_mode], hapd->conf->mesh_mode);
++	if (os_snprintf_error(buflen - len, ret))
++		return len;
++	len += ret;
++
++	return len;
++}
++
++static int hostapd_ctrl_iface_set_mesh_mode (struct hostapd_data *hapd, const char *cmd)
++{
++	int ret;
++	unsigned mesh_mode;
++
++	hapd = get_bss_index(cmd, hapd->iface);
++	if (NULL == hapd) {
++		wpa_printf(MSG_INFO, "CTRL: MESH_MODE - there is no iface with the given name");
++		return -1;
++	}
++
++	cmd = os_strchr(cmd, ' ');
++	if (!cmd) {
++		wpa_printf(MSG_INFO, "CTRL: MESH_MODE - mesh_mode missing");
++		return -1;
++	}
++	cmd++;
++
++	mesh_mode = hostapd_config_parse_mesh_mode(cmd);
++	if (mesh_mode >= MESH_MODE_LAST) {
++		wpa_printf(MSG_INFO, "CTRL: MESH_MODE - incorrect mesh_mode");
++		return -EINVAL;
++	}
++
++	if ((mesh_mode == MESH_MODE_BACKHAUL_AP) && (hapd->conf->max_num_sta != 1)) {
++		wpa_printf(MSG_INFO, "CTRL: MESH_MODE - max allowed STA's should be set to 1 for Backhaul AP");
++		return -1;
++	}
++
++	ret = hostapd_drv_set_mesh_mode(hapd, mesh_mode);
++	if (ret) {
++		wpa_printf(MSG_ERROR, "CTRL: MESH_MODE - Failed to set mesh_mode");
++	} else {
++		hapd->conf->mesh_mode = mesh_mode;
++	}
++	return ret;
++}
++
+ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 					      char *buf, char *reply,
+ 					      int reply_size,
+@@ -6579,6 +6728,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+         printf("%s; *** Received: 'SET_BSS_LOAD' (buf= '%s') ***\n", __FUNCTION__, buf);
+         reply_len = hostapd_ctrl_iface_set_bss_load(hapd, buf + 13, reply,
+                     reply_size);
++	} else if (os_strncmp(buf, "GET_BLACKLIST", 13) == 0) {
++		reply_len = hostapd_ctrl_iface_get_blacklist(hapd->iface, reply, reply_size);
+ 	} else if (os_strncmp(buf, "GET_STA_MEASUREMENTS ", 21) == 0) {
+ 		printf("%s; *** Received from FAPI: 'GET_STA_MEASUREMENTS' (buf= '%s') ***\n", __FUNCTION__, buf);
+ 		reply_len = hostapd_ctrl_iface_get_sta_measurements(hapd, buf + 21, reply,
+@@ -6704,6 +6855,12 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 	} else if (os_strncmp(buf, "GET_DFS_STATS", 13) == 0) {
+ 		reply_len = hostapd_ctrl_iface_get_dfs_stats(hapd->iface, NULL, reply,
+ 							     reply_size);
++	} else if (os_strncmp(buf, "GET_MESH_MODE ", sizeof("GET_MESH_MODE ")-1) == 0) {
++		reply_len = hostapd_ctrl_iface_get_mesh_mode(hapd, buf + sizeof("GET_MESH_MODE ")-1,
++			  reply, reply_size);
++	} else if (os_strncmp(buf, "MESH_MODE ", sizeof("MESH_MODE ")-1) == 0) {
++		if (hostapd_ctrl_iface_set_mesh_mode(hapd, buf + sizeof("MESH_MODE ")-1))
++			reply_len = -1;
+ 	} else {
+ 		os_memcpy(reply, "UNKNOWN COMMAND\n", 16);
+ 		reply_len = 16;
+diff --git a/hostapd/hostapd_cli.c b/hostapd/hostapd_cli.c
+index 5b5c166..d0c364b 100644
+--- a/hostapd/hostapd_cli.c
++++ b/hostapd/hostapd_cli.c
+@@ -1543,10 +1543,11 @@ static int hostapd_cli_cmd_deny_mac(struct wpa_ctrl *ctrl, int argc, char *argv[
+   int res;
+   char *tmp;
+   int total;
++  int i;
+ 
+-  if (argc < 1 || argc > 2) {
++  if (argc < 1 || argc > 3) {
+     printf("Invalid DENY_MAC command\n"
+-           "usage: <addr> <[0]/1>\n");
++           "usage: <addr> <[0]/1> [reject_sta=]\n");
+     return -1;
+   }
+ 
+@@ -1556,16 +1557,16 @@ static int hostapd_cli_cmd_deny_mac(struct wpa_ctrl *ctrl, int argc, char *argv[
+     return -1;
+   }
+ 
+-  if (argc == 2) {
+-    total = res;
+-    tmp = cmd + total;
+-    res = os_snprintf(tmp, sizeof(cmd) - total, " %s", argv[1]);
+-    if (res < 0 || (size_t) res >= sizeof(cmd) - total - 1) {
+-      printf("Too long DENY_MAC command.\n");
+-      return -1;
+-    }
+-  }
+-  return wpa_ctrl_command(ctrl, cmd);
++	total = res;
++	for (i = 1; i < argc; i++) {
++		tmp = &cmd[total];
++		res = os_snprintf(tmp, sizeof(cmd) - total, " %s", argv[i]);
++		if (os_snprintf_error(sizeof(cmd) - total, res))
++			return -1;
++		total += res;
++	}
++
++	return wpa_ctrl_command(ctrl, cmd);
+ }
+ 
+ 
+@@ -1637,6 +1638,12 @@ err:
+ }
+ 
+ 
++static int hostapd_cli_cmd_blacklist_get(struct wpa_ctrl *ctrl, int argc,
++	char *argv[])
++{
++	return wpa_ctrl_command(ctrl, "GET_BLACKLIST");
++}
++
+ static int hostapd_cli_cmd_unconnected_sta(struct wpa_ctrl *ctrl,
+                int argc, char *argv[])
+ {
+@@ -2004,6 +2011,47 @@ static int hostapd_cli_cmd_get_dfs_stats (struct wpa_ctrl *ctrl, int argc,
+ 	return wpa_ctrl_command(ctrl, cmd);
+ }
+ 
++static int hostapd_cli_cmd_set_mesh_mode(struct wpa_ctrl *ctrl, int argc,
++		char *argv[])
++{
++	char cmd[64];
++	int res;
++
++	if (argc != 2) {
++		printf("Invalid 'mesh_mode' command - two arguments: "
++				"BSS name and mesh mode are required.\n");
++		return -1;
++	}
++
++	res = os_snprintf(cmd, sizeof(cmd), "MESH_MODE %s %s", argv[0], argv[1]);
++	if (os_snprintf_error(sizeof(cmd), res)) {
++		printf("Too long MESH_MODE command.\n");
++		return -1;
++	}
++	return wpa_ctrl_command(ctrl, cmd);
++}
++
++static int hostapd_cli_cmd_get_mesh_mode(struct wpa_ctrl *ctrl, int argc,
++		char *argv[])
++{
++	char cmd[64];
++	int res;
++
++	if (argc != 1) {
++		printf("Invalid 'get_mesh_mode' command: needs one argument:\n"
++				"- BSS name for which VAP to get mesh mode\n");
++		return -1;
++	}
++
++	res = os_snprintf(cmd, sizeof(cmd), "GET_MESH_MODE %s", argv[0]);
++	if (os_snprintf_error(sizeof(cmd), res)) {
++		printf("Too long GET_MESH_MODE command.\n");
++		return -1;
++	}
++
++	return wpa_ctrl_command(ctrl, cmd);
++}
++
+ struct hostapd_cli_cmd {
+ 	const char *cmd;
+ 	int (*handler)(struct wpa_ctrl *ctrl, int argc, char *argv[]);
+@@ -2130,9 +2178,11 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
+ 	{ "report_sta_statistics", hostapd_cli_cmd_report_sta_statistics, NULL, NULL },
+ 	{ "driver_flags", hostapd_cli_cmd_driver_flags, NULL, NULL },
+ 	{ "deny_mac", hostapd_cli_cmd_deny_mac, NULL,
+-	  "<addr> <[0]/1> 0-add;1-remove station to/from blacklist" },
++	  "<addr> <[0]/1> 0-add;1-remove station to/from blacklist\n"
++		"[reject_sta=xx reject status code]"},
+ 	{ "sta_steer", hostapd_cli_cmd_sta_steer, NULL,
+-	  "<addr> [BSSID] [pref=<1/0 is candidate list included>]\n"
++	  "<addr> [BSSID] [reject_sta=xx reject status code]\n"
++	  "[pref=<1/0 is candidate list included>]\n"
+ 	  "[neighbor=<BSSID>,<BSSID Information>,<Operating Class>,\n"
+ 	  "<Channel Number>,<PHY Type>,<priority for this BSS>]\n"
+ #ifdef CONFIG_MBO
+@@ -2144,6 +2194,8 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
+ 	{ "sta_allow", hostapd_cli_cmd_sta_allow, NULL,
+ 	  "[addr1] [addr2] ... [addrX] add station(s) to whitelist"
+ 	  "without parameters will allow all STA's on this radio" },
++	{ "get_blacklist", hostapd_cli_cmd_blacklist_get, NULL,
++		"= print Multi-AP blacklist in the form <address reject_code>" },
+ 	{ "unconnected_sta", hostapd_cli_cmd_unconnected_sta, NULL,
+ 	  "<addr> <freq> <center_freq1=> [center_freq2=] <bandwidth=>\n"
+ 	  "get unconnected station statistics" },
+@@ -2180,6 +2232,10 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
+ #endif
+ 	{ "get_dfs_stats", hostapd_cli_cmd_get_dfs_stats, NULL,
+ 	  "get Sub band DFS and radar detected per channel stats" },
++	{ "mesh_mode", hostapd_cli_cmd_set_mesh_mode, NULL,
++	  "<BSS_name> <mode> = set mesh mode (fAP,0:Fronthaul AP; bAP,1:Backhaul AP; hybrid,2:Hybrid mode; reserved,3:Reserved)" },
++	{ "get_mesh_mode", hostapd_cli_cmd_get_mesh_mode, NULL,
++	  "<BSS_name> = get mesh mode" },
+ 	{ NULL, NULL, NULL, NULL }
+ };
+ 
+diff --git a/src/ap/ap_config.c b/src/ap/ap_config.c
+index 45082e8..aaa4bf4 100644
+--- a/src/ap/ap_config.c
++++ b/src/ap/ap_config.c
+@@ -102,6 +102,9 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
+ 	bss->radius_das_time_window = 300;
+ 
+ 	bss->sae_anti_clogging_threshold = 5;
++
++	/* default mesh mode */
++	bss->mesh_mode = MESH_MODE_DEFAULT;
+ }
+ 
+ #ifdef CONFIG_ACS
+@@ -1047,6 +1050,11 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
+ 
+ #endif /* CONFIG_MBO */
+ 
++	if ((bss->mesh_mode == MESH_MODE_BACKHAUL_AP) && (bss->max_num_sta != 1)) {
++		wpa_printf(MSG_ERROR, "Multi-AP: for backhaul AP max_num_sta should be set to 1");
++		return -1;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/src/ap/ap_config.h b/src/ap/ap_config.h
+index d39f909..3af7b03 100644
+--- a/src/ap/ap_config.h
++++ b/src/ap/ap_config.h
+@@ -225,6 +225,15 @@ struct anqp_element {
+ 	struct wpabuf *payload;
+ };
+ 
++typedef enum mesh_mode {
++	MESH_MODE_FRONTHAUL_AP	= 0,
++	MESH_MODE_BACKHAUL_AP	= 1,
++	MESH_MODE_HYBRID	= 2,
++	MESH_MODE_RESERVED	= 3,
++	MESH_MODE_LAST
++} mesh_mode_t;
++
++#define MESH_MODE_DEFAULT	MESH_MODE_FRONTHAUL_AP
+ 
+ /**
+  * struct hostapd_bss_config - Per-BSS configuration
+@@ -611,6 +620,8 @@ struct hostapd_bss_config {
+ 	struct mac_acl_entry *wds_wpa_sta;
+ 	int num_wds_wpa_sta;
+ #endif
++
++	enum mesh_mode mesh_mode;
+ };
+ 
+ 
+diff --git a/src/ap/ap_drv_ops.h b/src/ap/ap_drv_ops.h
+index fdba22a..166ea66 100644
+--- a/src/ap/ap_drv_ops.h
++++ b/src/ap/ap_drv_ops.h
+@@ -386,21 +386,21 @@ static inline int hostapd_drv_stop_ap(struct hostapd_data *hapd)
+ }
+ 
+ static inline int hostapd_drv_set_deny_mac(struct hostapd_data *hapd,
+-  const u8 *addr, const u8 remove)
++	struct multi_ap_blacklist* entry, const u8 remove)
+ {
+   if (hapd->driver == NULL || hapd->driver->set_deny_mac_addr == NULL)
+     return -ENOTSUP;
+ 
+-  return hapd->driver->set_deny_mac_addr(hapd->drv_priv, addr, remove);
++  return hapd->driver->set_deny_mac_addr(hapd->drv_priv, entry, remove);
+ }
+ 
+ static inline int hostapd_drv_sta_steer(struct hostapd_data *hapd,
+-  const u8 *sta_addr, const u8 *bssid)
++	struct multi_ap_blacklist* entry, const u8 *bssid)
+ {
+   if (hapd->driver == NULL || hapd->driver->sta_steer == NULL)
+     return -ENOTSUP;
+ 
+-  return hapd->driver->sta_steer(hapd->drv_priv, sta_addr, bssid);
++  return hapd->driver->sta_steer(hapd->drv_priv, entry, bssid);
+ }
+ 
+ static inline int hostapd_drv_sta_allow(struct hostapd_data *hapd,
+@@ -503,4 +503,11 @@ static inline int hostapd_drv_set_carrier(struct hostapd_data *hapd, int state)
+   return hapd->driver->set_carrier(hapd->drv_priv, state);
+ }
+ 
++static inline int hostapd_drv_set_mesh_mode(struct hostapd_data *hapd, int mesh_mode)
++{
++  if (hapd->driver == NULL || hapd->driver->set_mesh_mode == NULL)
++    return -ENOTSUP;
++
++  return hapd->driver->set_mesh_mode(hapd->drv_priv, mesh_mode);
++}
+ #endif /* AP_DRV_OPS */
+diff --git a/src/ap/drv_callbacks.c b/src/ap/drv_callbacks.c
+index a355da0..9cd8a2b 100644
+--- a/src/ap/drv_callbacks.c
++++ b/src/ap/drv_callbacks.c
+@@ -405,6 +405,8 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
+ skip_wpa_check:
+ #endif /* CONFIG_WPS */
+ 
++	ieee802_11_check_4addr_sta_elems(&elems, sta);
++
+ #ifdef CONFIG_IEEE80211R
+ 	p = wpa_sm_write_assoc_resp_ies(sta->wpa_sm, buf, sizeof(buf),
+ 					sta->auth_alg, req_ies, req_ies_len);
+diff --git a/src/ap/hostapd.c b/src/ap/hostapd.c
+index 2740137..c2d00d8 100644
+--- a/src/ap/hostapd.c
++++ b/src/ap/hostapd.c
+@@ -1029,6 +1029,11 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
+ 			os_memcpy(hapd->own_addr, if_addr, ETH_ALEN);
+ 	}
+ 
++	if (hostapd_drv_set_mesh_mode(hapd, hapd->conf->mesh_mode)) {
++		wpa_printf(MSG_ERROR, "Failed to set mesh_mode");
++		return -1;
++	}
++
+ 	if (conf->wmm_enabled < 0)
+ 		conf->wmm_enabled = hapd->iconf->ieee80211n;
+ 
+@@ -1132,6 +1137,8 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
+ 	}
+ #endif /* CONFIG_NO_RADIUS */
+ 
++	dl_list_init(&hapd->multi_ap_blacklist);
++
+ 	if (hostapd_acl_init(hapd)) {
+ 		wpa_printf(MSG_ERROR, "ACL initialization failed.");
+ 		return -1;
+diff --git a/src/ap/hostapd.h b/src/ap/hostapd.h
+index c1553b5..74d01b2 100644
+--- a/src/ap/hostapd.h
++++ b/src/ap/hostapd.h
+@@ -315,6 +315,9 @@ struct hostapd_data {
+ 	u8 bss_transition_token;
+ 	unsigned int lci_req_active:1;
+ 	unsigned int range_req_active:1;
++
++	/* Multi-AP blacklist */
++	struct dl_list multi_ap_blacklist;
+ };
+ 
+ 
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 884ca42..2c92582 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -987,6 +987,33 @@ int auth_sae_init_committed(struct hostapd_data *hapd, struct sta_info *sta)
+ 
+ #endif /* CONFIG_SAE */
+ 
++void ieee802_11_check_4addr_sta_elems(struct ieee802_11_elems *elems, struct sta_info *sta)
++{
++	if (elems->multi_ap)
++		sta->multi_ap_supported = 1;
++
++	if ((elems->multi_ap) ||
++		(elems->intel_ie_4addr_mode && (elems->intel_ie_4addr_mode[VENDOR_INTEL_ATTRIBUTES_OFFSET] == VENDOR_INTEL_4ADDR_MODE_STA)) ||
++		(elems->brcom_ie && (elems->brcom_ie[VENDOR_BRCOM_FLAGS1_OFFSET] & VENDOR_BRCOM_DWDS_CAPABLE))
++		)
++		sta->four_addr_mode_sta = 1;
++}
++
++u16 check_auth_ies(struct hostapd_data *hapd, struct sta_info *sta,
++			   const u8 *ies, size_t ies_len)
++{
++	struct ieee802_11_elems elems;
++
++	if (ieee802_11_parse_elems(ies, ies_len, &elems, 1) == ParseFailed) {
++		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
++			       HOSTAPD_LEVEL_INFO, "Station sent an invalid "
++			       "authentication request");
++		return WLAN_STATUS_UNSPECIFIED_FAILURE;
++	}
++
++	ieee802_11_check_4addr_sta_elems(&elems, sta);
++	return WLAN_STATUS_SUCCESS;
++}
+ 
+ static void handle_auth(struct hostapd_data *hapd,
+ 			const struct ieee80211_mgmt *mgmt, size_t len,
+@@ -1007,6 +1034,7 @@ static void handle_auth(struct hostapd_data *hapd,
+ 	char *identity = NULL;
+ 	char *radius_cui = NULL;
+ 	u16 seq_ctrl;
++	int left;
+ 
+ 	os_memset(&vlan_id, 0, sizeof(vlan_id));
+ 
+@@ -1164,6 +1192,10 @@ static void handle_auth(struct hostapd_data *hapd,
+ 		}
+ 	}
+ 
++	if (ieee802_11_multi_ap_blacklist_exists(hapd, mgmt->sa, &resp)) {
++		wpa_printf(MSG_INFO, "Station " MACSTR " not allowed to authenticate", MAC2STR(mgmt->sa));
++		goto fail;
++	}
+ 	res = hostapd_allowed_address(hapd, mgmt->sa, (u8 *) mgmt, len,
+ 				      &session_timeout,
+ 				      &acct_interim_interval, &vlan_id,
+@@ -1217,6 +1249,8 @@ static void handle_auth(struct hostapd_data *hapd,
+ 		}
+ #endif /* CONFIG_MESH */
+ 	} else {
++		u8 limit_reached;
++
+ #ifdef CONFIG_MESH
+ 		if (hapd->conf->mesh & MESH_ENABLED) {
+ 			/* if the mesh peer is not available, we don't do auth.
+@@ -1239,15 +1273,39 @@ static void handle_auth(struct hostapd_data *hapd,
+ 		}
+ #endif /* CONFIG_MESH */
+ 
+-		sta = ap_sta_add(hapd, mgmt->sa);
++		sta = ap_sta_add_ex(hapd, mgmt->sa, &limit_reached);
+ 		if (!sta) {
+ 			resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
++			/* Multi-AP Backhaul AP mode: if STA cannot be added because limit reached, send response code 33 */
++			if (limit_reached) {
++				hostapd_event_connect_failed_reason(hapd, mgmt->sa, MAX_CLIENT_REACHED);
++				if (hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP) {
++					resp = WLAN_STATUS_DENIED_INSUFFICIENT_BANDWIDTH;
++				}
++			}
+ 			goto fail;
+ 		}
+ 	}
+ 	sta->last_seq_ctrl = seq_ctrl;
+ 	sta->last_subtype = WLAN_FC_STYPE_AUTH;
+ 
++	/* Check information elements */
++	left = len - (IEEE80211_HDRLEN + sizeof(mgmt->u.auth));
++	resp = check_auth_ies(hapd, sta, mgmt->u.auth.variable, left);
++	if (resp != WLAN_STATUS_SUCCESS)
++		goto fail;
++
++	if ((hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP && !sta->four_addr_mode_sta) ||
++	    (hapd->conf->mesh_mode == MESH_MODE_FRONTHAUL_AP && sta->four_addr_mode_sta))
++	{
++		/* Depending from the mesh_mode and STA mode (3- or 4-address),
++		 * the STA must be either accepted or rejected */
++		hostapd_event_connect_failed_reason(hapd, mgmt->sa, BLOCKED_CLIENT);
++		wpa_printf(MSG_INFO, "Station " MACSTR " not allowed to authenticate", MAC2STR(mgmt->sa));
++		resp = WLAN_STATUS_DENIED_INSUFFICIENT_BANDWIDTH;
++		goto fail;
++	}
++
+ 	if (vlan_id.notempty &&
+ 	    !hostapd_vlan_valid(hapd->conf->vlan, &vlan_id)) {
+ 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_RADIUS,
+@@ -1627,7 +1685,6 @@ static u16 check_ext_capab(struct hostapd_data *hapd, struct sta_info *sta,
+ 	return WLAN_STATUS_SUCCESS;
+ }
+ 
+-
+ u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
+ 			   const u8 *ies, size_t ies_len, int reassoc)
+ {
+@@ -1948,6 +2005,8 @@ u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
+ 		}
+ #endif /* CONFIG_MBO */
+ 
++	ieee802_11_check_4addr_sta_elems(&elems, sta);
++
+ 	ap_copy_sta_supp_op_classes(sta, elems.supp_op_classes,
+ 				    elems.supp_op_classes_len);
+ 
+@@ -2131,6 +2190,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
+ 	if (sta->mbo_supported)
+ 		p = hostapd_eid_mbo(hapd, p, buf + sizeof(buf) - p);
+ #endif /* CONFIG_MBO */
++	if (sta->multi_ap_supported)
++		p = hostapd_eid_multi_ap(hapd, p, buf + sizeof(buf) - p);
+ 
+ 	if (hapd->conf->assocresp_elements &&
+ 	    (size_t) (buf + sizeof(buf) - p) >=
+@@ -2301,6 +2362,21 @@ static void handle_assoc(struct hostapd_data *hapd,
+ 	if (resp != WLAN_STATUS_SUCCESS)
+ 		goto fail;
+ 
++	if ((hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP && !sta->four_addr_mode_sta) ||
++	    (hapd->conf->mesh_mode == MESH_MODE_FRONTHAUL_AP && sta->four_addr_mode_sta))
++	{
++		/* Depending from the mesh_mode and STA mode (3- or 4-address),
++		 * the STA must be either accepted or rejected */
++		hostapd_event_connect_failed_reason(hapd, mgmt->sa, BLOCKED_CLIENT);
++		wpa_printf(MSG_INFO, "STA " MACSTR " not allowed to connect", MAC2STR(mgmt->sa));
++		resp = WLAN_STATUS_DENIED_INSUFFICIENT_BANDWIDTH;
++		goto fail;
++	}
++	if (ieee802_11_multi_ap_blacklist_exists(hapd, mgmt->sa, &resp)) {
++		wpa_printf(MSG_INFO, "STA " MACSTR " not allowed to connect", MAC2STR(mgmt->sa));
++		goto fail;
++	}
++
+ 	if (hostapd_get_aid(hapd, sta) < 0) {
+ 		hostapd_logger(hapd, mgmt->sa, HOSTAPD_MODULE_IEEE80211,
+ 			       HOSTAPD_LEVEL_INFO, "No room for more AIDs");
+@@ -3094,11 +3170,7 @@ remove_sta:
+ 	}
+ 
+ fail:
+-	/* Copy of the association request is not needed anymore */
+-	if (sta->last_assoc_req) {
+-		os_free(sta->last_assoc_req);
+-		sta->last_assoc_req = NULL;
+-	}
++	return;
+ }
+ 
+ 
+diff --git a/src/ap/ieee802_11.h b/src/ap/ieee802_11.h
+index 4e0243a..69dcd27 100644
+--- a/src/ap/ieee802_11.h
++++ b/src/ap/ieee802_11.h
+@@ -143,6 +143,8 @@ static inline u8 hostapd_mbo_ie_len(struct hostapd_data *hapd)
+ 
+ #endif /* CONFIG_MBO */
+ 
++u8 * hostapd_eid_multi_ap(struct hostapd_data *hapd, u8 *eid, size_t len);
++
+ void ap_copy_sta_supp_op_classes(struct sta_info *sta,
+ 				 const u8 *supp_op_classes,
+ 				 size_t supp_op_classes_len);
+@@ -150,4 +152,6 @@ void ap_copy_sta_supp_op_classes(struct sta_info *sta,
+ void hostapd_restart_ap_ht2040_timer(struct hostapd_iface *iface);
+ #endif
+ 
++void ieee802_11_check_4addr_sta_elems(struct ieee802_11_elems *elems, struct sta_info *sta);
++
+ #endif /* IEEE802_11_H */
+diff --git a/src/ap/ieee802_11_auth.c b/src/ap/ieee802_11_auth.c
+index b890537..d8ee17a 100644
+--- a/src/ap/ieee802_11_auth.c
++++ b/src/ap/ieee802_11_auth.c
+@@ -23,6 +23,7 @@
+ #include "ieee802_11.h"
+ #include "ieee802_1x.h"
+ #include "ieee802_11_auth.h"
++#include "utils/list.h"
+ 
+ #define RADIUS_ACL_TIMEOUT 30
+ 
+@@ -690,3 +691,111 @@ void hostapd_free_psk_list(struct hostapd_sta_wpa_psk_short *psk)
+ 		os_free(prev);
+ 	}
+ }
++
++static struct multi_ap_blacklist * _ieee802_11_multi_ap_blacklist_find(struct hostapd_data *hapd, const u8 *addr)
++{
++	struct multi_ap_blacklist *iter;
++
++	dl_list_for_each(iter, &hapd->multi_ap_blacklist, struct multi_ap_blacklist, list)
++		if (os_memcmp(addr, iter->addr, ETH_ALEN) == 0)
++			return iter;
++	return NULL;
++}
++
++int ieee802_11_multi_ap_blacklist_add(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry)
++{
++	struct multi_ap_blacklist *found, *new_entry;
++
++	found = _ieee802_11_multi_ap_blacklist_find(hapd, entry->addr);
++	if (found) {
++		found->status = entry->status;
++		return 0;
++	}
++
++	new_entry = os_malloc(sizeof(*entry));
++	if (!new_entry) {
++		wpa_printf(MSG_ERROR, "Failed to allocate memory for Multi-AP blacklist entry.");
++		return -1;
++	}
++	os_memcpy(new_entry, entry, sizeof(*new_entry));
++	DL_LIST_ADD(&hapd->multi_ap_blacklist, new_entry, list);
++	return 0;
++}
++
++void ieee802_11_multi_ap_blacklist_remove(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry)
++{
++	struct multi_ap_blacklist *found;
++
++	found = _ieee802_11_multi_ap_blacklist_find(hapd, entry->addr);
++	if (found) {
++		dl_list_del(&found->list);
++		os_free(found);
++	}
++}
++
++struct multi_ap_blacklist * ieee802_11_multi_ap_blacklist_find(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry)
++{
++	return _ieee802_11_multi_ap_blacklist_find(hapd, entry->addr);
++}
++
++void ieee802_11_multi_ap_blacklist_flush(struct hostapd_data *hapd)
++{
++	struct multi_ap_blacklist *iter;
++
++	while ((iter = dl_list_first(&hapd->multi_ap_blacklist, struct multi_ap_blacklist,
++		list)) != NULL) {
++		dl_list_del(&iter->list);
++		os_free(iter);
++	}
++}
++
++/* Sets status to reject status code of station and returns TRUE if blacklist
++ * entry exists, otherwise FALSE. */
++Boolean ieee802_11_multi_ap_blacklist_exists(struct hostapd_data *hapd,
++	const u8 *addr, u16 *status)
++{
++	struct multi_ap_blacklist *found;
++
++	found = _ieee802_11_multi_ap_blacklist_find(hapd, addr);
++	if (found) {
++		*status = found->status;
++		return TRUE;
++	}
++
++	return FALSE;
++}
++
++int ieee802_11_multi_ap_blacklist_print(struct hostapd_data *hapd, char *buf,
++	size_t buflen)
++{
++	struct multi_ap_blacklist *iter;
++	int ret = 0, len = 0;
++
++	dl_list_for_each(iter, &hapd->multi_ap_blacklist, struct multi_ap_blacklist, list) {
++		ret = os_snprintf(buf + len, buflen - len, MACSTR" %hu\n", MAC2STR(iter->addr),
++			iter->status);
++		if (ret >= buflen - len || ret < 0)
++			break;
++		len += ret;
++	}
++	return len;
++}
++
++int ieee802_11_multi_ap_set_deny_mac(struct hostapd_data *hapd,
++	struct multi_ap_blacklist* entry, const u8 remove)
++{
++	int ret = hostapd_drv_set_deny_mac(hapd, entry, remove);
++	if (ret < 0)
++		return ret;
++	if (remove) {
++		if (!is_zero_ether_addr(entry->addr))
++			ieee802_11_multi_ap_blacklist_remove(hapd, entry);
++		else
++			ieee802_11_multi_ap_blacklist_flush(hapd);
++	} else
++		ret = ieee802_11_multi_ap_blacklist_add(hapd, entry);
++	return ret;
++}
+diff --git a/src/ap/ieee802_11_auth.h b/src/ap/ieee802_11_auth.h
+index 71f53b9..27da1ad 100644
+--- a/src/ap/ieee802_11_auth.h
++++ b/src/ap/ieee802_11_auth.h
+@@ -28,5 +28,17 @@ int hostapd_acl_init(struct hostapd_data *hapd);
+ void hostapd_acl_deinit(struct hostapd_data *hapd);
+ void hostapd_free_psk_list(struct hostapd_sta_wpa_psk_short *psk);
+ void hostapd_acl_expire(struct hostapd_data *hapd);
+-
++int ieee802_11_multi_ap_blacklist_add(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry);
++void ieee802_11_multi_ap_blacklist_remove(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry);
++struct multi_ap_blacklist * ieee802_11_multi_ap_blacklist_find(struct hostapd_data *hapd,
++	struct multi_ap_blacklist *entry);
++void ieee802_11_multi_ap_blacklist_flush(struct hostapd_data *hapd);
++Boolean ieee802_11_multi_ap_blacklist_exists(struct hostapd_data *hapd,
++	const u8 *addr, u16 *status);
++int ieee802_11_multi_ap_blacklist_print(struct hostapd_data *hapd, char *buf,
++	size_t buflen);
++int ieee802_11_multi_ap_set_deny_mac(struct hostapd_data *hapd,
++	struct multi_ap_blacklist* entry, const u8 remove);
+ #endif /* IEEE802_11_AUTH_H */
+diff --git a/src/ap/ieee802_11_shared.c b/src/ap/ieee802_11_shared.c
+index 160dce1..cf0c893 100644
+--- a/src/ap/ieee802_11_shared.c
++++ b/src/ap/ieee802_11_shared.c
+@@ -600,6 +600,34 @@ u8 hostapd_mbo_ie_len(struct hostapd_data *hapd)
+ #endif /* CONFIG_MBO */
+ 
+ 
++u8 * hostapd_eid_multi_ap(struct hostapd_data *hapd, u8 *eid, size_t len)
++{
++	u8 multi_ap[3], *multi_ap_pos = multi_ap;
++	u8 *pos = eid;
++	u8 bss_type;
++
++	switch (hapd->conf->mesh_mode) {
++	case MESH_MODE_FRONTHAUL_AP:
++		bss_type = MULTI_AP_SUBELEMENT_FAP;
++		break;
++	case MESH_MODE_BACKHAUL_AP:
++		bss_type = MULTI_AP_SUBELEMENT_BAP;
++		break;
++	default:
++		bss_type = MULTI_AP_SUBELEMENT_BAP | MULTI_AP_SUBELEMENT_FAP;
++		break;
++	}
++
++	*multi_ap_pos++ = MULTI_AP_SUBELEMENT_ID;
++	*multi_ap_pos++ = MULTI_AP_SUBELEMENT_LEN;
++	*multi_ap_pos++ = bss_type;
++
++	pos += multi_ap_add_ie(pos, len, multi_ap, multi_ap_pos - multi_ap);
++
++	return pos;
++}
++
++
+ void ap_copy_sta_supp_op_classes(struct sta_info *sta,
+ 				 const u8 *supp_op_classes,
+ 				 size_t supp_op_classes_len)
+diff --git a/src/ap/sta_info.c b/src/ap/sta_info.c
+index 87df8a0..b05d355 100644
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -663,11 +663,12 @@ static int num_res_sta_get_total(struct hostapd_data *hapd)
+ 	return num_res_sta;
+ }
+ 
+-struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
++struct sta_info * ap_sta_add_ex(struct hostapd_data *hapd, const u8 *addr, u8 *out_limit_reached)
+ {
+ 	struct sta_info *sta;
+ 	int num_sta_total = num_sta_get_total(hapd);
+ 	int num_res_sta_total = num_res_sta_get_total(hapd);
++	*out_limit_reached = 0;
+ 
+ 	sta = ap_get_sta(hapd, addr);
+ 	if (sta)
+@@ -680,6 +681,7 @@ struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
+ 			/* FIX: might try to remove some old STAs first? */
+ 			wpa_printf(MSG_ERROR, "no more room for new STAs (%d/%d)",
+ 				   hapd->num_sta, hapd->conf->max_num_sta);
++			*out_limit_reached = 1;
+ 			return NULL;
+ 		}
+ 	} else { /* Number of reserved STAs is not set for this BSS */
+@@ -687,12 +689,14 @@ struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
+ 			wpa_printf(MSG_ERROR, "no more room for new STAs, "
+ 				   "reserved STAs limit is reached for BSS(%d/%d)",
+ 				   hapd->num_sta, hapd->conf->max_num_sta - num_res_sta_total);
++			*out_limit_reached = 1;
+ 			return NULL;
+ 		}
+ 	}
+ 	if (num_sta_total >= hapd->iconf->ap_max_num_sta) {
+ 		wpa_printf(MSG_ERROR, "no more room for new STAs, Radio limit reached (%d/%d)",
+ 			   num_sta_total, hapd->iconf->ap_max_num_sta);
++		*out_limit_reached = 1;
+ 		return NULL;
+ 	}
+ 	if (hapd->iconf->atf_cfg.distr_type && hostapd_atf_is_sta_allowed(hapd, addr) == 0) {
+@@ -738,6 +742,11 @@ struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
+ 	return sta;
+ }
+ 
++struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
++{
++	u8 out_limit_reached;
++	return ap_sta_add_ex(hapd, addr, &out_limit_reached);
++}
+ 
+ static int ap_sta_remove(struct hostapd_data *hapd, struct sta_info *sta)
+ {
+@@ -1251,8 +1260,8 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 	if (authorized) {
+ 		char ip_addr[100];
+ 		char signal_strength[30];
+-		char *rates, *capabilities;
+-		int i, ret, len = 0;
++		char *rates, *capabilities, *assoc_req;
++		int i, ret, len = 0, assoc_req_len;
+ #ifdef CONFIG_MBO
+ 		struct mbo_non_pref_chan_info *info;
+ #endif /* CONFIG_MBO */
+@@ -1273,6 +1282,17 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 		}
+ 		capabilities[0] = '\0';
+ 
++		assoc_req_len = sizeof(" assoc_req=") + sta->last_assoc_req_len * 2;
++		assoc_req = os_malloc(assoc_req_len);
++		if (assoc_req == NULL) {
++			wpa_printf(MSG_ERROR, "malloc failed");
++			os_free(rates);
++			os_free(capabilities);
++			goto free_alloc;
++			return;
++		}
++		assoc_req[0] = '\0';
++
+ 		ip_addr[0] = '\0';
+ 		signal_strength[0] = '\0';
+ #ifdef CONFIG_P2P
+@@ -1325,6 +1345,17 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 			len += ret;
+ 		}
+ 
++		if (sta->last_assoc_req) {
++			len = 0;
++			ret = os_snprintf(assoc_req + len, assoc_req_len - len, " assoc_req=");
++			len += ret;
++			for(i = 0; i < sta->last_assoc_req_len; i++) {
++				ret = os_snprintf(assoc_req + len, assoc_req_len - len, "%02X",
++					((u8*)sta->last_assoc_req)[i]);
++				len += ret;
++			}
++		}
++
+ 		ret = os_snprintf(pos, end - pos,
+ 				" nr_enabled=%u btm_supported=%u ",
+ 				sta->rrm_enabled_capa[0] & WLAN_RRM_CAPS_NEIGHBOR_REPORT ? 1 : 0,
+@@ -1332,6 +1363,7 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 		if (os_snprintf_error(end - pos, ret)) {
+ 			os_free(rates);
+ 			os_free(capabilities);
++			os_free(assoc_req);
+ 			goto free_alloc;
+ 		}
+ 		pos += ret;
+@@ -1341,6 +1373,7 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 		if (os_snprintf_error(end - pos, ret)) {
+ 			os_free(rates);
+ 			os_free(capabilities);
++			os_free(assoc_req);
+ 			goto free_alloc;
+ 		}
+ 		pos += ret;
+@@ -1366,8 +1399,8 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 		}
+ #endif
+ 
+-		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s%s%s%s",
+-			buf, ip_addr, signal_strength, rates, capabilities);
++		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s%s%s%s%s",
++			buf, ip_addr, signal_strength, rates, capabilities, assoc_req);
+ 
+ 		if (hapd->msg_ctx_parent &&
+ 		    hapd->msg_ctx_parent != hapd->msg_ctx)
+@@ -1376,6 +1409,7 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 					  buf, ip_addr, signal_strength, rates, capabilities);
+ 		os_free(rates);
+ 		os_free(capabilities);
++		os_free(assoc_req);
+ 	} else {
+ 
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED "%s", buf);
+diff --git a/src/ap/sta_info.h b/src/ap/sta_info.h
+index 5eb4679..a5e6af2 100644
+--- a/src/ap/sta_info.h
++++ b/src/ap/sta_info.h
+@@ -219,6 +219,9 @@ struct sta_info {
+ 	unsigned int mbo_supported:1;
+ #endif /* CONFIG_MBO */
+ 
++	unsigned int multi_ap_supported:1;
++	unsigned int four_addr_mode_sta:1;
++
+ 	u8 *supp_op_classes; /* Supported Operating Classes element, if
+ 			      * received, starting from the Length field */
+ 
+@@ -269,6 +272,7 @@ void ap_sta_no_session_timeout(struct hostapd_data *hapd,
+ void ap_sta_session_warning_timeout(struct hostapd_data *hapd,
+ 				    struct sta_info *sta, int warning_time);
+ struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr);
++struct sta_info * ap_sta_add_ex(struct hostapd_data *hapd, const u8 *addr, u8 *out_limit_reached);
+ void ap_sta_disassociate(struct hostapd_data *hapd, struct sta_info *sta,
+ 			 u16 reason);
+ void ap_sta_deauthenticate(struct hostapd_data *hapd, struct sta_info *sta,
+diff --git a/src/common/ieee802_11_common.c b/src/common/ieee802_11_common.c
+index 2ab9b4c..1deda16 100644
+--- a/src/common/ieee802_11_common.c
++++ b/src/common/ieee802_11_common.c
+@@ -120,6 +120,11 @@ static int ieee802_11_parse_vendor_specific(const u8 *pos, size_t elen,
+ 			elems->mbo = pos;
+ 			elems->mbo_len = elen;
+ 			break;
++		case MULTI_AP_OUI_TYPE:
++			/* Multi-AP */
++			elems->multi_ap = pos;
++			elems->multi_ap_len = elen;
++			break;
+ 		default:
+ 			wpa_printf(MSG_MSGDUMP, "Unknown WFA "
+ 				   "information element ignored "
+@@ -129,6 +134,43 @@ static int ieee802_11_parse_vendor_specific(const u8 *pos, size_t elen,
+ 		}
+ 		break;
+ 
++	case OUI_INTEL:
++		switch (pos[3]) {
++		case VENDOR_INTEL_4ADDR_MODE_OUI_TYPE:
++			elems->intel_ie_4addr_mode = pos;
++			elems->intel_ie_4addr_len = elen;
++			break;
++		default:
++			wpa_printf(MSG_EXCESSIVE, "Unknown INTEL "
++				   "information element ignored "
++				   "(type=%d len=%lu)",
++				   pos[3], (unsigned long) elen);
++			return -1;
++		}
++		break;
++
++	case OUI_BRCOM:
++		switch (pos[3]) {
++		case VENDOR_BRCOM_VER2_OUI_TYPE:
++			if (elen < VENDOR_BRCOM_FLAGS1_OFFSET) {
++				wpa_printf(MSG_MSGDUMP, "short Broadcom "
++					   "information element ignored "
++					   "(len=%lu)",
++					   (unsigned long) elen);
++				return -1;
++			}
++			elems->brcom_ie = pos;
++			elems->brcom_ie_len = elen;
++			break;
++		default:
++			wpa_printf(MSG_EXCESSIVE, "Unknown Broadcom "
++				   "information element ignored "
++				   "(type=%d len=%lu)",
++				   pos[3], (unsigned long) elen);
++			return -1;
++		}
++		break;
++
+ 	case OUI_BROADCOM:
+ 		switch (pos[3]) {
+ 		case VENDOR_HT_CAPAB_OUI_TYPE:
+@@ -1318,3 +1360,22 @@ size_t mbo_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len)
+ 
+ 	return 6 + attr_len;
+ }
++
++size_t multi_ap_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len)
++{
++	if (len < 6 + attr_len) {
++	  wpa_printf(MSG_DEBUG,
++			"MBO: Not enough room in buffer for Multi-AP IE: buf len = %zu, attr_len = %zu",
++			len, 6 + attr_len);
++	  return 0;
++	}
++
++	*buf++ = WLAN_EID_VENDOR_SPECIFIC;
++	*buf++ = attr_len + 4;
++	WPA_PUT_BE24(buf, OUI_WFA);
++	buf += 3;
++	*buf++ = MULTI_AP_OUI_TYPE;
++	os_memcpy(buf, attr, attr_len);
++
++	return 6 + attr_len;
++}
+diff --git a/src/common/ieee802_11_common.h b/src/common/ieee802_11_common.h
+index 011646e..161fe30 100644
+--- a/src/common/ieee802_11_common.h
++++ b/src/common/ieee802_11_common.h
+@@ -65,6 +65,9 @@ struct ieee802_11_elems {
+ 	const u8 *pref_freq_list;
+ 	const u8 *supp_op_classes;
+ 	const u8 *rrm_enabled;
++	const u8 *multi_ap;
++	const u8 *intel_ie_4addr_mode;
++	const u8 *brcom_ie;
+ 
+ 	u8 ssid_len;
+ 	u8 supp_rates_len;
+@@ -98,6 +101,9 @@ struct ieee802_11_elems {
+ 	u8 pref_freq_list_len;
+ 	u8 supp_op_classes_len;
+ 	u8 rrm_enabled_len;
++	u8 multi_ap_len;
++	u8 intel_ie_4addr_len;
++	u8 brcom_ie_len;
+ 
+ 	struct mb_ies_info mb_ies;
+ };
+@@ -154,5 +160,6 @@ extern size_t global_op_class_size;
+ const u8 * get_ie(const u8 *ies, size_t len, u8 eid);
+ 
+ size_t mbo_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len);
++size_t multi_ap_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len);
+ 
+ #endif /* IEEE802_11_COMMON_H */
+diff --git a/src/common/ieee802_11_defs.h b/src/common/ieee802_11_defs.h
+index 4ac1c4c..3bdab5b 100644
+--- a/src/common/ieee802_11_defs.h
++++ b/src/common/ieee802_11_defs.h
+@@ -11,6 +11,7 @@
+ #define IEEE802_11_DEFS_H
+ 
+ #include <utils/common.h>
++#include <utils/list.h>
+ 
+ /* IEEE 802.11 defines */
+ 
+@@ -137,6 +138,8 @@
+ #define WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY 30
+ #define WLAN_STATUS_ROBUST_MGMT_FRAME_POLICY_VIOLATION 31
+ #define WLAN_STATUS_UNSPECIFIED_QOS_FAILURE 32
++#define WLAN_STATUS_DENIED_INSUFFICIENT_BANDWIDTH 33
++#define WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS 34
+ #define WLAN_STATUS_REQUEST_DECLINED 37
+ #define WLAN_STATUS_INVALID_PARAMETERS 38
+ /* IEEE 802.11i */
+@@ -814,6 +817,12 @@ struct ieee80211_ampe_ie {
+ 	 */
+ } STRUCT_PACKED;
+ 
++struct multi_ap_blacklist {
++	struct dl_list list;
++	u8 addr[ETH_ALEN];
++	u16 status;
++};
++
+ #ifdef _MSC_VER
+ #pragma pack(pop)
+ #endif /* _MSC_VER */
+@@ -1008,6 +1017,13 @@ struct ieee80211_ampe_ie {
+ #define MBO_IE_VENDOR_TYPE 0x506f9a16
+ #define MBO_OUI_TYPE 22
+ #define MBO_IE_HEADER 6 /* type + length + oui + oui type */
++#define MULTI_AP_VENDOR_TYPE		0x506f9a1b
++#define MULTI_AP_OUI_TYPE		0x1B
++#define MULTI_AP_SUBELEMENT_ID		0x06
++#define MULTI_AP_SUBELEMENT_LEN		0x01
++#define MULTI_AP_SUBELEMENT_FAP		0x20	/* Fronthaul BSS */
++#define MULTI_AP_SUBELEMENT_BAP		0x40	/* Backhaul BSS */
++#define MULTI_AP_SUBELEMENT_BSTA	0x80	/* Backhaul STA */
+ 
+ #define WMM_OUI_TYPE 2
+ #define WMM_OUI_SUBTYPE_INFORMATION_ELEMENT 0
+@@ -1412,6 +1428,21 @@ enum plink_action_field {
+ 	PLINK_CLOSE
+ };
+ 
++/* Intel 4-address mode */
++#define OUI_INTEL	0x001735
++#define VENDOR_INTEL_ATTRIBUTES_OFFSET		4
++#define VENDOR_INTEL_4ADDR_MODE_VENDOR_TYPE	0x00173530
++#define VENDOR_INTEL_4ADDR_MODE_OUI_TYPE	0x30
++#define VENDOR_INTEL_4ADDR_MODE_STA		0x01
++#define VENDOR_INTEL_3ADDR_MODE_STA		0x02
++
++/* Broadcom 4-address mode */
++#define OUI_BRCOM	0x001018
++#define VENDOR_BRCOM_VER2_VENDOR_TYPE		0x00101802
++#define VENDOR_BRCOM_VER2_OUI_TYPE		2
++#define VENDOR_BRCOM_FLAGS1_OFFSET		6
++#define VENDOR_BRCOM_DWDS_CAPABLE		0x80
++
+ #define OUI_BROADCOM 0x00904c /* Broadcom (Epigram) */
+ #define VENDOR_VHT_TYPE		0x04
+ #define VENDOR_VHT_SUBTYPE	0x08
+diff --git a/src/common/ltq-vendor.h b/src/common/ltq-vendor.h
+index 2bad35b..adcaf82 100644
+--- a/src/common/ltq-vendor.h
++++ b/src/common/ltq-vendor.h
+@@ -49,6 +49,7 @@ enum ltq_nl80211_vendor_subcmds {
+   LTQ_NL80211_VENDOR_SUBCMD_BLOCK_TX             = 16, /* Block TX after next channel switch */
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_DGAF_DISABLED    = 17,
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_BSS_LOAD         = 18,
++	LTQ_NL80211_VENDOR_SUBCMD_SET_MESH_MODE        = 19,
+ };
+ 
+ enum ltq_nl80211_vendor_events {
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index 2cee364..324ccf1 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -1414,8 +1414,15 @@ struct hostapd_unconnected_sta_req_params {
+ 
+ typedef struct mtlk_blacklist_cfg {
+   u8 addr[ETH_ALEN];
++  u16 status;
+   u8 remove;
+-} mtlk_blacklist_cfg_t;
++} __attribute__ ((packed)) mtlk_blacklist_cfg_t;
++
++typedef struct mtlk_steer_cfg {
++  u8 addr[ETH_ALEN];
++  u8 bssid[ETH_ALEN];
++  u16 status;
++} __attribute__ ((packed)) mtlk_steer_cfg_t;
+ 
+ struct mtlk_wssa_peer_traffic_stats {
+   u32 BytesSent;
+@@ -3734,20 +3741,22 @@ struct wpa_driver_ops {
+   /**
+    * set_deny_mac_addr - Add/remove MAC address to/from blacklist
+    * @priv: Private driver interface data
+-   * @addr: MAC address to use
++   * @entry: pointer to multi_ap_blacklist structure
+    * @remove: 1 - remove address from blacklist, 0 - add address to blacklist
+    * Returns: 0 on success, -1 on failure
+    */
+-  int (*set_deny_mac_addr)(void *priv, const u8 *addr, const u8 remove);
++  int (*set_deny_mac_addr)(void *priv, const struct multi_ap_blacklist *entry,
++      const u8 remove);
+ 
+   /**
+    * sta_steer - Steer station to required VAP
+    * @priv: Private driver interface data
+-   * @sta_addr: Station MAC address
++   * @entry: pointer to multi_ap_blacklist structure
+    * @bssid: VAP to steer to
+    * Returns: 0 on success, -1 on failure
+    */
+-  int (*sta_steer)(void *priv, const u8 *sta_addr, const u8 *bssid);
++  int (*sta_steer)(void *priv, const struct multi_ap_blacklist *entry,
++      const u8 *bssid);
+ 
+   /**
+    * sta_allow - Add station(s) to whitelist
+@@ -4187,6 +4196,15 @@ struct wpa_driver_ops {
+ 	 * Returns: 0 on success, -1 on failure
+ 	 */
+ 	int (*set_carrier)(void *priv, int state);
++
++
++	/**
++	 * set_mesh_mode - mesh mode change request to driver
++	 * @priv: Private driver interface data
++	 * @mesh_mode: 0 - fronthaul AP, 1 - backhaul AP, 2 - Hybrid mode, 3 - reserved
++	 * Returns: 0 on success, -1 on failure
++	 */
++	int (*set_mesh_mode)(void *priv, int mesh_mode);
+ };
+ 
+ /**
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index ff27c25..378075c 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -5434,6 +5434,17 @@ static int wpa_driver_nl80211_set_carrier(void *priv, int state)
+   return netlink_send_carrier_ifla(drv->global->netlink, drv->ifindex, state);
+ }
+ 
++int nl80211_set_mesh_mode(void *priv, const int mesh_mode)
++{
++	int ret = nl80211_vendor_cmd(priv, OUI_LTQ, LTQ_NL80211_VENDOR_SUBCMD_SET_MESH_MODE,
++		(u8*) &mesh_mode, sizeof(mesh_mode), NULL);
++
++	if (ret < 0)
++		wpa_printf(MSG_ERROR, "nl80211: sending SET_MESH_MODE failed: %i (%s)",
++			ret, strerror(-ret));
++
++	return ret;
++}
+ 
+ static int wpa_driver_nl80211_set_supp_port(void *priv, int authorized)
+ {
+@@ -5750,12 +5761,14 @@ int nl80211_free_aid(void *priv, u16 *aid)
+ 	return res;
+ }
+ 
+-int nl80211_set_deny_mac_addr(void *priv, const u8 *addr, const u8 remove)
++int nl80211_set_deny_mac_addr(void *priv,
++	const struct multi_ap_blacklist *entry, const u8 remove)
+ {
+   int ret;
+   mtlk_blacklist_cfg_t blacklist;
+ 
+-  os_memcpy(blacklist.addr, addr, ETH_ALEN);
++  os_memcpy(blacklist.addr, entry->addr, ETH_ALEN);
++  blacklist.status = entry->status;
+   blacklist.remove = remove;
+   ret = nl80211_vendor_cmd(priv, OUI_LTQ,
+     LTQ_NL80211_VENDOR_SUBCMD_SET_DENY_MAC, (u8*) &blacklist, sizeof(blacklist),
+@@ -5765,27 +5778,29 @@ int nl80211_set_deny_mac_addr(void *priv, const u8 *addr, const u8 remove)
+     wpa_printf(MSG_ERROR, "nl80211: sending SET_DENY_MAC failed: %i (%s)",
+          ret, strerror(-ret));
+   else
+-    wpa_printf(MSG_DEBUG, MACSTR " %s blacklist", MAC2STR(addr),
++    wpa_printf(MSG_DEBUG, MACSTR " %s blacklist", MAC2STR(entry->addr),
+       remove ? "removed from" : "added to");
+ 
+   return ret;
+ }
+ 
+-int nl80211_sta_steer(void *priv, const u8 *sta_addr, const u8 *bssid)
++int nl80211_sta_steer(void *priv, const struct multi_ap_blacklist* entry, const u8 *bssid)
+ {
+   int ret;
+-  u8 data[ETH_ALEN << 1];
++  mtlk_steer_cfg_t steer;
+ 
+-  os_memcpy(data, sta_addr, ETH_ALEN);
+-  os_memcpy(data + ETH_ALEN, bssid, ETH_ALEN);
++  os_memset(&steer, 0, sizeof(steer));
++  os_memcpy(steer.addr, entry->addr, ETH_ALEN);
++  os_memcpy(steer.bssid, bssid, ETH_ALEN);
++  steer.status = entry->status;
+   ret = nl80211_vendor_cmd(priv, OUI_LTQ,
+-    LTQ_NL80211_VENDOR_SUBCMD_STA_STEER, data, sizeof(data), NULL);
++    LTQ_NL80211_VENDOR_SUBCMD_STA_STEER, (u8*) &steer, sizeof(steer), NULL);
+ 
+   if (ret < 0)
+     wpa_printf(MSG_ERROR, "nl80211: sending STA_STEER failed: %i (%s)",
+          ret, strerror(-ret));
+   else
+-    wpa_printf(MSG_DEBUG, MACSTR " steered to " MACSTR, MAC2STR(sta_addr),
++    wpa_printf(MSG_DEBUG, MACSTR " steered to " MACSTR, MAC2STR(steer.addr),
+       MAC2STR(bssid));
+ 
+   return ret;
+@@ -5838,7 +5853,6 @@ int nl80211_set_bss_load(void *priv, const u8 is_enable)
+   return ret;
+ }
+ 
+-
+ int nl80211_get_sta_measurements(void *priv, const u8 *sta_addr,
+   mtlk_sta_info_t *sta_info)
+ {
+@@ -9977,4 +9991,5 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
+ #endif
+ 	.block_tx = nl80211_block_tx,
+   .set_carrier = wpa_driver_nl80211_set_carrier,
++	.set_mesh_mode = nl80211_set_mesh_mode,
+ };
+diff --git a/wpa_supplicant/ctrl_iface.c b/wpa_supplicant/ctrl_iface.c
+index 10bf23b..e0364a6 100644
+--- a/wpa_supplicant/ctrl_iface.c
++++ b/wpa_supplicant/ctrl_iface.c
+@@ -2505,6 +2505,27 @@ static char * wpa_supplicant_wps_ie_txt(struct wpa_supplicant *wpa_s,
+ #endif /* CONFIG_WPS */
+ }
+ 
++static char * wpa_supplicant_ie_hex(char *pos, char *end, const char *proto,
++					const u8 *ie, size_t ie_len)
++{
++	int ret;
++
++	ret = os_snprintf(pos, end - pos, "[%s:", proto);
++	if (os_snprintf_error(end - pos, ret))
++		return pos;
++	pos += ret;
++
++	ret = wpa_snprintf_hex_uppercase(pos, end-pos, ie, ie_len);
++	if (os_snprintf_error(end - pos, ret))
++		return pos;
++	pos += ret;
++
++	ret = os_snprintf(pos, end - pos, "]");
++	if (os_snprintf_error(end - pos, ret))
++		return pos;
++	pos += ret;
++	return pos;
++}
+ 
+ /* Format one result on one text line into a buffer. */
+ static int wpa_supplicant_ctrl_iface_scan_result(
+@@ -2513,7 +2534,7 @@ static int wpa_supplicant_ctrl_iface_scan_result(
+ {
+ 	char *pos, *end;
+ 	int ret;
+-	const u8 *ie, *ie2, *osen_ie, *p2p, *mesh;
++	const u8 *ie, *ie2, *osen_ie, *p2p, *mesh, *ve_ie;
+ 
+ 	mesh = wpa_bss_get_ie(bss, WLAN_EID_MESH_ID);
+ 	p2p = wpa_bss_get_vendor_ie(bss, P2P_IE_VENDOR_TYPE);
+@@ -2533,6 +2554,7 @@ static int wpa_supplicant_ctrl_iface_scan_result(
+ 	if (os_snprintf_error(end - pos, ret))
+ 		return -1;
+ 	pos += ret;
++
+ 	ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
+ 	if (ie)
+ 		pos = wpa_supplicant_ie_txt(pos, end, "WPA", ie, 2 + ie[1]);
+@@ -2635,6 +2657,24 @@ static int wpa_supplicant_ctrl_iface_scan_result(
+ 		return -1;
+ 	pos += ret;
+ 
++	/* Dump vendor elements */
++	ret = os_snprintf(pos, end - pos, " VEs=");
++	if (os_snprintf_error(end - pos, ret))
++		return -1;
++	pos += ret;
++	ve_ie = wpa_bss_get_vendor_ie(bss, MULTI_AP_VENDOR_TYPE);
++	if (ve_ie) {
++		pos = wpa_supplicant_ie_hex(pos, end, "MULTIAP", ve_ie, 2 + ve_ie[1]);
++	}
++	ve_ie = wpa_bss_get_vendor_ie(bss, VENDOR_INTEL_4ADDR_MODE_VENDOR_TYPE);
++	if (ve_ie) {
++		pos = wpa_supplicant_ie_hex(pos, end, "INTEL_4ADDR", ve_ie, 2 + ve_ie[1]);
++	}
++	ve_ie = wpa_bss_get_vendor_ie(bss, VENDOR_BRCOM_VER2_VENDOR_TYPE);
++	if (ve_ie) {
++		pos = wpa_supplicant_ie_hex(pos, end, "BRCOM", ve_ie, 2 + ve_ie[1]);
++	}
++
+ 	ret = os_snprintf(pos, end - pos, "\n");
+ 	if (os_snprintf_error(end - pos, ret))
+ 		return -1;
+-- 
+2.10.1
+

@@ -1,0 +1,25 @@
+From f1ba6ee5ef41f3d55db0d8c4af049e86251d29f3 Mon Sep 17 00:00:00 2001
+From: Simon Dinkin <simonx.dinkin@intel.com>
+Date: Thu, 18 Aug 2016 19:17:06 +0300
+Subject: [PATCH] enable CONFIG_MBO
+
+---
+ hostapd/.config | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/hostapd/.config b/hostapd/.config
+index 5cb0373..5d2c23b 100644
+--- a/hostapd/.config
++++ b/hostapd/.config
+@@ -322,3 +322,8 @@ CONFIG_P2P_MANAGER=y
+ # http://wireless.kernel.org/en/users/Documentation/acs
+ #
+ CONFIG_ACS=y
++
++# Multiband Operation support
++# These extentions facilitate efficient use of multiple frequency bands
++# available to the AP and the devices that may associate with it.
++CONFIG_MBO=y
+-- 
+2.10.1
+

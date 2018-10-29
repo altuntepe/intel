@@ -1,0 +1,90 @@
+From ace9c145ac7dc6bfa4f2efdeb7312cbb96a959c3 Mon Sep 17 00:00:00 2001
+From: vulsmike <mikelis.vuls@intel.com>
+Date: Thu, 5 Jul 2018 15:16:18 +0300
+Subject: [PATCH] hostapd-radar-during-scan
+
+---
+ src/ap/acs.c         | 6 ++++++
+ src/ap/dfs.c         | 6 ++++++
+ src/ap/hw_features.c | 3 +++
+ 3 files changed, 15 insertions(+)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index 0d59c3b..c0e4212 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -1732,6 +1732,7 @@ static void acs_smart_process_bsses(struct hostapd_iface *iface, struct wpa_scan
+ 
+   acs_fclose(fp, "ACS history file");
+ 
++  acs_update_radar(iface);
+   acs_recalc_ranks_and_set_chan(iface, SWR_INITIAL);
+ 
+   /* hostapd_setup_interface_complete() will return -1 on failure and 0 on success */
+@@ -2196,6 +2197,7 @@ static int acs_request_scan(struct hostapd_iface *iface)
+   iface->in_scan = 1;
+ 	if (hostapd_driver_scan(iface->bss[0], &params) < 0) {
+ 		wpa_printf(MSG_ERROR, "ACS: Failed to request initial scan");
++		iface->in_scan = 0;
+ 		acs_cleanup(iface);
+ 		os_free(params.freqs);
+ 		return -1;
+@@ -2333,6 +2335,10 @@ int acs_do_switch_channel(struct hostapd_iface *iface, int block_tx)
+ 
+     channel = &mode->channels[i];
+ 
++    /* Radar Simulation Feature does CSA prior to CAC */
++    if (iface->conf->dfs_debug_chan)
++      break;
++
+     if ((channel->chan == iface->conf->channel) &&
+         (channel->flag & HOSTAPD_CHAN_RADAR) &&
+         ((channel->flag & HOSTAPD_CHAN_DFS_MASK) != HOSTAPD_CHAN_DFS_AVAILABLE))
+diff --git a/src/ap/dfs.c b/src/ap/dfs.c
+index 7f4b3d2..7bbd20f 100644
+--- a/src/ap/dfs.c
++++ b/src/ap/dfs.c
+@@ -1696,6 +1696,12 @@ int hostapd_dfs_radar_detected(struct hostapd_iface *iface, int freq,
+ 
+ 	wpa_printf(MSG_DEBUG, "SB DFS: Radar Bit Map 0x%02x", rbm);
+ 
++	if (iface->in_scan) {
++		wpa_printf(MSG_INFO, "Radar detected during scan, not initiating channel switch");
++		hostapd_add_dfs_history_entry(iface, cf1, cf2, chan_width, rbm, DFS_NO_SWITCH);
++		return 0;
++	}
++
+ 	if (iface->conf->sub_band_dfs && !iface->conf->dfs_debug_chan) {
+ 		sb_dfs_new_prim = hostapd_sub_dfs_get_new_chan(iface, &sb_dfs_new_bw, &secondary_offset);
+ 
+diff --git a/src/ap/hw_features.c b/src/ap/hw_features.c
+index 8561ad0..e6cbe30 100644
+--- a/src/ap/hw_features.c
++++ b/src/ap/hw_features.c
+@@ -552,6 +552,7 @@ static void ieee80211n_check_scan(struct hostapd_iface *iface)
+ 	 * allowed per IEEE Std 802.11-2012, 10.15.3.2 */
+ 
+ 	iface->scan_cb = NULL;
++	iface->in_scan = 0;
+ 
+ 	scan_res = hostapd_driver_get_scan_results(iface->bss[0]);
+ 	if (scan_res == NULL) {
+@@ -728,6 +729,7 @@ static void ap_ht40_scan_retry(void *eloop_data, void *user_data)
+ 
+ 	wpa_printf(MSG_DEBUG,
+ 		   "Failed to request a scan in device, bringing up in HT20 mode");
++	iface->in_scan = 0;
+ 	iface->conf->secondary_channel = 0;
+ 	iface->conf->ht_capab &= ~HT_CAP_INFO_SUPP_CHANNEL_WIDTH_SET;
+ 	hostapd_setup_interface_complete(iface, 0);
+@@ -783,6 +785,7 @@ static int ieee80211n_check_40mhz(struct hostapd_iface *iface)
+ 	}
+ 
+ 	if (ret < 0) {
++		iface->in_scan = 0;
+ 		wpa_printf(MSG_ERROR,
+ 			   "Failed to request a scan of neighboring BSSes ret=%d (%s)",
+ 			   ret, strerror(-ret));
+-- 
+2.10.1
+

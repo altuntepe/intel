@@ -1,0 +1,58 @@
+From ffce5f5ea0835ef7d76f499a327b132198e62665 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:10:46 +0200
+Subject: [PATCH] hostapd-acs-20-40-coex
+
+---
+ src/ap/acs.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index c2f2458..d6aa34d 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -1627,24 +1627,26 @@ void acs_smart_record_bsses(struct hostapd_iface *iface, struct wpa_scan_results
+           os_get_reltime(&candidates[j].ts_legacy);
+         }
+ 
+-        if (candidates[j].width == 40) { /* 20/40 rules */
+-          if (((bss_width == VHT_OPER_CHWIDTH_20_40) && bss_sec_freq && /* pri and sec must be equal */
+-            ((acs_chan_to_freq(candidates[j].primary) != bss->freq) ||
+-              (acs_chan_to_freq(candidates[j].secondary) != bss_sec_freq))) ||
+-            (!bss_sec_freq && acs_chan_to_freq(candidates[j].primary) != bss->freq))
+-          { /* primary channel must be the same as the operating channel of all 20MHz BSSs */
+-            if (iface->conf->obss_beacon_rssi_threshold < bss->level) {
+-              candidates[j].overlap40++;
+-              os_get_reltime(&candidates[j].ts_overlap40);
++        if (iface->conf->obss_interval) { /* Check if 20/40 CoEx enabled */
++          if (candidates[j].width == 40) { /* 20/40 rules */
++            if (((bss_width == VHT_OPER_CHWIDTH_20_40) && bss_sec_freq && /* pri and sec must be equal */
++              ((acs_chan_to_freq(candidates[j].primary) != bss->freq) ||
++                (acs_chan_to_freq(candidates[j].secondary) != bss_sec_freq))) ||
++              (!bss_sec_freq && acs_chan_to_freq(candidates[j].primary) != bss->freq))
++            { /* primary channel must be the same as the operating channel of all 20MHz BSSs */
++              if (iface->conf->obss_beacon_rssi_threshold < bss->level) {
++                candidates[j].overlap40++;
++                os_get_reltime(&candidates[j].ts_overlap40);
++              }
+             }
+           }
+-        }
+ 
+-        if (ht_cap &&
+-            (le_to_host16(ht_cap->ht_capabilities_info) & HT_CAP_INFO_40MHZ_INTOLERANT) &&
+-            candidates[j].secondary) {
+-          candidates[j].intolerant40++;
+-          os_get_reltime(&candidates[j].ts_intolerant40);
++          if (ht_cap &&
++              (le_to_host16(ht_cap->ht_capabilities_info) & HT_CAP_INFO_40MHZ_INTOLERANT) &&
++              candidates[j].secondary) {
++            candidates[j].intolerant40++;
++            os_get_reltime(&candidates[j].ts_intolerant40);
++          }
+         }
+ 
+         if (channels_overlap(acs_chan_to_freq(candidates[j].primary), 20, bss_base_freq, num_width)) {
+-- 
+2.10.1
+

@@ -1,0 +1,25 @@
+From e33492b1db38daedea52c24a069b5a075bd5c27c Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 20 Feb 2018 14:25:24 +0200
+Subject: [PATCH] hostapd-coex-dont-drop-to-20
+
+---
+ src/ap/ieee802_11_ht.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/ap/ieee802_11_ht.c b/src/ap/ieee802_11_ht.c
+index b4a07e1..8b5e291 100644
+--- a/src/ap/ieee802_11_ht.c
++++ b/src/ap/ieee802_11_ht.c
+@@ -533,8 +533,6 @@ void hostapd_obss_beacon(struct hostapd_data *hapd,
+ #endif
+         hostapd_switch_to_20mhz(hapd, iface, mgmt, rssi_level);
+ 		}
+-	} else {
+-		hostapd_switch_to_20mhz(hapd, iface, mgmt, rssi_level);
+ 	}
+ }
+ 
+-- 
+2.10.1
+

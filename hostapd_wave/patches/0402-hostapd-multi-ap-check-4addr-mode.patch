@@ -1,0 +1,220 @@
+From fbc7bdb6488aebfef1ad23360155c3d7b637d093 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 4 Jun 2018 19:40:59 +0300
+Subject: [PATCH] hostapd-multi-ap-check-4addr-mode
+
+---
+ src/ap/ap_drv_ops.h          | 10 ++++++++++
+ src/ap/ieee802_11.c          | 38 +++++++++++++++++++++++++++++++++-----
+ src/ap/sta_info.h            |  6 +++++-
+ src/common/ltq-vendor.h      |  1 +
+ src/drivers/driver.h         | 19 +++++++++++++++++++
+ src/drivers/driver_nl80211.c | 37 +++++++++++++++++++++++++++++++++++++
+ 6 files changed, 105 insertions(+), 6 deletions(-)
+
+diff --git a/src/ap/ap_drv_ops.h b/src/ap/ap_drv_ops.h
+index 166ea66..efc84fa 100644
+--- a/src/ap/ap_drv_ops.h
++++ b/src/ap/ap_drv_ops.h
+@@ -510,4 +510,14 @@ static inline int hostapd_drv_set_mesh_mode(struct hostapd_data *hapd, int mesh_
+ 
+   return hapd->driver->set_mesh_mode(hapd->drv_priv, mesh_mode);
+ }
++
++static inline int hostapd_drv_check_4addr_mode(struct hostapd_data *hapd,
++	const u8 *sta_addr, mtlk_check_4addr_mode_t *check_4addr_mode)
++{
++  if (hapd->driver == NULL || hapd->driver->check_4addr_mode == NULL)
++    return -ENOTSUP;
++
++  return hapd->driver->check_4addr_mode(hapd->drv_priv, sta_addr, check_4addr_mode);
++}
++
+ #endif /* AP_DRV_OPS */
+diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
+index 2c92582..25585e1 100644
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -995,11 +995,33 @@ void ieee802_11_check_4addr_sta_elems(struct ieee802_11_elems *elems, struct sta
+ 	if ((elems->multi_ap) ||
+ 		(elems->intel_ie_4addr_mode && (elems->intel_ie_4addr_mode[VENDOR_INTEL_ATTRIBUTES_OFFSET] == VENDOR_INTEL_4ADDR_MODE_STA)) ||
+ 		(elems->brcom_ie && (elems->brcom_ie[VENDOR_BRCOM_FLAGS1_OFFSET] & VENDOR_BRCOM_DWDS_CAPABLE))
+-		)
+-		sta->four_addr_mode_sta = 1;
++		) {
++		sta->four_addr_mode_sta = STA_4ADDR_MODE_DYNAMIC;
++	}
++}
++
++static int check_static_4addr_mode(struct hostapd_data *hapd, struct sta_info *sta, const u8 *sta_addr)
++{
++	struct mtlk_check_4addr_mode check_4addr_mode;
++	s8 four_addr_mode_sta;
++
++	if (hostapd_drv_check_4addr_mode(hapd, sta_addr, &check_4addr_mode)) {
++		wpa_printf(MSG_ERROR, "Failed to check 4-ADDR mode");
++		return -1;
++	}
++
++	if (check_4addr_mode.sta_4addr_mode == STA_4ADDR_MODE_DYNAMIC) {
++		four_addr_mode_sta = (sta->four_addr_mode_sta == STA_4ADDR_MODE_DYNAMIC) ?
++			STA_4ADDR_MODE_ON : STA_4ADDR_MODE_OFF;
++	}
++	else
++		four_addr_mode_sta = check_4addr_mode.sta_4addr_mode;
++
++	sta->four_addr_mode_sta = four_addr_mode_sta;
++	return 0;
+ }
+ 
+-u16 check_auth_ies(struct hostapd_data *hapd, struct sta_info *sta,
++static u16 check_auth_ies(struct hostapd_data *hapd, struct sta_info *sta,
+ 			   const u8 *ies, size_t ies_len)
+ {
+ 	struct ieee802_11_elems elems;
+@@ -1295,8 +1317,11 @@ static void handle_auth(struct hostapd_data *hapd,
+ 	if (resp != WLAN_STATUS_SUCCESS)
+ 		goto fail;
+ 
+-	if ((hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP && !sta->four_addr_mode_sta) ||
+-	    (hapd->conf->mesh_mode == MESH_MODE_FRONTHAUL_AP && sta->four_addr_mode_sta))
++	if (check_static_4addr_mode(hapd, sta, mgmt->sa))
++		goto fail;
++
++	if ((hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP  && sta->four_addr_mode_sta == STA_4ADDR_MODE_OFF) ||
++	    (hapd->conf->mesh_mode == MESH_MODE_FRONTHAUL_AP && sta->four_addr_mode_sta == STA_4ADDR_MODE_ON))
+ 	{
+ 		/* Depending from the mesh_mode and STA mode (3- or 4-address),
+ 		 * the STA must be either accepted or rejected */
+@@ -2362,6 +2387,9 @@ static void handle_assoc(struct hostapd_data *hapd,
+ 	if (resp != WLAN_STATUS_SUCCESS)
+ 		goto fail;
+ 
++	if (check_static_4addr_mode(hapd, sta, mgmt->sa))
++		goto fail;
++
+ 	if ((hapd->conf->mesh_mode == MESH_MODE_BACKHAUL_AP && !sta->four_addr_mode_sta) ||
+ 	    (hapd->conf->mesh_mode == MESH_MODE_FRONTHAUL_AP && sta->four_addr_mode_sta))
+ 	{
+diff --git a/src/ap/sta_info.h b/src/ap/sta_info.h
+index a5e6af2..406c554 100644
+--- a/src/ap/sta_info.h
++++ b/src/ap/sta_info.h
+@@ -220,7 +220,11 @@ struct sta_info {
+ #endif /* CONFIG_MBO */
+ 
+ 	unsigned int multi_ap_supported:1;
+-	unsigned int four_addr_mode_sta:1;
++
++	s8 four_addr_mode_sta; /* Is station is working in 4-addr mode:
++							   0: No (3-address mode)
++							   1: Yes (4-address mode)
++							   -1: Dynamic mode, should be detected later using VE's */
+ 
+ 	u8 *supp_op_classes; /* Supported Operating Classes element, if
+ 			      * received, starting from the Length field */
+diff --git a/src/common/ltq-vendor.h b/src/common/ltq-vendor.h
+index adcaf82..6b7ee78 100644
+--- a/src/common/ltq-vendor.h
++++ b/src/common/ltq-vendor.h
+@@ -50,6 +50,7 @@ enum ltq_nl80211_vendor_subcmds {
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_DGAF_DISABLED    = 17,
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_BSS_LOAD         = 18,
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_MESH_MODE        = 19,
++	LTQ_NL80211_VENDOR_SUBCMD_CHECK_4ADDR_MODE	   = 20,
+ };
+ 
+ enum ltq_nl80211_vendor_events {
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index 324ccf1..d2a5227 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -1470,6 +1470,16 @@ typedef struct mtlk_sta_info {
+   u32 TxMgmtPwr;
+ } __attribute__ ((packed)) mtlk_sta_info_t;
+ 
++enum mtlk_sta_4addr_mode_e {
++  STA_4ADDR_MODE_DYNAMIC    = -1,
++  STA_4ADDR_MODE_OFF        = 0,
++  STA_4ADDR_MODE_ON         = 1
++};
++
++typedef struct mtlk_check_4addr_mode {
++  enum mtlk_sta_4addr_mode_e sta_4addr_mode;
++} __attribute__ ((packed)) mtlk_check_4addr_mode_t;
++
+ struct mtlk_wssa_drv_tr181_vap_stats {
+   struct mtlk_wssa_driver_traffic_stats traffic_stats;
+   struct mtlk_wssa_peer_error_stats error_stats;
+@@ -4205,6 +4215,15 @@ struct wpa_driver_ops {
+ 	 * Returns: 0 on success, -1 on failure
+ 	 */
+ 	int (*set_mesh_mode)(void *priv, int mesh_mode);
++
++	/**
++	 * check_4addr_mode - check station for static 4-address mode
++	 * @priv: Private driver interface data
++	 * @sta_addr: Station MAC address
++	 * @sta_info: Pointer to check_4addr_mode structure (filled by the function)
++	 * Returns: 0 on success, -1 on failure
++	 */
++	int (*check_4addr_mode)(void *priv, const u8 *sta_addr, mtlk_check_4addr_mode_t *check_4addr_mode);
+ };
+ 
+ /**
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 378075c..a4f82ae 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -5959,6 +5959,42 @@ out:
+   return ret;
+ }
+ 
++int nl80211_check_4addr_mode(void *priv, const u8 *sta_addr, mtlk_check_4addr_mode_t *check_4addr_mode)
++{
++	int ret;
++	struct wpabuf *rsp;
++
++	/* sizeof(*check_4addr_mode) + NLA_HDRLEN + NLA_ALLIGN */
++	rsp = wpabuf_alloc(NLA_ALIGN(sizeof(struct nlattr) + sizeof(*check_4addr_mode)));
++	if (!rsp) {
++		return -ENOBUFS;
++	}
++
++	ret = nl80211_vendor_cmd(priv, OUI_LTQ, LTQ_NL80211_VENDOR_SUBCMD_CHECK_4ADDR_MODE,
++		sta_addr, ETH_ALEN, rsp);
++
++	if (ret) {
++		wpa_printf(MSG_ERROR, "nl80211: sending/receiving CHECK_4ADDR_MODE failed: %i (%s)",
++			ret, strerror(-ret));
++		goto out;
++	}
++
++	if (rsp->used != sizeof(*check_4addr_mode)) {
++		ret = -EMSGSIZE;
++		wpa_printf(MSG_ERROR, "nl80211: driver returned %d bytes instead of %d",
++			rsp->used, sizeof(*check_4addr_mode));
++		goto out;
++	}
++
++	memcpy(check_4addr_mode, rsp->buf, sizeof(*check_4addr_mode));
++	wpa_printf(MSG_DEBUG, "nl80211: checked static 4-address mode for station "
++			MACSTR, MAC2STR(sta_addr));
++
++out:
++	wpabuf_free(rsp);
++	return ret;
++}
++
+ int nl80211_send_atf_quotas(void *priv, mtlk_atf_quotas_t* atf_quotas)
+ {
+   int ret = nl80211_vendor_cmd(priv, OUI_LTQ, LTQ_NL80211_VENDOR_SUBCMD_SET_ATF_QUOTAS,
+@@ -9992,4 +10028,5 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
+ 	.block_tx = nl80211_block_tx,
+   .set_carrier = wpa_driver_nl80211_set_carrier,
+ 	.set_mesh_mode = nl80211_set_mesh_mode,
++	.check_4addr_mode = nl80211_check_4addr_mode,
+ };
+-- 
+2.10.1
+

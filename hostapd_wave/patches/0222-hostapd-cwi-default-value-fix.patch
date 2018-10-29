@@ -1,0 +1,27 @@
+From 78b4d3489816cd150b72c7cc3bba75e1c0d81afb Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 17:19:57 +0200
+Subject: [PATCH] hostapd-cwi-default-value-fix
+
+---
+ src/ap/ap_config.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/ap/ap_config.c b/src/ap/ap_config.c
+index 4d524fd..0a7a5c9 100644
+--- a/src/ap/ap_config.c
++++ b/src/ap/ap_config.c
+@@ -244,8 +244,8 @@ struct hostapd_config * hostapd_config_defaults(void)
+     if (NULL == conf->acs_to_degradation) goto fail;
+     conf->acs_to_degradation[ACS_NUM_DEGRADATION_FACTORS] = 0;
+     for (i = 0; i < ACS_NUM_DEGRADATION_FACTORS; i++) conf->acs_to_degradation[i] = 1;
+-    conf->acs_to_degradation[T_40INTO] = 360;
+-    conf->acs_to_degradation[D_CWI] = 50;
++    conf->acs_to_degradation[T_40INTO] = conf->acs_to_degradation[T_LNTO] = 360;
++    conf->acs_to_degradation[D_CWI] = 60;
+ 
+     conf->acs_grp_priorities_throughput = os_malloc(sizeof(int) * (ACS_NUM_GRP_PRIORITIES + 1));
+     if (NULL == conf->acs_grp_priorities_throughput) goto fail;
+-- 
+2.10.1
+

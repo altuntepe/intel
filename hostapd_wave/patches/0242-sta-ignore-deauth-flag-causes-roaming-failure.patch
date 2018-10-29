@@ -1,0 +1,37 @@
+From e3372d12e788fe229c134a40208671863bbf7d51 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:03:03 +0200
+Subject: [PATCH] sta-ignore-deauth-flag-causes-roaming-failure
+
+---
+ src/drivers/driver_nl80211_event.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/src/drivers/driver_nl80211_event.c b/src/drivers/driver_nl80211_event.c
+index 3810e7f..3d45252 100644
+--- a/src/drivers/driver_nl80211_event.c
++++ b/src/drivers/driver_nl80211_event.c
+@@ -245,6 +245,20 @@ static void mlme_event_assoc(struct wpa_driver_nl80211_data *drv,
+ 	}
+ 
+ 	drv->associated = 1;
++
++        if (drv->ignore_next_local_deauth == 1){
++            /*
++             * In case the flag to ignore deauth event triggered by
++             * local deauthentication was not reset (because kernel did not
++             * actually send the deauth event) reset ignore_next_local_deauth
++             * flag
++             */
++	    wpa_printf(MSG_DEBUG,
++                    "nl80211: Resetting flag that prevents raising deauth event"
++                    " triggered by local deauth");
++            drv->ignore_next_local_deauth = 0;
++        }
++
+ 	os_memcpy(drv->bssid, mgmt->sa, ETH_ALEN);
+ 	os_memcpy(drv->prev_bssid, mgmt->sa, ETH_ALEN);
+ 
+-- 
+2.10.1
+

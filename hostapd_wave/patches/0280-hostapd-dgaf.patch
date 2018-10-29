@@ -1,0 +1,133 @@
+From 4729b932df24d8408a28990e3c99267b94ab469f Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:14:15 +0200
+Subject: [PATCH] hostapd-dgaf
+
+---
+ src/ap/ap_drv_ops.h          |  9 +++++++++
+ src/ap/beacon.c              |  7 ++++++-
+ src/common/ltq-vendor.h      |  1 +
+ src/drivers/driver.h         |  9 +++++++++
+ src/drivers/driver_nl80211.c | 21 +++++++++++++++++++++
+ 5 files changed, 46 insertions(+), 1 deletion(-)
+
+diff --git a/src/ap/ap_drv_ops.h b/src/ap/ap_drv_ops.h
+index c93843c..9311362 100644
+--- a/src/ap/ap_drv_ops.h
++++ b/src/ap/ap_drv_ops.h
+@@ -476,4 +476,13 @@ static inline int hostapd_drv_set_wds_wpa_sta(struct hostapd_data *hapd,
+   return hapd->driver->set_wds_wpa_sta(hapd->drv_priv, addr, remove);
+ }
+ #endif
++
++static inline int hostapd_drv_set_disable_dgaf(struct hostapd_data *hapd,
++  int disable_dgaf)
++{
++  if (hapd->driver == NULL || hapd->driver->set_disable_dgaf == NULL)
++    return -ENOTSUP;
++
++  return hapd->driver->set_disable_dgaf(hapd->drv_priv, disable_dgaf);
++}
+ #endif /* AP_DRV_OPS */
+diff --git a/src/ap/beacon.c b/src/ap/beacon.c
+index 7284cb1..8b315c6 100644
+--- a/src/ap/beacon.c
++++ b/src/ap/beacon.c
+@@ -1330,10 +1330,15 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
+ 
+ 	res = hostapd_drv_set_ap(hapd, &params);
+ 	hostapd_free_ap_extra_ies(hapd, beacon, proberesp, assocresp);
+-	if (res)
++	if (res) {
+ 		wpa_printf(MSG_ERROR, "Failed to set beacon parameters");
++		goto fail;
++	}
+ 	else
+ 		ret = 0;
++  ret = hostapd_drv_set_disable_dgaf(hapd, params.disable_dgaf);
++  if (ret)
++    wpa_printf(MSG_ERROR, "Failed to set disable_dgaf");
+ fail:
+ 	ieee802_11_free_ap_params(&params);
+ 	return ret;
+diff --git a/src/common/ltq-vendor.h b/src/common/ltq-vendor.h
+index 3e3355d..5710f90 100644
+--- a/src/common/ltq-vendor.h
++++ b/src/common/ltq-vendor.h
+@@ -47,6 +47,7 @@ enum ltq_nl80211_vendor_subcmds {
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_ATF_QUOTAS       = 14,  /* Air time fairness data */
+ 	LTQ_NL80211_VENDOR_SUBCMD_SET_WDS_WPA_STA      = 15,
+   LTQ_NL80211_VENDOR_SUBCMD_BLOCK_TX             = 16, /* Block TX after next channel switch */
++	LTQ_NL80211_VENDOR_SUBCMD_SET_DGAF_DISABLED    = 17,
+ };
+ 
+ enum ltq_nl80211_vendor_events {
+diff --git a/src/drivers/driver.h b/src/drivers/driver.h
+index 6ae51c8..d19813f 100644
+--- a/src/drivers/driver.h
++++ b/src/drivers/driver.h
+@@ -4162,6 +4162,14 @@ struct wpa_driver_ops {
+    * to DFS USABLE channel.
+    */
+   int (*block_tx)(void *priv);
++
++  /**
++   * set_disable_dgaf - configure disable_dgaf
++   * @priv: Private driver interface data
++   * @disable_dgaf: disable_dgaf value
++   * Returns: 0 on success, -1 on failure
++   */
++  int (*set_disable_dgaf)(void *priv, int set_disable_dgaf);
+ };
+ 
+ /**
+@@ -4172,6 +4180,7 @@ struct wpa_driver_ops {
+  */
+ int (*get_radio_info)(void *priv, mtlk_radio_info_t *radio_info);
+ 
++
+ /**
+  * enum wpa_event_type - Event type for wpa_supplicant_event() calls
+  */
+diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
+index 1d01c4d..1b671da 100644
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -9786,6 +9786,26 @@ static int nl80211_block_tx(void *priv)
+   return ret;
+ }
+ 
++int nl80211_set_disable_dgaf(void *priv, int disable_dgaf)
++{
++  int ret;
++  uint32_t disable_dgaf_u32;
++
++  disable_dgaf_u32 = disable_dgaf;
++  ret = nl80211_vendor_cmd(priv, OUI_LTQ,
++    LTQ_NL80211_VENDOR_SUBCMD_SET_DGAF_DISABLED, (u8*) &disable_dgaf_u32,
++    sizeof(disable_dgaf_u32), NULL);
++
++  if (ret < 0)
++    wpa_printf(MSG_ERROR, "nl80211: sending SET_DGAF_DISABLED failed: %i (%s)",
++         ret, strerror(-ret));
++  else
++    wpa_printf(MSG_DEBUG, "nl80211: disable_dgaf set to %u", disable_dgaf_u32);
++
++  return ret;
++}
++
++
+ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
+ 	.name = "nl80211",
+ 	.desc = "Linux nl80211/cfg80211",
+@@ -9919,6 +9939,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
+ 	.get_ext_capab = nl80211_get_ext_capab,
+ #ifdef CONFIG_WDS_WPA
+ 	.set_wds_wpa_sta = nl80211_set_wds_wpa_sta,
++	.set_disable_dgaf = nl80211_set_disable_dgaf,
+ #endif
+ 	.block_tx = nl80211_block_tx,
+ };
+-- 
+2.10.1
+

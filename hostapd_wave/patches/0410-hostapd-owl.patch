@@ -1,0 +1,192 @@
+From 69f0ca972710c575512e8ecb219cd214580eb472 Mon Sep 17 00:00:00 2001
+From: vulsmike <mikelis.vuls@intel.com>
+Date: Wed, 30 May 2018 10:48:55 +0300
+Subject: [PATCH] hostapd-owl
+
+---
+ hostapd/ctrl_iface.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ hostapd/hostapd_cli.c | 22 +++++++++++++++++++++
+ src/ap/beacon.c       | 27 ++++++++++++++++++++++++++
+ src/common/wpa_ctrl.h |  2 ++
+ 4 files changed, 105 insertions(+)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 7acff90..7250eca 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -6585,6 +6585,58 @@ static int hostapd_ctrl_iface_set_elements (struct hostapd_data *hapd, const cha
+ 	return 0;
+ }
+ 
++static int hostapd_ctrl_iface_get_last_assoc_req (struct hostapd_data *hapd, const char *cmd, char *reply, size_t reply_len)
++{
++	int i, ret, len = 0;
++	struct sta_info *sta = NULL;
++	u8 sta_mac[ETH_ALEN];
++
++	if (hwaddr_aton(cmd, sta_mac)) {
++		ret = os_snprintf(reply, reply_len, "CTRL: GET_LAST_ASSOC_REQ - Incorrect MAC address passed\n");
++		if (os_snprintf_error(reply_len, ret))
++			return 0;
++		return ret;
++	}
++
++	for (i = 0; i < hapd->iface->num_bss; i++) {
++		sta = ap_get_sta(hapd->iface->bss[i], sta_mac);
++
++		if (sta)
++			 break;
++	}
++
++	if (!sta) {
++		ret = os_snprintf(reply, reply_len, "CTRL: GET_LAST_ASSOC_REQ - STA doesn't exist\n");
++		if (os_snprintf_error(reply_len, ret))
++			return 0;
++		return ret;
++	}
++
++	if (!sta->last_assoc_req || !sta->last_assoc_req_len) {
++		ret = os_snprintf(reply, reply_len, "CTRL: GET_LAST_ASSOC_REQ - STA doesn't have last assoc req\n");
++		if (os_snprintf_error(reply_len, ret))
++			return 0;
++		return ret;
++	}
++
++	ret = os_snprintf(reply + len, reply_len - len, "last_assoc_req=");
++	if (os_snprintf_error(reply_len - len, ret))
++		return len;
++	len += ret;
++
++	ret = wpa_snprintf_hex_uppercase(reply + len, reply_len - len, (const u8 *)sta->last_assoc_req, sta->last_assoc_req_len);
++	if (os_snprintf_error(reply_len - len, ret))
++		return len;
++	len += ret;
++
++	ret = os_snprintf(reply + len, reply_len - len, "\n");
++	if (os_snprintf_error(reply_len - len, ret))
++		return len;
++	len += ret;
++
++	return len;
++}
++
+ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 					      char *buf, char *reply,
+ 					      int reply_size,
+@@ -6985,6 +7037,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
+ 	} else if (os_strncmp(buf, "ASSOCRESP_ELEMENTS ", sizeof("ASSOCRESP_ELEMENTS ")-1) == 0) {
+ 		if (hostapd_ctrl_iface_set_elements(hapd, buf + sizeof("ASSOCRESP_ELEMENTS ")-1, ASSOCRESP_ELEM_TYPE))
+ 			reply_len = -1;
++	} else if (os_strncmp(buf, "GET_LAST_ASSOC_REQ ", sizeof("GET_LAST_ASSOC_REQ ") - 1) == 0) {
++		reply_len = hostapd_ctrl_iface_get_last_assoc_req(hapd, buf + sizeof("GET_LAST_ASSOC_REQ ") - 1, reply, reply_size);
+ 	} else {
+ 		os_memcpy(reply, "UNKNOWN COMMAND\n", 16);
+ 		reply_len = 16;
+diff --git a/hostapd/hostapd_cli.c b/hostapd/hostapd_cli.c
+index 02dc3cb..ce92618 100644
+--- a/hostapd/hostapd_cli.c
++++ b/hostapd/hostapd_cli.c
+@@ -2126,6 +2126,26 @@ static int hostapd_cli_cmd_get_assocresp_elements(struct wpa_ctrl *ctrl, int arg
+ 	return _hostapd_cli_cmd_get_elements(ctrl, argc, argv, "assocresp", "ASSOCRESP");
+ }
+ 
++static int hostapd_cli_cmd_get_last_assoc_req (struct wpa_ctrl *ctrl, int argc, char *argv[])
++{
++	char cmd[64];
++	int res;
++
++	if (argc != 1) {
++		printf("Invalid 'get_last_assoc_req' command: needs one argument:\n"
++				"- STA MAC address from which to get last association request\n");
++		return -1;
++	}
++
++	res = os_snprintf(cmd, sizeof(cmd), "GET_LAST_ASSOC_REQ %s", argv[0]);
++	if (os_snprintf_error(sizeof(cmd), res)) {
++		printf("Too long GET_LAST_ASSOC_REQ command.\n");
++		return -1;
++	}
++
++	return wpa_ctrl_command(ctrl, cmd);
++}
++
+ struct hostapd_cli_cmd {
+ 	const char *cmd;
+ 	int (*handler)(struct wpa_ctrl *ctrl, int argc, char *argv[]);
+@@ -2325,6 +2345,8 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
+ 	  "<BSS_name> [assocresp_elements] = set assocresp elements" },
+ 	{ "get_assocresp_elements", hostapd_cli_cmd_get_assocresp_elements, NULL,
+ 	  "<BSS_name> = get assocresp elements" },
++	{ "get_last_assoc_req", hostapd_cli_cmd_get_last_assoc_req, NULL,
++	  "<MAC addr> = get last association request frame for specified STA" },
+ 
+ 	{ NULL, NULL, NULL, NULL }
+ };
+diff --git a/src/ap/beacon.c b/src/ap/beacon.c
+index ad1a721..5f5253e 100644
+--- a/src/ap/beacon.c
++++ b/src/ap/beacon.c
+@@ -16,6 +16,7 @@
+ #include "common/ieee802_11_defs.h"
+ #include "common/ieee802_11_common.h"
+ #include "common/hw_features_common.h"
++#include "common/wpa_ctrl.h"
+ #include "wps/wps_defs.h"
+ #include "p2p/p2p.h"
+ #include "hostapd.h"
+@@ -687,6 +688,29 @@ void sta_track_claim_taxonomy_info(struct hostapd_iface *iface, const u8 *addr,
+ #endif /* CONFIG_TAXONOMY */
+ 
+ 
++static void _notify_probe_req (struct hostapd_data *hapd, const u8 *probe_req, size_t length)
++{
++	int ret, str_len = length * 2 + 1;
++	char *buf = os_malloc(str_len);
++
++	if (buf == NULL) {
++		wpa_printf(MSG_ERROR, "Malloc for probe req failed");
++		return;
++	}
++
++	ret = wpa_snprintf_hex_uppercase(buf, str_len, probe_req, length);
++
++	/* '\0' is not counted in return value of wpa_snprintf_hex_uppercase() */
++	if (ret != (str_len - 1)) {
++		wpa_printf(MSG_ERROR, "Failed to copy all probe req bytes: copied %d, expected %d", ret, str_len);
++		os_free(buf);
++		return;
++	}
++
++	wpa_msg_ctrl(hapd->msg_ctx, MSG_INFO, AP_PROBE_REQ_RECEIVED "%s", buf);
++	os_free(buf);
++}
++
+ void handle_probe_req(struct hostapd_data *hapd,
+ 		      const struct ieee80211_mgmt *mgmt, size_t len,
+ 		      int ssi_signal)
+@@ -704,6 +728,9 @@ void handle_probe_req(struct hostapd_data *hapd,
+ 
+ 	if (len < IEEE80211_HDRLEN)
+ 		return;
++
++	_notify_probe_req(hapd, (const u8 *)mgmt, len);
++
+ 	ie = ((const u8 *) mgmt) + IEEE80211_HDRLEN;
+ 	if (hapd->iconf->track_sta_max_num)
+ 		sta_track_add(hapd->iface, mgmt->sa);
+diff --git a/src/common/wpa_ctrl.h b/src/common/wpa_ctrl.h
+index 5becfec..5c0db49 100644
+--- a/src/common/wpa_ctrl.h
++++ b/src/common/wpa_ctrl.h
+@@ -304,6 +304,8 @@ extern "C" {
+ #define P2P_EVENT_LISTEN_OFFLOAD_STOP "P2P-LISTEN-OFFLOAD-STOPPED "
+ #define P2P_LISTEN_OFFLOAD_STOP_REASON "P2P-LISTEN-OFFLOAD-STOP-REASON "
+ 
++#define AP_PROBE_REQ_RECEIVED "AP-PROBE-REQ-RECEIVED "
++
+ /* BSS Transition Management Response frame received */
+ #define BSS_TM_RESP "BSS-TM-RESP "
+ /* BSS Transition Management Query frame received */
+-- 
+2.10.1
+

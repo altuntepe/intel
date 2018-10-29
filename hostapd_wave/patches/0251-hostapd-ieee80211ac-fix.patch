@@ -1,0 +1,51 @@
+From c00a8f07f1a52b2a5bb1c71548f6f8f3343a68c3 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 13:10:46 +0200
+Subject: [PATCH] hostapd-ieee80211ac-fix
+
+---
+ hostapd/config_file.c  | 1 +
+ src/ap/ap_config.h     | 1 +
+ src/ap/drv_callbacks.c | 2 ++
+ 3 files changed, 4 insertions(+)
+
+diff --git a/hostapd/config_file.c b/hostapd/config_file.c
+index dc1fd57..42f7307 100644
+--- a/hostapd/config_file.c
++++ b/hostapd/config_file.c
+@@ -3308,6 +3308,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+ #ifdef CONFIG_IEEE80211AC
+ 	} else if (os_strcmp(buf, "ieee80211ac") == 0) {
+ 		conf->ieee80211ac = atoi(pos);
++		conf->orig_ieee80211ac = conf->ieee80211ac;
+ 	} else if (os_strcmp(buf, "vht_capab") == 0) {
+ 		if (hostapd_config_vht_capab(conf, pos) < 0) {
+ 			wpa_printf(MSG_ERROR, "Line %d: invalid vht_capab",
+diff --git a/src/ap/ap_config.h b/src/ap/ap_config.h
+index 1004b7b..9fb434e 100644
+--- a/src/ap/ap_config.h
++++ b/src/ap/ap_config.h
+@@ -713,6 +713,7 @@ struct hostapd_config {
+ 	int acs_scan_mode;
+ 	u32 vht_capab;
+ 	int ieee80211ac;
++	int orig_ieee80211ac;
+ 	int require_vht;
+ 	u8 vht_oper_chwidth;
+ 	u8 vht_oper_centr_freq_seg0_idx;
+diff --git a/src/ap/drv_callbacks.c b/src/ap/drv_callbacks.c
+index 4cbb0e9..ae84fe1 100644
+--- a/src/ap/drv_callbacks.c
++++ b/src/ap/drv_callbacks.c
+@@ -582,6 +582,8 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
+ 	hapd->iconf->ieee80211n = ht;
+ 	if (!ht)
+ 		hapd->iconf->ieee80211ac = 0;
++	else if (ht && hapd->iface->conf->orig_ieee80211ac)
++		hapd->iconf->ieee80211ac = 1;
+ 	hapd->iconf->secondary_channel = offset;
+ 	hapd->iconf->vht_oper_chwidth = chwidth;
+ 	hapd->iconf->vht_oper_centr_freq_seg0_idx = seg0_idx;
+-- 
+2.10.1
+

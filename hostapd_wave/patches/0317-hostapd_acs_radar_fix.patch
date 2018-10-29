@@ -1,0 +1,79 @@
+From aaaa8a107f8772e11eaac25747b656f303d2a4bc Mon Sep 17 00:00:00 2001
+From: vulsmike <mikelis.vuls@intel.com>
+Date: Tue, 15 May 2018 12:07:22 +0300
+Subject: [PATCH] hostapd_acs_radar_fix
+
+---
+ src/ap/acs.c | 21 ++++-----------------
+ src/ap/acs.h |  1 -
+ src/ap/dfs.c |  2 +-
+ 3 files changed, 5 insertions(+), 19 deletions(-)
+
+diff --git a/src/ap/acs.c b/src/ap/acs.c
+index 1be6324..0d59c3b 100644
+--- a/src/ap/acs.c
++++ b/src/ap/acs.c
+@@ -3168,20 +3168,6 @@ void acs_switch_intolerant_expired(struct hostapd_iface *iface)
+     hostapd_restart_ap_ht2040_timer(iface);
+ }
+ 
+-void acs_set_radar(struct hostapd_iface *iface, int freq, int chan_width, int cf1)
+-{
+-  struct hostapd_hw_modes *mode = iface->current_mode;
+-  int j;
+-
+-  if (chan_width != 20 || freq == 0) freq = cf1;
+-  freq = freq - (chan_width >> 1) + 10;
+-
+-  for (j = 0; j < mode->num_candidates; j++) {
+-    if (channels_overlap(freq, chan_width, mode->candidates[j].freq, mode->candidates[j].width))
+-      mode->candidates[j].radar_detected = TRUE;
+-  }
+-}
+-
+ void acs_update_radar(struct hostapd_iface *iface)
+ {
+   struct hostapd_hw_modes *mode = iface->current_mode;
+@@ -3195,10 +3181,11 @@ void acs_update_radar(struct hostapd_iface *iface)
+ 
+       chan = &iface->current_mode->channels[i];
+ 
+-      if ((chan->freq >= mode->candidates[j].freq) &&
+-          (chan->freq <= mode->candidates[j].freq + mode->candidates[j].width)) {
+-        if ((chan->flag & HOSTAPD_CHAN_DFS_MASK) == HOSTAPD_CHAN_DFS_UNAVAILABLE)
++      if (channels_overlap(mode->candidates[j].freq, mode->candidates[j].width, chan->freq, 20)) {
++        if ((chan->flag & HOSTAPD_CHAN_DFS_MASK) == HOSTAPD_CHAN_DFS_UNAVAILABLE) {
+           mode->candidates[j].radar_detected = TRUE;
++          break;
++        }
+       }
+     }
+   }
+diff --git a/src/ap/acs.h b/src/ap/acs.h
+index b740052..a47b4aa 100644
+--- a/src/ap/acs.h
++++ b/src/ap/acs.h
+@@ -17,7 +17,6 @@ int acs_recalc_ranks_and_set_chan(struct hostapd_iface *iface, int switch_reason
+ void acs_update_intolerant_channels(struct hostapd_iface *iface, u8 chan);
+ void acs_switch_intolerant(struct hostapd_iface *iface);
+ void acs_switch_intolerant_expired(struct hostapd_iface *iface);
+-void acs_set_radar(struct hostapd_iface *iface, int freq, int chan_width, int cf1);
+ void acs_update_radar(struct hostapd_iface *iface);
+ void acs_radar_switch(struct hostapd_iface *iface);
+ int acs_do_switch_channel(struct hostapd_iface *iface, int block_tx);
+diff --git a/src/ap/dfs.c b/src/ap/dfs.c
+index 2d594fb..7f4b3d2 100644
+--- a/src/ap/dfs.c
++++ b/src/ap/dfs.c
+@@ -1686,7 +1686,7 @@ int hostapd_dfs_radar_detected(struct hostapd_iface *iface, int freq,
+ 
+ #ifdef CONFIG_ACS
+   if (iface->conf->acs_init_done)
+-    acs_set_radar(iface, freq, chan_width_enum_to_freq(chan_width), cf1);
++    acs_update_radar(iface);
+ #endif
+ 
+ 	/* Skip if reported radar event not overlapped our channels */
+-- 
+2.10.1
+

@@ -1,0 +1,87 @@
+From b16e45fb9286b73292d59c3572e0b9f9fec88dd4 Mon Sep 17 00:00:00 2001
+From: pukitis <martins.pukitis@intel.com>
+Date: Mon, 12 Mar 2018 14:16:16 +0200
+Subject: [PATCH] hostapd-send-csa-on-40-intoler-chan-switch
+
+---
+ src/ap/ieee802_11_ht.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 49 insertions(+), 2 deletions(-)
+
+diff --git a/src/ap/ieee802_11_ht.c b/src/ap/ieee802_11_ht.c
+index 8b5e291..1f8e26c 100644
+--- a/src/ap/ieee802_11_ht.c
++++ b/src/ap/ieee802_11_ht.c
+@@ -24,6 +24,8 @@
+ #include "acs.h"
+ 
+ 
++static void hostapd_switch_csa(struct hostapd_iface *iface);
++
+ /*    special case for ASSOC RESP:
+       mask out RX MCS Set as a workoaround for some STA vendors*/
+ u8 * hostapd_eid_ht_capabilities_assoc_resp(struct hostapd_data *hapd, u8 *eid,
+@@ -599,7 +601,7 @@ void ht40_intolerant_add(struct hostapd_iface *iface, struct sta_info *sta)
+ 	if (iface->conf->secondary_channel &&
+ 	    (iface->drv_flags & WPA_DRIVER_FLAGS_HT_2040_COEX)) {
+ 		iface->conf->secondary_channel = 0;
+-		ieee802_11_set_beacons(iface);
++		hostapd_switch_csa(iface);
+ 	}
+ }
+ 
+@@ -745,6 +747,51 @@ void ap_ht2040_timeout(void *eloop_data, void *user_data)
+     iface->conf->secondary_channel = iface->secondary_ch;
+ 
+     iface->chan_switch_reason = HAPD_CHAN_SWITCH_20_40_COEX;
+-    ieee802_11_set_beacons(iface);
++    hostapd_switch_csa(iface);
+   }
+ }
++
++static void hostapd_switch_csa(struct hostapd_iface *iface)
++{
++	struct csa_settings csa_settings;
++	unsigned int i;
++	int err = 1;
++
++	/* Check if CSA in progress */
++	if (hostapd_csa_in_progress(iface)) {
++		wpa_printf(MSG_DEBUG, "will NOT switch to a new channel - CSA already in progress");
++		return;
++	}
++
++	/* Check if active CAC */
++	if (iface->cac_started) return;
++
++	/* Setup CSA request */
++	os_memset(&csa_settings, 0, sizeof(csa_settings));
++	csa_settings.cs_count = 5;
++	csa_settings.block_tx = 0;
++
++	err = hostapd_set_freq_params(&csa_settings.freq_params,
++		iface->conf->hw_mode,
++		acs_chan_to_freq(iface->conf->channel),
++		iface->conf->channel,
++		iface->conf->ieee80211n,
++		iface->conf->ieee80211ac,
++		iface->conf->secondary_channel,
++		iface->conf->vht_oper_chwidth,
++		iface->conf->vht_oper_centr_freq_seg0_idx,
++		iface->conf->vht_oper_centr_freq_seg1_idx,
++		iface->current_mode->vht_capab);
++
++	if (err) {
++		wpa_printf(MSG_ERROR, "failed to calculate CSA freq params");
++		/* possibly recover actual iface params */
++		hostapd_disable_iface(iface);
++		return;
++	}
++
++	for (i = 0; i < iface->num_bss; i++) {
++		err = hostapd_switch_channel(iface->bss[i], &csa_settings);
++		if (err) return;
++	}
++}
+-- 
+2.10.1
+

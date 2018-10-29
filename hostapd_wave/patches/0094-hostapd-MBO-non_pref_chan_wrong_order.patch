@@ -1,0 +1,52 @@
+From d80c7d1791743b619772eee722d763866ab8c4f8 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Mon, 5 Feb 2018 16:06:08 +0200
+Subject: [PATCH] hostapd-MBO-non_pref_chan_wrong_order
+
+---
+ src/ap/wnm_ap.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/src/ap/wnm_ap.c b/src/ap/wnm_ap.c
+index 79b7f71..9489450 100644
+--- a/src/ap/wnm_ap.c
++++ b/src/ap/wnm_ap.c
+@@ -564,7 +564,6 @@ static void report_notification_req(struct hostapd_data *hapd, const u8 *addr)
+ 	struct sta_info *sta;
+ #ifdef CONFIG_MBO
+ 	struct mbo_non_pref_chan_info *info;
+-	unsigned int count = 0;
+ 	u8 i;
+ #endif /* CONFIG_MBO */
+ 
+@@ -590,19 +589,22 @@ static void report_notification_req(struct hostapd_data *hapd, const u8 *addr)
+ 	pos += ret;
+ 
+ 	for (info = sta->non_pref_chan; info; info = info->next) {
+-		ret = os_snprintf(pos, end - pos, "non_pref_chan=%u:%u:%u:",
+-						  info->op_class, info->pref, info->reason_code);
+-		count++;
++		ret = os_snprintf(pos, end - pos, "non_pref_chan=%u:",
++						  info->op_class);
+ 		if (os_snprintf_error(end - pos, ret))
+ 			break;
+-		pos += ret;
+ 		for (i = 0; i < info->num_channels; i++) {
+ 			ret = os_snprintf(pos, end - pos, "%u%s", info->channels[i],
+-					i + 1 < info->num_channels ? "," : " ");
++					i + 1 < info->num_channels ? "," : ":");
+ 			if (os_snprintf_error(end - pos, ret))
+ 				break;
+ 			pos += ret;
+ 		}
++		ret = os_snprintf(pos, end - pos, "%u:%u",
++						  info->pref, info->reason_code);
++		if (os_snprintf_error(end - pos, ret))
++			break;
++		pos += ret;
+ 	}
+ #endif
+ 
+-- 
+2.10.1
+

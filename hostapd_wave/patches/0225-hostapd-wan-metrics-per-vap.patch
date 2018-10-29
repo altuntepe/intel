@@ -1,0 +1,73 @@
+From 75b357e312c2391f2092e203718a215d0f9de950 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:10:17 +0200
+Subject: [PATCH] hostapd-wan-metrics-per-vap
+
+---
+ hostapd/ctrl_iface.c  | 24 ++++++++++++++++--------
+ hostapd/hostapd_cli.c |  7 ++++---
+ 2 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index a4ba7f4..8d879d7 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -729,17 +729,25 @@ static int hostapd_ctrl_iface_hs20_deauth_req(struct hostapd_data *hapd,
+ static int hostapd_ctrl_iface_update_wan_metrics(struct hostapd_data *hapd,
+ 						const char *cmd)
+ {
+-	struct hostapd_iface *iface = hapd->iface;
+ 	char buf[128];
+-	int j;
+ 
+-	os_strlcpy(buf, cmd, 128);
+-	wpa_printf(MSG_DEBUG, "hostapd_ctrl_iface_update_wan_metrics, iface->num_bss=%zu"
+-			,iface->num_bss);
+-	for (j = 0; j < iface->num_bss; j++) {
+-		if (hs20_parse_wan_metrics(iface->bss[j]->conf, buf, 0) != 0)
+-			return -1;
++	hapd = get_bss_index(cmd, hapd->iface);
++	if (NULL == hapd) {
++		return -1;
++	}
++
++	cmd = os_strchr(cmd, ' ');
++	if (NULL == cmd) {
++		return -1;
+ 	}
++	cmd++;
++
++	os_strlcpy(buf, cmd, 128);
++	wpa_printf(MSG_DEBUG, "hostapd_ctrl_iface_update_wan_metrics, bss=%s", hapd->conf->iface);
++
++	if (hs20_parse_wan_metrics(hapd->conf, buf, 0) != 0)
++		return -1;
++
+ 	return 0;
+ }
+ 
+diff --git a/hostapd/hostapd_cli.c b/hostapd/hostapd_cli.c
+index 485772e..9679738 100644
+--- a/hostapd/hostapd_cli.c
++++ b/hostapd/hostapd_cli.c
+@@ -845,13 +845,14 @@ static int hostapd_cli_cmd_update_wan_metrics(struct wpa_ctrl *ctrl,
+ 	char buf[200];
+ 	int res;
+ 
+-	if (argc != 1) {
++	if (argc != 2) {
+ 		printf("Invalid 'update_wan_metrics' command - "
+-			   "one argument is needed\n");
++			   "two arguments are needed\n");
+ 		return -1;
+ 	}
+ 
+-	res = os_snprintf(buf, sizeof(buf), "UPDATE_WAN_METRICS %s", argv[0]);
++	res = os_snprintf(buf, sizeof(buf), "UPDATE_WAN_METRICS %s %s",
++								  argv[0], argv[1]);
+ 	if (res < 0 || res >= (int) sizeof(buf))
+ 		return -1;
+ 	return wpa_ctrl_command(ctrl, buf);
+-- 
+2.10.1
+

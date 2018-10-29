@@ -1,0 +1,44 @@
+From 4564f1975f3e36fecbc1f28491a6eafe347bb3a0 Mon Sep 17 00:00:00 2001
+From: Ido Reis <idox.reis@intel.com>
+Date: Mon, 5 Sep 2016 16:21:22 +0300
+Subject: [PATCH] hostapd: LDPC
+
+Signed-off-by: Ido Reis <idox.reis@intel.com>
+---
+ src/ap/ieee802_11_ht.c  | 4 ++++
+ src/ap/ieee802_11_vht.c | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/ap/ieee802_11_ht.c b/src/ap/ieee802_11_ht.c
+index e25df32..cd2101e 100644
+--- a/src/ap/ieee802_11_ht.c
++++ b/src/ap/ieee802_11_ht.c
+@@ -562,6 +562,10 @@ void hostapd_get_ht_capab(struct hostapd_data *hapd,
+ 	if (!(hapd->iconf->ht_capab & HT_CAP_INFO_TX_STBC))
+ 		cap &= ~HT_CAP_INFO_RX_STBC_MASK;
+ 
++	/* if we don't support RX LDPC, mask out LDPC for TX in the STA's HT caps */
++	if (!(hapd->iconf->ht_capab & HT_CAP_INFO_LDPC_CODING_CAP))
++		cap &= ~HT_CAP_INFO_LDPC_CODING_CAP;
++
+ 	neg_ht_cap->ht_capabilities_info = host_to_le16(cap);
+ 
+ 	/* mask out supported MCS set vs our own MCS set */
+diff --git a/src/ap/ieee802_11_vht.c b/src/ap/ieee802_11_vht.c
+index a3429e6..460c55e 100644
+--- a/src/ap/ieee802_11_vht.c
++++ b/src/ap/ieee802_11_vht.c
+@@ -522,6 +522,10 @@ void hostapd_get_vht_capab(struct hostapd_data *hapd,
+ 	if (!(own_cap & VHT_CAP_TXSTBC))
+ 		cap &= ~VHT_CAP_RXSTBC_MASK;
+ 
++	/* if we don't support RX LDPC, mask out LDPC for TX in the STA's VHT caps */
++	if (!(own_cap & VHT_CAP_RXLDPC))
++		cap &= ~VHT_CAP_RXLDPC;
++
+ 	neg_vht_cap->vht_capabilities_info = host_to_le32(cap);
+ 
+ 	/* mask out supported MCS set vs our own MCS set */
+-- 
+2.10.1
+

@@ -1,0 +1,28 @@
+From 32bba93bf5e4144c0bd913dda3ef6fc34219149e Mon Sep 17 00:00:00 2001
+From: sdinkinx <simonx.dinkin@intel.com>
+Date: Wed, 13 Dec 2017 12:36:53 +0200
+Subject: [PATCH] wpa_cli: add wps timeout and overlap events
+
+Signed-off-by: sdinkinx <simonx.dinkin@intel.com>
+---
+ wpa_supplicant/wpa_cli.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/wpa_supplicant/wpa_cli.c b/wpa_supplicant/wpa_cli.c
+index 5e03cba..2369803 100644
+--- a/wpa_supplicant/wpa_cli.c
++++ b/wpa_supplicant/wpa_cli.c
+@@ -3680,6 +3680,10 @@ static void wpa_cli_action_process(const char *msg)
+ 		wpa_cli_exec(action_file, ifname, pos);
+ 	} else if (str_starts(pos, WPS_EVENT_FAIL)) {
+ 		wpa_cli_exec(action_file, ifname, pos);
++	} else if (str_starts(pos, WPS_EVENT_TIMEOUT)) {
++		wpa_cli_exec(action_file, ifname, pos);
++	} else if (str_starts(pos, WPS_EVENT_OVERLAP)) {
++		wpa_cli_exec(action_file, ifname, pos);
+ 	} else if (str_starts(pos, AP_STA_CONNECTED)) {
+ 		wpa_cli_exec(action_file, ifname, pos);
+ 	} else if (str_starts(pos, AP_STA_DISCONNECTED)) {
+-- 
+2.10.1
+

@@ -1,0 +1,31 @@
+From 3e9b2080e42b84ab193130f8635622a62451b710 Mon Sep 17 00:00:00 2001
+From: grishche <a.grishchenko@intel.com>
+Date: Tue, 6 Feb 2018 12:10:17 +0200
+Subject: [PATCH] hostapd-get-sta-measurements-fix
+
+---
+ hostapd/ctrl_iface.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hostapd/ctrl_iface.c b/hostapd/ctrl_iface.c
+index 8d879d7..0420bbc 100644
+--- a/hostapd/ctrl_iface.c
++++ b/hostapd/ctrl_iface.c
+@@ -4968,7 +4968,14 @@ int hostapd_ctrl_iface_get_sta_measurements(struct hostapd_data *hapd,
+       return 0;
+     return ret;
+   }
++
+   sta = ap_get_sta(hapd, sta_addr);
++  if (sta == NULL) {
++    ret = os_snprintf(buf, buflen, "FAIL\n");
++    if (ret < 0 || (size_t) ret >= buflen)
++      return 0;
++    return ret;
++  }
+ 
+   ret = hostapd_drv_get_sta_measurements(hapd, sta_addr, &sta_info);
+   if (ret) {
+-- 
+2.10.1
+
