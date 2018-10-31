@@ -17,7 +17,6 @@ PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=
 PKG_BUILD_PARALLEL:=1
 PKG_IS_KERNEL_MODULE:=y
-PKG_DEFAULT_CUSTOM_SOURCE_DIR:=$(TOPDIR)/ppa-drv
 
 -include $(INCLUDE_DIR)/package-version-override.mk
 include $(INCLUDE_DIR)/package.mk
