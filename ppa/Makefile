@@ -3,13 +3,13 @@ include $(INCLUDE_DIR)/kernel.mk
 SUBTARGET_SUFFIX:=$(shell echo $(subst .,_,$(subst -,_,$(subst /,_,$(SUBTARGET)))) | cut -d_ -f2-)
 
 PKG_NAME:=ppa-drv
-PKG_VERSION:=1.0
+PKG_VERSION:=1.0.1
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/ppa_drv.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=a836ff797052d0bac2c85fbfad43b12ccd46a83c
+PKG_SOURCE_VERSION:=f067537665a0f5dadb0220092087b55b1f274f7b
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Intel
 
@@ -60,7 +60,7 @@ define KernelPackage/ppa-drv
  MAINTAINER:=Intel
  KCONFIG:= \
 	CONFIG_PPA=y \
-  	CONFIG_PPA_API_SW_FASTPATH=y \
+	CONFIG_PPA_API_SW_FASTPATH=y \
 	CONFIG_PPA_TCP_LITEPATH=y
 
  FILES:= \
@@ -88,12 +88,12 @@ define KernelPackage/ppa-drv-stack-al
  KCONFIG:= \
 	CONFIG_PPA=y \
 	CONFIG_PPA_QOS=y \
- 	CONFIG_PPA_API_DIRECTPATH=y \
+	CONFIG_PPA_API_DIRECTPATH=y \
 	CONFIG_PPA_TMU_MIB_SUPPORT=n \
-  	CONFIG_PPA_API_SW_FASTPATH=n \
-  	CONFIG_PPA_BR_SESS_LEARNING=y \
+	CONFIG_PPA_API_SW_FASTPATH=n \
+	CONFIG_PPA_BR_SESS_LEARNING=y \
 	CONFIG_PPA_TCP_LITEPATH=n
- 
+
  FILES:= \
 	$(PKG_BUILD_DIR)/src/ppa_api/ppa_drv_stack_al.ko
 
@@ -159,7 +159,7 @@ define KernelPackage/ppa-drv-grx500-mpe
  TITLE:=Packet Protocol Acceleration Multi-Protocol Engine for GRX500
  DEPENDS:=@TARGET_intel_mips_xrx500 +kmod-ppa-drv-grx500
  MAINTAINER:=Intel
- 
+
  FILES:= \
 	$(PKG_BUILD_DIR)/src/platform/xrx500/ltq_mpe_hal_drv.ko \
 	$(PKG_BUILD_DIR)/src/ppa_api/ppa_api_tmplbuf.ko
@@ -200,11 +200,11 @@ define KernelPackage/ppa-drv-grx500-eth-bond
  KCONFIG+= \
 	CONFIG_HGU_BONDING=y \
 	CONFIG_LTQ_PPA_ETH_BOND
-        
+
  $(if $(wildcard $(LINUX_DIR)/drivers/net/lantiq_ppa),PPAPATH:="lantiq_ppa",PPAPATH:="lantiq_ppa/src")
  FILES := \
 	$(LINUX_DIR)/drivers/net/$(PPAPATH)/platform/$(SUBTARGET_SUFFIX)/ltq_eth_bond_dp.ko
- 
+
 endef
 
 define KernelPackage/ppa-drv-grx500-eth-bond/description
@@ -270,7 +270,7 @@ define Build/Compile
 	)
 endef
 
-define Build/Clean	
+define Build/Clean
 	if [ -d $(PKG_BUILD_DIR) ]; then $(MAKE) -C "$(LINUX_DIR)" SUBDIRS="$(PKG_BUILD_DIR)/src" clean; \
         $(RM) -r $(PKG_BUILD_DIR)/ipkg-$(BOARD); \
 	$(if $(CONFIG_PACKAGE_ppacmd), \
