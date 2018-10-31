@@ -32,7 +32,7 @@ define Package/ppacmd
  SECTION:=utils
  CATEGORY:=Intel
  TITLE:=Packet Protocol Acceleration Commandline tool
- DEPENDS:=@TARGET_intel_mips +kmod-ppa-drv
+ DEPENDS:=@TARGET_intel_mips +kmod-ppa-drv +libsafec
  MAINTAINER:=Intel
  URL:=http://www.intel.com
  MENU:=1
@@ -82,7 +82,7 @@ endef
 define KernelPackage/ppa-drv-stack-al
  SUBMENU:=Intel
  TITLE:=Packet Protocol Acceleration Stack Adaptation Layer
- DEPENDS:=@TARGET_intel_mips +kmod-nf-conntrack
+ DEPENDS:=@TARGET_intel_mips +kmod-nf-conntrack +kmod-veth
  MAINTAINER:=Intel
  KCONFIG:= \
 	CONFIG_PPA=y \
@@ -124,6 +124,7 @@ endef
 
 $(eval $(call add_ppa_config,ppa-drv-grx500, \
 	CONFIG_PPA_TMU_HAL \
+	CONFIG_NAT_LOOP_BACK \
 ))
 
 define KernelPackage/ppa-drv-grx500/description
@@ -133,20 +134,21 @@ endef
 define KernelPackage/ppa-drv-falcon
  SUBMENU:=Intel
  TITLE:=Packet Protocol Acceleration Support for FALCON Mountain
- DEPENDS:=@TARGET_intel_mips_falcon_mountain +kmod-ppa-drv-stack-al
+ DEPENDS:=@TARGET_intel_mips_falcon_mountain +kmod-ppa-drv-stack-al +kmod-sched-flower +kmod-sched-act-extra
  MAINTAINER:=Intel
  KCONFIG:= \
         CONFIG_PPA_HAL_SELECTOR=y \
         CONFIG_PPA_API_DIRECTCONNECT=y
 
  FILES:= \
-        $(PKG_BUILD_DIR)/src/platform/xrx500/ltq_pae_hal.ko
+        $(PKG_BUILD_DIR)/src/platform/xrx500/qos_hal_drv.ko
 
- AUTOLOAD:=$(call AutoProbe,ltq_pae_hal)
+ AUTOLOAD:=$(call AutoProbe,qos_hal_drv)
 endef
 
 $(eval $(call add_ppa_config,ppa-drv-falcon, \
 	CONFIG_PPA_QOS_HAL \
+	CONFIG_QOS_MGR_TC_SUPPORT \
 ))
 
 define KernelPackage/ppa-drv-falcon/description
@@ -183,9 +185,9 @@ endef
 define KernelPackage/ppa-drv-mpe-ip97
  SUBMENU:=Intel
  TITLE:=LTQ PPA MPE IP97 Support for xRX500
- DEPENDS:=@TARGET_intel_mips_xrx500 @PACKAGE_kmod-ppa-drv
+ DEPENDS:=@TARGET_intel_mips_xrx500 @PACKAGE_kmod-ppa-drv +kmod-eip97
  KCONFIG:= \
-	CONFIG_LTQ_PPA_MPE_IP97=y
+	CONFIG_PPA_MPE_IP97=y
 endef
 
 define KernelPackage/ppa-drv-mpe-ip97/description
@@ -240,6 +242,26 @@ define KernelPackage/ppa-drv-gre/description
   GRE/EoGRE Acceleration in PPA - Enable this to support GRE/EoGRE in PPA
 endef
 
+define KernelPackage/mac-violation-mirror
+  SUBMENU:=Intel
+  TITLE:=Intel Mac Violation Exception Handling Support
+  DEPENDS:=@TARGET_intel_mips_xrx500 +kmod-ppa-drv
+  KCONFIG:= \
+	CONFIG_MAC_VIOLATION_MIRROR=m
+  FILES:= \
+	$(PKG_BUILD_DIR)/src/mac_violation_mirror/mac_violation_mirror.ko
+
+ AUTOLOAD:=$(call AutoProbe,mac_violation_mirror)
+endef
+
+$(eval $(call add_ppa_config,mac-violation-mirror, \
+	CONFIG_MAC_VIOLATION_MIRROR \
+))
+
+define KernelPackage/mac-violation-mirror/description
+ Kernel support for handling Source Mac Violated Packets by Mirroring to PAE port for connectivity continuation
+endef
+
 
 #############################################################################
 PKG_EXTRA_CFLAGS := $(patsubst CONFIG_%, -DCONFIG_%=1, $(patsubst %=m,%,$(filter %=m,$(PKG_EXTRA_KCONFIG))))
@@ -280,10 +302,11 @@ endef
 $(eval $(call KernelPackage,ppa-drv-grx500))
 $(eval $(call KernelPackage,ppa-drv-falcon))
 $(eval $(call KernelPackage,ppa-drv-grx500-mpe))
-#$(eval $(call KernelPackage,ppa-drv-mpe-ip97))
+$(eval $(call KernelPackage,ppa-drv-mpe-ip97))
 $(eval $(call KernelPackage,ppa-drv-grx500-eth-bond))
 $(eval $(call KernelPackage,ppa-drv-grx500-eth-rgmii))
 $(eval $(call KernelPackage,ppa-drv-gre))
 $(eval $(call KernelPackage,ppa-drv))
 $(eval $(call KernelPackage,ppa-drv-stack-al))
+$(eval $(call KernelPackage,mac-violation-mirror))
 $(eval $(call BuildPackage,ppacmd))
