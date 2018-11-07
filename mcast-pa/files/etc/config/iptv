@@ -1,0 +1,14 @@
+
+config iptv
+    # valid modes are: bridged | wan2lan | video2lan
+    option mode 'wan2lan'
+
+config igmp
+    option fastleave '1'
+    option force_v2 '1'
+
+config blocks
+    list entries '(*|239.255.255.0/24)'
+    list entries '(*|224.0.0.0/24)'
+    list entries '(*|239.192.0.0/16)'
+
