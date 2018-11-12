@@ -54,15 +54,15 @@ define Package/mcast-pa/install
 	$(INSTALL_DIR) $(1)/usr/prpl/scripts
 	$(CP) ./files/usr/prpl/scripts $(1)/usr/prpl/scripts/.
 
-	##
-	# install iptv scripts from here now too
-	#
-	# NOTE: these should probably be in their own package
-	##
+##
+# install iptv scripts from here now too
+#
+# NOTE: these should probably be in their own package
+##
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/iptv $(1)/etc/init.d/.
 
-	# HACK / FIXME - don't do this! make a uci-default instead
+# HACK / FIXME - don't do this! make a uci-default instead
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_BIN) ./files/etc/config/iptv $(1)/etc/config/.
 
