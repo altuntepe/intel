@@ -220,7 +220,7 @@
 #include <linux/rtnetlink.h>
 #include <linux/in_route.h>
 #include <linux/mroute.h>
-#include <kernel-list.h>
+#include "list.h"
 #include <mcast-pa.h>
 
 char *_SL_ = "\n";
