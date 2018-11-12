@@ -33,9 +33,9 @@
 
 // choose one and only one of these three: 
 
-//#define INTEL_MCAST_USE_PPA 1
+#define INTEL_MCAST_USE_PPA 1
 //#define INTEL_MCAST_USE_MCAST_CLI 1
-#define INTEL_MCAST_USE_MCAST_FAPI 1
+//#define INTEL_MCAST_USE_MCAST_FAPI 1
 
 // are you sure ? 
 

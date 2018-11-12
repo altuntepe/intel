@@ -25,7 +25,6 @@ DEP = $(SRC:.c=.d)
 LIBS=-lpcap
 LIBS+=-lrt
 LIBS+=-lnetlink
-LIBS+=-lmcastfapi
 
 LDFLAGS=$(HOST_LDFLAGS) -L$(STAGING_DIR)/usr/lib/mcast/
 EXTRA_CFLAGS += -fPIC -O -g -Wall -Werror -I. 
