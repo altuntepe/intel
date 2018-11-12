@@ -1393,7 +1393,7 @@ parse_route(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
 	parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
 
 	if (tb[RTA_OIF]) {
-		if (iswan(ll_index_to_name(*(int *) RTA_DATA(tb[RTA_OIF])))) {
+		if (iswan((char *)ll_index_to_name(*(int *) RTA_DATA(tb[RTA_OIF])))) {
 		} else {
 			return 0;
 		}
@@ -1931,7 +1931,7 @@ do_mroute(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
 }
 
 static int
-do_monitor_msg(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
+do_monitor_msg(const struct sockaddr_nl *who, struct rtnl_ctrl_data *data, struct nlmsghdr *n, void *arg)
 {
 	struct rtmsg *r = NLMSG_DATA(n);
 
