@@ -1250,12 +1250,9 @@ mcg_br_entry_head_get_from_group(char *group)
  */
 #define MDB_FORK_EXIT 69
 static void
-mdb_exit_handler(int ev, void *arg)
+mdb_exit_handler()
 {
 	struct mcastpa_system_init_t msi;
-	syslog(LOG_INFO, "%s:%d \n", __FUNCTION__, __LINE__);
-	if (ev == MDB_FORK_EXIT)
-		return;
 	syslog(LOG_INFO, "%s:%d removing head lists\n", __FUNCTION__, __LINE__);
 	mcg_br_entry_head_list_del_all();
 	memset(&msi, 0, sizeof (struct mcastpa_system_init_t));
@@ -2194,6 +2191,7 @@ mcast_sig_handler(int signo)
 	case SIGINT:
 	case SIGTERM:
 		syslog(LOG_INFO, "%s:%d quit or kill %d", __FUNCTION__, __LINE__, signo);
+		mdb_exit_handler();
 		exit(0);
 	case SIGUSR1:
 		mcg_br_entry_head_list_show();
@@ -2447,7 +2445,6 @@ main(int argc, char **argv)
 
 	openlog("mcast-pa", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
-	on_exit(mdb_exit_handler, 0);
 
 	if (signal(SIGUSR1, mcast_sig_handler) == SIG_ERR)
 		printf("\ncan't catch SIGUSR1\n");
