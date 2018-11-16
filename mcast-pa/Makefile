@@ -52,7 +52,7 @@ define Package/mcast-pa/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mcast-pa $(1)/sbin/
 
 	$(INSTALL_DIR) $(1)/usr/prpl/scripts
-	$(CP) ./files/usr/prpl/scripts $(1)/usr/prpl/scripts/.
+	$(CP) ./files/usr/prpl/scripts/* $(1)/usr/prpl/scripts/
 
 ##
 # install iptv scripts from here now too
