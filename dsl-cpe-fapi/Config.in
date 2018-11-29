@@ -1,0 +1,7 @@
+menu "Configuration"
+	depends on PACKAGE_dsl-cpe-fapi
+
+	config dsl-cpe-fapi_FAPI_DAEMON
+		bool "Support CLI application"
+		default n
+endmenu
