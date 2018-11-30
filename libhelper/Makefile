@@ -12,13 +12,13 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ############################### 
 PKG_NAME:=libhelper
-PKG_SOURCE_VERSION:=1.4.0.3
+PKG_VERSION:=1.4.0.3
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_NAME:=ugw_sdk
+PKG_SOURCE_VERSION:=ff1956b0c768af7efb33e4d8f0d4c880f052d8c9
 PKG_SOURCE_INNERDIR:=helper/libhelper
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/$(PKG_SOURCE_NAME).git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Intel
 PKG_LICENSE:=Intel
 

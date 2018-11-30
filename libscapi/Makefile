@@ -12,13 +12,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ############################### 
 PKG_NAME:=libscapi
-PKG_SOURCE_VERSION:=1.5.1.3
+PKG_VERSION:=1.5.1.3
+PKG_SOURCE_VERSION:=bc57b46e70a8c41302a77243e1c412d8fbea6863
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_NAME:=ugw_sdk
-PKG_SOURCE_INNERDIR:=libscapi
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/$(PKG_SOURCE_NAME).git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Intel
 PKG_LICENSE:=Intel
 

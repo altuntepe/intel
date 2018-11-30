@@ -12,13 +12,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ###############################
 PKG_NAME:=system_fapi
-PKG_SOURCE_VERSION:=1.1.8.10
+PKG_VERSION:=1.1.8.10
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_NAME:=system_service
-PKG_SOURCE_INNERDIR:=fapi_system_src
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/$(PKG_SOURCE_NAME).git
+PKG_SOURCE_VERSION:=33700daeacaaf896599dfdc595bf15f12f380b27
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Intel
 PKG_LICENSE:=Intel
