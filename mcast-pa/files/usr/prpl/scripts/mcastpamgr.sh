@@ -20,6 +20,7 @@
 #                                                                             #
 ###############################################################################
 . /lib/functions.sh
+. /lib/functions/network.sh
 export LD_LIBRARY_PATH=/opt/lantiq/lib:/opt/lantiq/usr/lib:${LD_LIBRARY_PATH}
 
 PPA_RUN_FILE="/tmp/mcastppamode"
@@ -51,7 +52,7 @@ setup_mcpd_config() {
 		model=1
 		echo video2lan $wan
 	elif [ "$iptv_mode" = "wan2lan" ] ; then
-		wan=$(uci get network.wan.ifname)
+		network_get_device wan wan
 		echo wan2lan upif $wan
 		model=0
 	elif [ "$iptv_mode" = "bridged" ] ; then

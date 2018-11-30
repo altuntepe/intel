@@ -19,8 +19,10 @@
 # Purpose: Configure mcproxy, mcast-pa and linux bridge based on iptv config  #
 #                                                                             #
 ###############################################################################
-START=19
+START=99
 USE_PROCD=1
+
+. /lib/functions/network.sh
 
 clear_section() {
 	local sec="$1"
@@ -124,8 +126,7 @@ setup_mcpd_config() {
 		set_instance $iptv_mode "br-video"	
 	elif [ "$iptv_mode" = "wan2lan" ] ; then
 		uci set mcproxy.mcproxy.disabled='0'
-		# FIXME: set upstream wan interface name (should be hard coded in future)
-		upif=$(uci get network.wan.ifname)
+		network_get_device upif wan
 		set_instance $iptv_mode $upif
 	elif [ "$iptv_mode" = "bridged" ] ; then
 		# Nothing to do
