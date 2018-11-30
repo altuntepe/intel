@@ -66,6 +66,9 @@ define Package/mcast-pa/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_BIN) ./files/etc/config/iptv $(1)/etc/config/.
 
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/etc/uci-defaults/mcast-pa $(1)/etc/uci-defaults/99-mcast-pa
+
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
 	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/60-iptv $(1)/etc/hotplug.d/iface/.
 endef
