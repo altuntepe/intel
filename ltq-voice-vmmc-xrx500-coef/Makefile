@@ -21,7 +21,7 @@ PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
 #PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_UNPACK:=gzip -dc $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:git@dev.iopsys.eu:intel/drv_vmmc_xrx500.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/drv_vmmc_xrx500.git
 
 VOICE_TARGET_FILENAME_FXS_DEDICATED:=xrx500_bbd_fxs.bin
 VOICE_TARGET_FILENAME_FXS_COMBINED:=xrx500_bbd_cmb_fxs.bin
@@ -84,14 +84,14 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/$(FIRMWARE_DIR)
 	$(INSTALL_DIR) $(1)/$(BBD_DIR)
 
-	# copy BBD archive files only
+        # copy BBD archive files only
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/xrx500_bbd*.bin  $(1)$(BBD_DIR)/
 
-	# copy custom BBD files if given
+        # copy custom BBD files if given
 	- $(INSTALL_DATA) $(CONFIG_LTQ_VOICE_VMMC_COEF_XRX500_CUSTOM_FILE_FXS) $(1)$(BBD_DIR)/$(FXS_SRC_FILENAME)
 	- $(INSTALL_DATA) $(CONFIG_LTQ_VOICE_VMMC_COEF_XRX500_CUSTOM_FILE_FXO) $(1)$(BBD_DIR)/$(FXO_SRC_FILENAME)
 
-	# For backward compatibility create links to default names
+        # For backward compatibility create links to default names
 	ln -snf $(BBD_DIR)/$(FXS_SRC_FILENAME) $(1)$(FIRMWARE_DIR)/$(VOICE_TARGET_FILENAME_FXS_DEDICATED)
 	ln -snf $(BBD_DIR)/$(FXS_SRC_FILENAME) $(1)$(FIRMWARE_DIR)/$(VOICE_TARGET_FILENAME_FXS_COMBINED)
 	- ln -snf $(BBD_DIR)/$(FXO_SRC_FILENAME)  $(1)$(FIRMWARE_DIR)/$(VOICE_TARGET_FILENAME_FXO)
