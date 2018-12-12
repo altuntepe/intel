@@ -1,0 +1,80 @@
+choice
+   depends on PACKAGE_ltq-voice-vmmc-xrx500-coef
+   prompt "FXS coefficients"
+   default LTQ_VOICE_VMMC_COEF_XRX500_ETSI
+   help
+      Select country specific BBD coefficient file.
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_ETSI
+      bool "ETSI (FXS: T3R10, Vl:40V, Ic:25mA, Vid:25V, Vri:45Vrms, f:25Hz) (FXO: T0R0)"
+      help
+        These coefficents contains a parameter set with line impedance Zr according to ETSI.
+
+        T:   gain in transmit direction (attenuation in dBr) [dBr]
+        R:   gain in receive direction (attenuation in dBr) [dBr]
+        Vl:  on-hook voltage limit [V]
+        Ic:  off-hook loop current [mA]
+        Vid: low-power-standby voltage [V]
+        Vri: ring voltage [v]
+        f:   ring frequency [V]
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_US600R
+      bool "USA 600R (FXS: T3R10, Vl:40V, Ic:25mA, Vid:25V, Vri:45Vrms, f:25Hz) (FXO: T0R0)"
+      help
+        These coefficents contains a parameter set with line impedance e.g. for USA.
+
+        T:   gain in transmit direction (attenuation 3dBr) [dBr]
+        R:   gain in receive direction (attenuation 10dBr) [dBr]
+        Vl:  on-hook voltage limit [V]
+        Ic:  off-hook loop current [mA]
+        Vid: low-power-standby voltage [V]
+        Vri: ring voltage [v]
+        f:   ring frequency [V]
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_GERMANY
+      bool "Germany (FXS: T3R10, Vl:40V, Ic:25mA, Vid:25V, Vri:45Vrms, f:25Hz) (FXO: T0R0)"
+      help
+        These coefficents contains a parameter set with line impedance for Germany.
+
+        T:   gain in transmit direction (attenuation 3dBr) [dBr]
+        R:   gain in receive direction (attenuation 10dBr) [dBr]
+        Vl:  on-hook voltage limit [V]
+        Ic:  off-hook loop current [mA]
+        Vid: low-power-standby voltage [V]
+        Vri: ring voltage [v]
+        f:   ring frequency [V]
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_USE_CUSTOM_FILE
+      bool "Select own FXS coefficient file"
+endchoice
+
+menu "FXS own coefficient file"
+   depends on PACKAGE_ltq-voice-vmmc-xrx500-coef
+   depends on LTQ_VOICE_VMMC_COEF_XRX500_USE_CUSTOM_FILE
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_CUSTOM_FILE_FXS
+   depends on PACKAGE_ltq-voice-vmmc-xrx500-coef
+   depends on LTQ_VOICE_VMMC_COEF_XRX500_USE_CUSTOM_FILE
+   string "FXS own coefficient file"
+   help
+     Custom file to be used as BBD file. This can be either a BBD file as created by the XTCOS tool
+     or an BBD archive containing multiple BBD files for different DC/DC types and SLIC versions.
+     Specify the absolute path and filename of the file.
+
+endmenu
+
+menu "FXO own coefficient file"
+   depends on PACKAGE_ltq-voice-vmmc-xrx500-coef
+   depends on LTQ_VOICE_VMMC_COEF_XRX500_USE_CUSTOM_FILE
+
+   config LTQ_VOICE_VMMC_COEF_XRX500_CUSTOM_FILE_FXO
+   depends on PACKAGE_ltq-voice-vmmc-xrx500-coef
+   depends on LTQ_VOICE_VMMC_COEF_XRX500_USE_CUSTOM_FILE
+   string "FXO own coefficient file"
+   help
+     Custom file to be used as BBD file. This can be either a BBD file as created by the XTCOS tool
+     or an BBD archive containing multiple BBD files for different DC/DC types and SLIC versions.
+     Specify the absolute path and filename of the file.
+
+endmenu
+
