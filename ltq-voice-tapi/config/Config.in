@@ -1,0 +1,195 @@
+#error not defined 
+menu "Advanced configuration (for developers)"
+	depends on PACKAGE_ltq-voice-tapi
+
+config LTQ_VOICE_TAPI_USER_FLAGS
+	depends on PACKAGE_ltq-voice-tapi
+	string "Additional CFLAGS"
+	default ""
+	help
+		Additional CFLAGS for compilation (for developers)
+
+config LTQ_VOICE_TAPI_USER_OPTIONS
+	depends on PACKAGE_ltq-voice-tapi
+	string "Additional autogen configure options"
+	default ""
+	help
+		Additional autogen configure options (for developers)
+
+
+config LTQ_VOICE_TAPI_EVENT_LOGGER
+	bool "Event logger support"
+	depends on PACKAGE_ltq-voice-tapi && +PACKAGE_ltq-evtlog
+	default n
+	help
+		Option to capture detailed traces via the event logger module.
+		- for debugging only
+		- requires package ltq-evtlog.
+
+config LTQ_VOICE_TAPI_DEBUGGING
+	bool "Debugging support"
+	depends on PACKAGE_ltq-voice-tapi
+	default n
+	help
+		Option to support debugging:
+		- disable compile optimisation
+		- set the default trace-level to "debug"
+		- enable ASSERT
+
+endmenu
+
+config LTQ_VOICE_TAPI_FAX
+	bool "FAX relay and modem support"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-vmmc-grx750 
+	default y
+	help
+		Option to enable fax/modem support in TAPI.
+
+config LTQ_VOICE_TAPI_CID
+	bool "CID support"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default y
+	help
+		Option to enable Caller ID support.
+
+config LTQ_VOICE_TAPI_LT_GR909
+	bool "Linetesting GR-909 support"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default y
+	help
+		Option to enable GR-909 linetesting support.
+
+config LTQ_VOICE_TAPI_CONT_MEASUREMENT
+	bool "Continuous Analog Line Measurement"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default y
+	help
+		Option to enable continuous measurement on FXS lines.
+
+config LTQ_VOICE_TAPI_CAP_MEASUREMENT
+	bool "Capacitance Analog Line Measurement"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default y
+	help
+		Option to enable capacitance measurement on FXS lines.
+
+config LTQ_VOICE_TAPI_DECT
+	bool "DECT encoding for COSIC modem"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500
+	select LTQ_VOICE_TAPI_KPI
+	default y
+	help
+		Option to enable DECT encoding for COSIC modem.
+
+config LTQ_VOICE_TAPI_QOS
+	bool "QOS for accelerated RTP packet handling"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-kpi2udp
+	select LTQ_VOICE_TAPI_KPI
+	default y
+	help
+		Option to enable an accelerated RTP packet transfer inside
+		the LINUX kernel space. This option requires the KPI2UDP
+		packet, which actually provides the OS specific hooks in
+		the IP stack.
+
+config LTQ_VOICE_TAPI_KPI
+	bool "KPI (Kernel Packet Interface)"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-kpi2udp
+	default y
+	help
+		Option to enable the generic kernel level packet interface
+		which allows accelerated packet transfer for various purposes.
+		The most important example is the QOS option, which allows
+		to redirect RTP packets directly into the IP stack.
+		Other options relying on KPI are DECT and HDLC.
+
+config LTQ_VOICE_TAPI_STATISTICS
+	bool "Voice packet counters in procfs"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500
+	default y
+	help
+		Option to enable packet counters which can be read via the
+		procfs "statistic" node.
+
+config LTQ_VOICE_TAPI_METERING
+	bool "Metering (TTX) support"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default y
+	help
+		Option to enable metering (TTX) support.
+
+config LTQ_VOICE_TAPI_PCM
+	bool "PCM support"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs || PACKAGE_ltq-voice-vmmc-grx750 
+	default y
+	help
+		Option to enable the PCM interface support.
+
+#config LTQ_VOICE_TAPI_HDLC
+#	bool "PCM HDLC support (evaluation)"
+#	depends on PACKAGE_ltq-voice-tapi
+#	select LTQ_VOICE_TAPI_PCM
+#	default n
+#	help
+#		Option to enable PCM HDLC framing inside the firmware
+#		for ISDN D-Channel access.
+
+config LTQ_VOICE_TAPI_PHONE_DETECTION
+	bool "FXS Phone Detection"
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc || PACKAGE_ltq-voice-vmmc-xrx500 || PACKAGE_ltq-voice-duslic_xs
+	default n
+	help
+		Enable the Phone Detection feature on FXS lines.
+
+config LTQ_VOICE_TAPI_PMC
+	bool "Register with Power Management Control Unit"
+	depends on PACKAGE_ltq-voice-tapi
+	default n
+	help
+		Register with the Power Management Control Unit (PMCU)
+		for enable/disable of the power save features and status
+		reports of voice-FW activity.
+
+config LTQ_VOICE_TAPI_HOTPLUG
+	bool "Enable Linux hotplug events"
+	depends on PACKAGE_ltq-voice-tapi
+	default n
+	help
+		Enable support for Linux hotplug event feature.
+
+config LTQ_VOICE_TAPI_TRACES
+	bool "Compile with driver traces"
+	depends on PACKAGE_ltq-voice-tapi
+	default n
+	help
+		Enable driver trace printout with different trace levels to be
+		configured dynamically from the application or during insmod
+
+config LTQ_VOICE_TAPI_SRTP
+	depends on PACKAGE_ltq-voice-tapi
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	select PACKAGE_kmod-libsrtp-km
+	bool "SRTP support"
+	default n
+	help
+		Option to build SRTP support in TAPI
+
+config LTQ_VOICE_TAPI_KERNEL_MODULE
+	depends on PACKAGE_ltq-voice-tapi
+	bool "Build kernel module"
+	default y
+	help
+		Option to enable building of kernel module
+

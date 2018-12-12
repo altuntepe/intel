@@ -1,0 +1,11 @@
+diff --git a/include/drv_tapi_io.h b/include/drv_tapi_io.h
+--- a/include/drv_tapi_io.h
++++ b/include/drv_tapi_io.h
+@@ -91,6 +91,7 @@
+ #endif
+ 
+ /** \defgroup TAPI_INTERFACE TAPI Ioctl and Functions Reference
++    @ingroup TAPI
+     This chapter describes all the services that can be used via the TAPI. The ioctl
+     commands are described by means of the return values for each function.
+     The chapter is organized as follows: */
