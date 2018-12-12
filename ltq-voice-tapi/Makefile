@@ -14,7 +14,7 @@ PKG_MD5SUM:=0a8de1ebdb2b1c771971ce08bf415052
 PKG_RELEASE:=1
 
 # IMPORTANT - include the version-override here after PKG_VERSION definition
-include $(INCLUDE_DIR)/package-version-override.mk
+-include $(INCLUDE_DIR)/package-version-override.mk
 # IMPORTANT - ... and before using PKG_VERSION below
 
 PKG_BASE_NAME:=drv_tapi
@@ -173,13 +173,13 @@ endef
 
 ifneq ($(CONFIG_LTQ_VOICE_VMMC_WITH_DEVICE_FALCON),y)
 define Package/$(PKG_NAME)/install
-	# Startup script
+        # Startup script
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/$(PKG_START_SCRIPT) $(1)/etc/init.d/
-	# Install the driver binary
+        # Install the driver binary
 	$(INSTALL_DIR) $(1)/$(MODULES_SUBDIR)
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/drv_tapi$(PKG_MODULE_EXTENSION) $(1)/$(MODULES_SUBDIR)
-	# Copy header file into staging directory
+        # Copy header file into staging directory
 	$(INSTALL_DIR) $(STAGING_DIR)/usr/docs
 	$(CP) $(PKG_BUILD_DIR)/include/drv_tapi_io.h $(STAGING_DIR)/usr/docs/.
 endef
