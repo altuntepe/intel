@@ -1,0 +1,49 @@
+diff --git a/src/mps/CHANGELOG b/src/mps/CHANGELOG
+index d85ce24..6db865b 100644
+--- a/src/mps/CHANGELOG
++++ b/src/mps/CHANGELOG
+@@ -1,3 +1,6 @@
++FIX Corrected writing to already freed heap memory when switching from mailbox
++    layout 1 to layout2. [VOICECPE_SW-1844]
++
+ -------------------------------------------------------------------------------
+ version 3.3.0.0  |  2017-11-29  |  Voice System Package 4.52.1
+ -------------------------------------------------------------------------------
+diff --git a/src/mps/drv_mps_vmmc_common.c b/src/mps/drv_mps_vmmc_common.c
+index d57536d..8549d6d 100644
+--- a/src/mps/drv_mps_vmmc_common.c
++++ b/src/mps/drv_mps_vmmc_common.c
+@@ -2426,13 +2426,14 @@ static IFX_int32_t mps_release_dev_mbox_setup_l1(
+       if (p_tmp != IFX_NULL)
+          {IFXOS_BlockFree((IFX_void_t *)p_tmp);}
+    }
+-   memset(&pDev->voice_upstrm_fifo, 0x0, sizeof(mps_fifo));
+-   memset(&pDev->voice_dwstrm_fifo, 0x0, sizeof(mps_fifo));
++
+    p_tmp = pDev->sw_event_upstrm_fifo.pend;
+-   memset(&pDev->event_upstrm_fifo, 0x0, sizeof(mps_fifo));
++   memset(&pDev->sw_event_upstrm_fifo, 0x0, sizeof(mps_fifo));
+    if (p_tmp != IFX_NULL)
+       {IFXOS_BlockFree((IFX_void_t *)p_tmp);}
+ 
++   memset(&pDev->voice_upstrm_fifo, 0x0, sizeof(mps_fifo));
++   memset(&pDev->voice_dwstrm_fifo, 0x0, sizeof(mps_fifo));
+    memset(&pDev->event_upstrm_fifo, 0x0, sizeof(mps_fifo));
+    memset(&pDev->cmd_upstrm_fifo, 0x0, sizeof(mps_fifo));
+    memset(&pDev->cmd_dwstrm_fifo, 0x0, sizeof(mps_fifo));
+@@ -2510,6 +2511,7 @@ static IFX_int32_t mps_init_dev_mbox_setup_l2(mps_comm_dev * pDev)
+ 
+    MPSOS_SPIN_LOCK_INIT(&pDev->sw_event_upstrm_fifo.mps_spin_lock);
+    MPSOS_SPIN_LOCK_IRQSAVE(&pDev->sw_event_upstrm_fifo.mps_spin_lock);
++   pDev->sw_event_upstrm_fifo.pend = p_tmp;
+    pDev->sw_event_upstrm_fifo.pwrite_off =
+       (pDev->sw_event_upstrm_fifo.pend + ((DEEP_EVT_SW_FIFO_SIZE) >> 2));
+    *pDev->sw_event_upstrm_fifo.pwrite_off = (DEEP_EVT_SW_FIFO_SIZE - 4);
+@@ -2532,6 +2534,7 @@ static IFX_int32_t mps_init_dev_mbox_setup_l2(mps_comm_dev * pDev)
+ 
+    MPSOS_SPIN_LOCK_INIT(&pDev->sw_event_upstrm_fifo.mps_spin_lock);
+    MPSOS_SPIN_LOCK_IRQSAVE(&pDev->sw_event_upstrm_fifo.mps_spin_lock);
++   pDev->sw_event_upstrm_fifo.pend = p_tmp;
+    pDev->sw_event_upstrm_fifo.pwrite_off =
+       (pDev->sw_event_upstrm_fifo.pend + ((p_mbx_defs->MBX_UPSTR_EVENT_SIZE) >> 2));
+    *pDev->sw_event_upstrm_fifo.pwrite_off = (p_mbx_defs->MBX_UPSTR_EVENT_SIZE - 4);

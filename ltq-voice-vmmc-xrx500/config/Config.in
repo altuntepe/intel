@@ -1,0 +1,128 @@
+menu "advanced configuration (for developers)"
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+
+config LTQ_VOICE_VMMC_USER_FLAGS
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	string "Additional CFLAGS"
+	default ""
+        help
+                Additional CFLAGS for compilation (for developers)
+
+config LTQ_VOICE_VMMC_USER_OPTIONS
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	string "Additional autogen configure options"
+        default ""
+        help
+                Additional autogen configure options (for developers)
+
+config LTQ_VOICE_VMMC_DEBUGGING
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	bool "Debugging support"
+	default n
+	help
+		Option to support debugging:
+		- disable compile optimisation
+		- set the default trace-level to "debug"
+		- enable ASSERT
+
+config LTQ_VOICE_VMMC_MPS_HISTORY_SIZE
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	string "MPS history buffer in words (0<=size<=512)"
+	default "128"
+	help
+		MPS history buffer (default=128 words, maximum=512 words, 0=disable)
+		To opimize the memory footprint in RAM, you might want to set the
+		buffer size to 0.
+endmenu
+
+choice
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	prompt "device selection"
+	default LTQ_VOICE_VMMC_WITH_DEVICE_XRX500 if (TARGET_intel_mips_xrx500 || TARGET_lantiq_xrx500)
+	help
+		Select the target device.
+
+	config LTQ_VOICE_VMMC_WITH_DEVICE_XRX500
+		bool "xRX500 family"
+		select PACKAGE_ltq-voice-vmmc-xrx500-firmware
+		select PACKAGE_ltq-voice-vmmc-xrx500-coef  if (!PACKAGE_ltq-voice-tapi-lib-country)
+endchoice
+
+choice
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	prompt "SLIC selection"
+	default LTQ_VOICE_VMMC_WITH_SLIC100
+
+	config LTQ_VOICE_VMMC_WITH_SLIC_NONE
+		help
+			Option to disable all SLIC support. This removes all FXS port
+			support from the driver and frees the GPIOs which are otherwise used
+			by the SSI interface that connects the SLIC to the SOC.
+			The DSP functions of the voice subsystem remain unaffected by this.
+			This configuration is intended for systems providing DECT voice
+			service using the Cosic chipset but also for other voice services
+			like DUSLIC-xT or DUSLIC XS which are connected via the PCM interface.
+		bool "no SLIC support"
+
+	config LTQ_VOICE_VMMC_WITH_SLIC100
+		help
+			Support the XWAY(TM) SLIC 100 chipset family devices.
+		bool "SLIC 100"
+		select PACKAGE_ltq-voice-sdd-mbx
+
+	config LTQ_VOICE_VMMC_WITH_SLIC200
+		help
+			Support the SLIC 200 family devices.
+		bool "SLIC 200"
+		select PACKAGE_ltq-voice-sdd-mbx
+endchoice
+
+config LTQ_VOICE_VMMC_FXO
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	depends on LTQ_VOICE_VMMC_WITH_SLIC100
+	bool "FXO support"
+	default y
+	help
+		Option to enable support for the FXO functionality.
+
+config LTQ_VOICE_VMMC_SSLIC_FXO_ACTIVATE
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	depends on LTQ_VOICE_VMMC_FXO
+	bool "Activate SmartSLIC FXO ports upon TAPI init"
+	default n
+	help
+		Option to activate FXO ports connected to a SmartSLIC by default.
+                This should be disabled unless there is an FXO chip connected to
+                the GPIOs of the SmartSLIC. Otherwise the SmartSLIC may consume
+                quite some processor power depending on the signals on the GPIO pins
+                of the SmartSLIC.
+                Do not set for the LANTIQ xRX500 Family boards.
+
+config LTQ_VOICE_VMMC_DISABLE_DECT_NIBBLE_SWAP
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	bool "disable DECT nibble swap"
+	default n
+	help
+		Option to disable DECT nibble swap for COSIC modem.
+		This is only needed for backward compatibility.
+
+config LTQ_VOICE_VMMC_RTCP_XR
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	bool "RTCP Extended Reports support"
+	default y
+	help
+		Option to enable support for the RTCP Extended Reports (RFC3611) functionality.
+
+config LTQ_VOICE_VMMC_DISABLE_AUTO_DATA_MAP
+	depends on PACKAGE_ltq-voice-vmmc-xrx500
+	bool "Disable automatic data channel to data channel connections"
+	default n
+	help
+		Option to disable the automatic connection between data channels
+		which are connected to the same Phone, DECT or PCM module.
+		When the automatic mapping is disabled the IOCTLs IFX_TAPI_MAP_DATA_ADD
+		and IFX_TAPI_MAP_DATA_REMOVE can be used to create data channel to
+		data channel mappings. This allows to create connections between data
+		channels without using a Phone, DECT or PCM module. Data channels can
+		even be connected to itself which results in a decoding/encoding module
+		for one RTP stream only.
