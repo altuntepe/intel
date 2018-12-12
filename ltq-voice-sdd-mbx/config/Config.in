@@ -1,0 +1,39 @@
+menu "Advanced configuration (for developers)"
+	depends on PACKAGE_ltq-voice-sdd-mbx
+
+config LTQ_VOICE_SDD_MBX_USER_FLAGS
+	depends on PACKAGE_ltq-voice-sdd-mbx
+	string "Additional CFLAGS"
+	default ""
+	help
+		Additional CFLAGS for compilation (for developers)
+
+config LTQ_VOICE_SDD_MBX_USER_OPTIONS
+	depends on PACKAGE_ltq-voice-sdd-mbx
+	string "Additional configure options"
+	default ""
+	help
+		Additional configure options (for developers)
+
+config LTQ_VOICE_SDD_MBX_EVENT_LOGGER
+	depends on PACKAGE_ltq-voice-sdd-mbx
+	depends on +PACKAGE_ltq-evtlog
+	bool "event logger support"
+	default n
+	help
+		Option to send traces from Tapidemo to Event Logger
+		- for debugging only
+		- requires package ltq-evtlog
+
+config LTQ_VOICE_SDD_MBX_DEBUGGING
+	bool "Debugging support"
+	depends on PACKAGE_ltq-voice-sdd-mbx
+	default n
+	help
+		Option to support debugging:
+		- disable compile optimisation
+		- set the default trace-level to "debug"
+		- enable ASSERT
+
+endmenu
+
