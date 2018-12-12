@@ -1,0 +1,56 @@
+config VOIP_FAX
+	bool "FAX support"
+	depends on !TARGET_x86_puma_puma7
+	default y
+	help
+	 Option to enable FAX support.
+config VOIP_FXO
+	bool "FXO support"
+		#select PACKAGE_teridian-voice-daa-ter1x66
+		depends on (TARGET_lantiq_xrx200  && !DECT_SS_FEATURE_USIF_SPI) || !TARGET_lantiq_xrx200
+	default n
+	help
+	 Option to enable FXO support.
+config VOIP_DISABLE_FXS
+	bool "Disable FXS support"
+		depends on TARGET_lantiq_xrx330_EASY300_SH
+	default y
+	help
+	 Option to disable FXS support.
+
+config DECT_SUPPORT
+	bool "DECT support" 
+	#depends on CONFIG_TARGET_ifxcpe_ar9 
+	default n
+	help
+	 Option to enable DECT support.
+config CVOIP_SUPPORT
+  bool "CVOIP support" 
+  depends on TARGET_ltqcpe_ar9 && !DECT_SUPPORT
+  default n
+  help
+   Option to enable COSIC VoIP support.
+config OSGI_POWER_OUTLET_SUPPORT
+	bool "OSGI Power outlet support"
+	depends on RAW_DPSU_SUPPORT
+	default n
+	help
+	 Option to enable OSGI based power outlet control.
+config VOIP_NEWVMAPI
+        bool "NEWVMAPI support"
+        default n
+        help
+         Option to support VMAPI for 6.5 framework.
+
+config M5T_SCEAGENT_ENABLE_SUPPORT
+        bool "M5T SCE Agent support"
+		depends on NEW_FRAMEWORK
+        default y
+        help
+         Use the M5T SCE Agent SIP network agent.
+config VOIP_ENABLE_SINGLE_FXS
+    bool "Enable single line FXS support"
+    default n
+    help
+     Option to enable only one fxs port FXS support.
+
