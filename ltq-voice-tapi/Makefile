@@ -18,10 +18,14 @@ PKG_RELEASE:=1
 # IMPORTANT - ... and before using PKG_VERSION below
 
 PKG_BASE_NAME:=drv_tapi
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=6b5547491999447c137a93511e4ca85cbd2f9984
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_PROTO:=git
 #PKG_SOURCE_URL:=http://localhost
 #PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)/$(PKG_BASE_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/drv_tapi.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
+PKG_SOURCE_VERSION:=6b5547491999447c137a93511e4ca85cbd2f9984
 PKG_START_SCRIPT:=load_voice_tapi.sh
 PKG_BUILD_DEPENDS:=ifxos \
                    PACKAGE_ltq-evtlog:ltq-evtlog \
@@ -43,7 +47,7 @@ define Package/$(PKG_NAME)
   URL:=http://www.intel.com/
   MAINTAINER:=Intel Corporation
   MENU:=1
-  DEPENDS:=+kmod-ifxos +kmod-voice-tapi
+  DEPENDS:=+kmod-ifxos
 endef
 
 define Package/$(PKG_NAME)/description
@@ -156,13 +160,13 @@ endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
-	mkdir -p $(1)/usr/include/drv_tapi
-	$(CP) --dereference $(PKG_BUILD_DIR)/include/* $(1)/usr/include/drv_tapi
-	(cd $(1)/usr/include/drv_tapi && ln -s ../ifxos/ifx_types.h .)
+	mkdir -p $(1)/usr/include/$(PKG_BASE_NAME)
+	$(CP) --dereference $(PKG_BUILD_DIR)/include/* $(1)/usr/include/$(PKG_BASE_NAME)
+	(cd $(1)/usr/include/$(PKG_BASE_NAME) && ln -s ../ifxos/ifx_types.h .)
 endef
 
 define Build/UninstallDev
-	rm -rf $(BUILD_DIR)/drv_tapi
+	rm -rf $(BUILD_DIR)/$(PKG_BASE_NAME)
 endef
 
 define Build/Clean
@@ -178,7 +182,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) ./files/$(PKG_START_SCRIPT) $(1)/etc/init.d/
         # Install the driver binary
 	$(INSTALL_DIR) $(1)/$(MODULES_SUBDIR)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/drv_tapi$(PKG_MODULE_EXTENSION) $(1)/$(MODULES_SUBDIR)
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION) $(1)/$(MODULES_SUBDIR)
         # Copy header file into staging directory
 	$(INSTALL_DIR) $(STAGING_DIR)/usr/docs
 	$(CP) $(PKG_BUILD_DIR)/include/drv_tapi_io.h $(STAGING_DIR)/usr/docs/.
@@ -191,8 +195,8 @@ define KernelPackage/voice-tapi
   URL:=http://www.intel.com/
   MAINTAINER:=Intel Corporation
   DEPENDS:=+kmod-ifxos @(TARGET_lantiq||TARGET_intel_mips) @!TARGET_lantiq_ase
-  FILES:=$(PKG_BUILD_DIR)/src/drv_tapi$(PKG_MODULE_EXTENSION)
-  AUTOLOAD:=$(call AutoLoad,20,drv_tapi)
+  FILES:=$(PKG_BUILD_DIR)/src/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION)
+  AUTOLOAD:=$(call AutoLoad,20,$(PKG_BASE_NAME))
 endef
 
 ifeq ($(CONFIG_LTQ_VOICE_CPE_TAPI_LINUX_HOTPLUG),y)

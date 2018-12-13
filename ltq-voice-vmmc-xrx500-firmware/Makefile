@@ -17,8 +17,10 @@ PKG_BASE_NAME:=fw_voip_xrx500
 -include $(INCLUDE_DIR)/package-version-override.mk
 # IMPORTANT - ... and before using PKG_VERSION below
 
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=e3db0e4c3c1ad583cc10c3faeb91f7ccef315414
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
-#PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_RELEASE:=1
 PKG_UNPACK:=gzip -dc $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
 #PKG_SOURCE_URL:=http://localhost
@@ -57,7 +59,7 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/$(FIRMWARE_DIR)
 	$(INSTALL_DIR) $(1)/$(VOICEFW_DIR)
-	$(CP) $(PKG_BUILD_DIR)/fw*.bin $(1)/$(VOICEFW_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION).bin
+	$(CP) $(PKG_BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/fw*.bin $(1)/$(VOICEFW_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION).bin
 	ln -snf $(VOICEFW_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION).bin $(1)/$(FIRMWARE_DIR)/$(PKG_TARGET_BASE_NAME)
 endef
 

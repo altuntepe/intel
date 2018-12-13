@@ -18,6 +18,8 @@ PKG_RELEASE:=1
 # IMPORTANT - ... and before using PKG_VERSION below
 
 PKG_BASE_NAME:=drv_sdd_mbx
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=903dd5582155ee71510a7f608b7c115145de8844
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=http://localhost
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/drv_sdd_mbx.git

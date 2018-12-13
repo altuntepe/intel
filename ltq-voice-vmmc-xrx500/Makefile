@@ -17,6 +17,8 @@ PKG_RELEASE:=1
 -include $(INCLUDE_DIR)/package-version-override.mk
 # IMPORTANT - ... and before using PKG_VERSION below
 
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=0d9243aea9aa2c65753a0e063b2d952dbd77c4a8
 PKG_SOURCE:=drv_vmmc_xrx500-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=http://localhost
 #PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/drv_vmmc_xrx500-$(PKG_VERSION)

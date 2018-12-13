@@ -17,11 +17,13 @@ PKG_BASE_NAME:=coef_voip_xrx500
 -include $(INCLUDE_DIR)/package-version-override.mk
 # IMPORTANT - ... and before using PKG_VERSION below
 
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=21d023fe81b2a6c77c8df496f11c488f366a7ac0
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
-#PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_UNPACK:=gzip -dc $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/drv_vmmc_xrx500.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/coef_voip_xrx500.git
 
 VOICE_TARGET_FILENAME_FXS_DEDICATED:=xrx500_bbd_fxs.bin
 VOICE_TARGET_FILENAME_FXS_COMBINED:=xrx500_bbd_cmb_fxs.bin
@@ -85,7 +87,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/$(BBD_DIR)
 
         # copy BBD archive files only
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/xrx500_bbd*.bin  $(1)$(BBD_DIR)/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/xrx500_bbd*.bin  $(1)$(BBD_DIR)/
 
         # copy custom BBD files if given
 	- $(INSTALL_DATA) $(CONFIG_LTQ_VOICE_VMMC_COEF_XRX500_CUSTOM_FILE_FXS) $(1)$(BBD_DIR)/$(FXS_SRC_FILENAME)

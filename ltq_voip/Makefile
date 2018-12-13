@@ -25,6 +25,8 @@ PKG_BUILD_DEPENDS:=PACKAGE_teridian-voice-daa-ter1x66:teridian-voice-daa-ter1x66
                    PACKAGE_ltq-voice-mxp-core:ltq-voice-mxp-core \
                    PACKAGE_ltq_hanserver:ltq_hanserver
 #PKG_SOURCE_URL:=http://localhost
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=3abca3799d6ceb3076fe52d382d590493fa99f50
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/ltq_voip.git
 PKG_FILE_DEPENDS:=$(PKG_BUILD_DIR)/.configured__*
 PKG_NO_AUTORECONF:=y
