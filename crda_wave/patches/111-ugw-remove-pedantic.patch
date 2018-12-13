@@ -1,0 +1,12 @@
+diff -Nur crda-3.18-orig/Makefile crda-3.18/Makefile
+--- crda-3.18-orig/Makefile	2018-04-08 19:54:54.000000000 +0300
++++ crda-3.18/Makefile	2018-04-08 20:29:41.000000000 +0300
+@@ -26,7 +26,7 @@
+ RUNTIME_PUBKEY_DIR?=/etc/wireless-regdb/pubkeys
+ 
+ CFLAGS += -O2 -fpic
+-CFLAGS += -std=gnu99 -Wall -Werror -pedantic
++CFLAGS += -std=gnu99 -Wall -Werror
+ CFLAGS += -Wall -g
+ LDLIBREG += -lreg
+ LDLIBS += $(LDLIBREG)
