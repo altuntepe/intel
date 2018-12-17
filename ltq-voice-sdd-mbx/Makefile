@@ -142,7 +142,7 @@ define KernelPackage/voice-tapi-sdd-mbx
   TITLE:=TAPI driver for VCODEC
   URL:=http://www.intel.com/
   MAINTAINER:=Intel Corporation
-  DEPENDS:=+kmod-ltq-tapi
+  #DEPENDS:=+kmod-ltq-tapi
   FILES:=$(PKG_BUILD_DIR)/src/drv_sdd_mbx$(PKG_MODULE_EXTENSION)
   AUTOLOAD:=$(call AutoLoad,21,drv_sdd_mbx)
   KCONFIG:= \
