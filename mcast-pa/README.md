@@ -5,10 +5,19 @@ Source code for the mcast-pa (Multicast Packet Acclerator) application.
 You can find more details about mcast-pa specifically in doc/mcast-pa.pdf.. this readme will cover the package layout and other functionality outside of mcast-pa.
 
 ## License
+Copyright (c) 2018 by SmartRG, Inc.
 
-Originally posted by Chad Monroe <chad.monroe@smartrg.com> as a contribution to the prplwrt carrier feed.
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-I will add licensing information to the files after we review them and determine we want to utilize this module.. it will likely follow the ISC license to simplify integration with prpl's existing procedures.
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ## IPTV Overview
 
