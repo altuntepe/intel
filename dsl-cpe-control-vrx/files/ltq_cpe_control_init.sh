@@ -15,6 +15,7 @@ xDSL_FwLibDir=/lib/firmware
 xDSL_FwFileName=xcpe_hw.bin
 xDSL_FwFileName_2p=xcpe_hw_2p.bin
 xDSL_InitDir=/etc/init.d
+xDSL_CallbackDir=/usr/share/dsl
 xDSL_CtrlAppName="ltq_cpe_control_init.sh"
 xDSL_WhatStrPrefix="@(#)"
 
@@ -349,8 +350,8 @@ start() {
       AUTOBOOT_VDSL="-A ${xDSL_BinDir}/vdsl.scr"
    fi
 
-   if [ -e ${xDSL_InitDir}/xdslrc.sh ]; then
-      NOTIFICATION_SCRIPT="-n ${xDSL_InitDir}/xdslrc.sh"
+   if [ -e ${xDSL_CallbackDir}/xdslrc.sh ]; then
+      NOTIFICATION_SCRIPT="-n ${xDSL_CallbackDir}/xdslrc.sh"
    fi
 
    if [ -e ${xDSL_FwDir}/${xDSL_FwFileName} ]; then
