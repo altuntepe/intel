@@ -13,7 +13,7 @@ PKG_VERSION:=0.6.1
 #PKG_MD5SUM:=4d24f6163e6c2ba53222872bf7019198
 PKG_BASE_NAME:=$(PKG_NAME)
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=8c578787c4c7a578822b3381d69b4ccae817185e
+PKG_SOURCE_VERSION:=2d7d2c1daff86218452fccc36b47a6e19deb9685
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
@@ -69,7 +69,7 @@ CONFIGURE_ARGS += \
 	--enable-dsl-fapi-library="-L$(STAGING_DIR)/usr/lib" \
 	--enable-cli \
 	--enable-cli-include="-I$(STAGING_DIR)/usr/include/cli" \
-	--enable-cli-library="-L$(STAGING_DIR)/usr/lib"	\
+	--enable-cli-library="-L$(STAGING_DIR)/usr/lib" \
 
 ifeq ($(CONFIG_dsl-cpe-fapi_FAPI_DAEMON),y)
 CONFIGURE_ARGS += --enable-dsl-fapi-daemon=yes
@@ -113,11 +113,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libdslfapi.so $(1)/$(VENDOR_PATH)/usr/lib/
 	$(INSTALL_DIR) $(1)/$(LANTIQ_BIN_DIR)
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/dsl_fapid $(1)/$(LANTIQ_BIN_DIR)
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/dsl_fapi_pipe.sh $(1)/$(LANTIQ_BIN_DIR)
 	$(INSTALL_BIN) ./files/dsl_fapi.cfg $(1)/$(LANTIQ_BIN_DIR)
-	$(INSTALL_DIR) $(STAGING_DIR)/usr/docs
-	$(CP) $(PKG_BUILD_DIR)/include/dsl_fapi.h $(STAGING_DIR)/usr/docs/.
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
