@@ -299,6 +299,12 @@ define Build/Clean
 	); fi
 endef
 
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	mkdir -p $(1)/usr/include/net/switch_api
+	$(CP) --dereference $(LINUX_DIR)/include/net/switch_api/* $(1)/usr/include/net/switch_api/
+endef
+
 $(eval $(call KernelPackage,ppa-drv-grx500))
 $(eval $(call KernelPackage,ppa-drv-falcon))
 $(eval $(call KernelPackage,ppa-drv-grx500-mpe))
