@@ -77,9 +77,15 @@ define Build/InstallDev
 	$(RM) $(1)/usr/docs/list.h
 endef
 
+define Build/UninstallDev
+	- rm -f $(1)/usr/lib/libhelper*.*
+endef
+
 define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $(1)/usr/lib
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/usr/lib
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libhelper.so $(1)/$(VENDOR_PATH)/usr/lib/
+	cd $(1)/usr/lib && rm -f "libhelper.so*" && ln -s "../../$(VENDOR_PATH)/usr/lib/libhelper.so" "libhelper.so"
 endef
 
 define Build/Clean

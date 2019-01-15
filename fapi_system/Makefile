@@ -212,8 +212,14 @@ endif
 	$(CP) $(PKG_BUILD_DIR)/*.so $(1)/usr/lib/
 endef
 
+define Build/UninstallDev
+	- rm -f $(1)/usr/lib/libsysfapi*.*
+	- rm -f $(1)/usr/lib/libethfapi*.*
+endef
+
 # To ipkg / Rootfs
 define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $(1)/usr/lib
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/usr/lib
 ifeq ($(CONFIG_TARGET_lantiq_xrx200),y)
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/etc/
@@ -222,7 +228,9 @@ ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/etc/
 endif
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libsysfapi.so $(1)/$(VENDOR_PATH)/usr/lib/
+	cd $(1)/usr/lib && rm -f "libsysfapi.so*" && ln -s "../../$(VENDOR_PATH)/usr/lib/libsysfapi.so" "libsysfapi.so"
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libethfapi.so $(1)/$(VENDOR_PATH)/usr/lib/
+	cd $(1)/usr/lib && rm -f "libethfapi.so*" && ln -s "../../$(VENDOR_PATH)/usr/lib/libethfapi.so" "libethfapi.so"
 ifneq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
 ifeq ($(CONFIG_TARGET_lantiq_xrx200),y)
 	$(CP) ./files/etc/* $(1)/$(VENDOR_PATH)/etc/
