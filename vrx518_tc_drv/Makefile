@@ -47,11 +47,11 @@ define KernelPackage/$(PKG_NAME)
     CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT=y \
     CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND=y
   DEPENDS:=@TARGET_lantiq_xrx500||TARGET_intel_mips_xrx500||TARGET_x86||TARGET_lantiq_xrx330 +PACKAGE_kmod-directconnect_dp:kmod-directconnect_dp +kmod-vrx518_ep +vrx518_ppe_fw +vrx518_aca_fw
-ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
-  AUTOLOAD:=$(call AutoLoad,42,vrx518)
-else
-  AUTOLOAD:=$(call AutoLoad,26,vrx518)
-endif
+#ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
+#  AUTOLOAD:=$(call AutoLoad,42,vrx518)
+#else
+#  AUTOLOAD:=$(call AutoLoad,26,vrx518)
+#endif
   FILES:=$(PKG_BUILD_DIR)/$(PLAT_DIR)/$(PKG_BASE_NAME).$(LINUX_KMOD_SUFFIX)
   MENU:=1
 endef
@@ -67,11 +67,11 @@ define KernelPackage/vrx518_ep
         CONFIG_VRX518=m \
         CONFIG_VRX518_PCIE_SWITCH_BONDING=y \
         CONFIG_TEST=m
-ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
- AUTOLOAD:=$(call AutoLoad,43,vrx518 vrx518_tc)
-else
- AUTOLOAD:=$(call AutoLoad,27,vrx518 vrx518_tc)
-endif
+#ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
+# AUTOLOAD:=$(call AutoLoad,43,vrx518 vrx518_tc)
+#else
+# AUTOLOAD:=$(call AutoLoad,27,vrx518 vrx518_tc)
+#endif
  FILES:= \
         $(LINUX_DIR)/drivers/net/ethernet/intel/vrx518/vrx518.ko
 endef

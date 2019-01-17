@@ -79,7 +79,7 @@ define KernelPackage/$(PKG_NAME)
 	DEPENDS:=+kmod-dsl-cpe-mei-vrx
 	KCONFIG:=CONFIG_LTQ_DSL_CPE_API_VRX=y
 	FILES:=$(PKG_BUILD_DIR)/src/drv_dsl_cpe_api$(PKG_MODULE_EXTENSION)
-	AUTOLOAD:=$(call AutoLoad,45,drv_dsl_cpe_api)
+	#AUTOLOAD:=$(call AutoLoad,45,drv_dsl_cpe_api)
 endef
 
 define Package/$(PKG_NAME)/description
