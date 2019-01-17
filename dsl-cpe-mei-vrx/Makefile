@@ -80,7 +80,7 @@ define KernelPackage/$(PKG_NAME)
 #  @(TARGET_ltqcpe_vr9||TARGET_ltqcpe_platform_vr9||TARGET_ltqcpe_platform_ar10_vrx318||TARGET_lantiq_xway)
   KCONFIG:=CONFIG_LTQ_DSL_CPE_MEI_VRX=y
   FILES:=$(PKG_BUILD_DIR)/src/$(PKG_BASE_NAME)$(PKG_MODULE_EXTENSION)
-  AUTOLOAD:=$(call AutoLoad,44,$(PKG_BASE_NAME))
+  #AUTOLOAD:=$(call AutoLoad,44,$(PKG_BASE_NAME))
 endef
 
 
