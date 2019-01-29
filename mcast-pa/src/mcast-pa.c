@@ -2471,19 +2471,6 @@ main(int argc, char **argv)
 		exit(0);
 	}
 
-	/*
-	   daemonize 
-	 */
-
-	process_id = fork();
-	if (process_id < 0) {
-		printf("fork failed!\n");
-		exit(1);
-	}
-	if (process_id > 0) {
-		printf("process_id of child process %d \n", process_id);
-		exit(MDB_FORK_EXIT);
-	}
 
 	{
 		FILE *f = fopen("/var/run/mcast-pa.pid", "w");
