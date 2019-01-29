@@ -51,26 +51,11 @@ define Package/mcast-pa/install
 	$(INSTALL_DIR) $(1)/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mcast-pa $(1)/sbin/
 
-	$(INSTALL_DIR) $(1)/usr/prpl/scripts
-	$(CP) ./files/usr/prpl/scripts/* $(1)/usr/prpl/scripts/
-
-##
-# install iptv scripts from here now too
-#
-# NOTE: these should probably be in their own package
-##
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/etc/init.d/iptv $(1)/etc/init.d/.
-
-# HACK / FIXME - don't do this! make a uci-default instead
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_BIN) ./files/etc/config/iptv $(1)/etc/config/.
+	$(INSTALL_BIN) ./files/etc/init.d/mcast-pa $(1)/etc/init.d/mcast-pa
 
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/etc/uci-defaults/mcast-pa $(1)/etc/uci-defaults/99-mcast-pa
-
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
-	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/60-iptv $(1)/etc/hotplug.d/iface/.
 endef
 
 $(eval $(call BuildPackage,mcast-pa))
