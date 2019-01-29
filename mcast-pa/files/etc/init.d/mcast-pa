@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+
+START=90
+STOP=90
+
+USE_PROCD=1
+NAME=mcast-pa
+PROG=/sbin/mcast-pa
+
+start_service() {
+	# Is mcproxy configured?
+	wan=$(uci get mcproxy.@instance[0].upstream)
+	if [ -n $wan ]; then
+		procd_open_instance
+		procd_set_param command $PROG --wan $wan
+		procd_set_param respawn
+		procd_close_instance
+	fi
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger network mcproxy
+}
+
+stop_service()
+{
+	killall mcast-pa
+}
