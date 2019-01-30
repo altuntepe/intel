@@ -22,8 +22,3 @@ service_triggers()
 {
 	procd_add_reload_trigger network mcproxy
 }
-
-stop_service()
-{
-	killall mcast-pa
-}
