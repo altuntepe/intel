@@ -220,6 +220,14 @@ define KernelPackage/$(KERNEL_PKG_NAME)
  SUBMENU:=Lantiq
  TITLE:=Lantiq Support for Wave WLAN
  DEPENDS:=@TARGET_ltqcpe||TARGET_lantiq||TARGET_x86||TARGET_intel_mips
+ FILES:= \
+	$(PKG_FULL_DIR)/builds/$(LINUX_ENV_NAME)/binaries/wls/driver/mtlkroot.ko \
+	$(PKG_FULL_DIR)/builds/$(LINUX_ENV_NAME)/binaries/wls/driver/mtlk.ko
+ AUTOLOAD:=$(call AutoProbe,mtlk)
+ MODPARAMS.mtlk:= \
+	 ap=1,1 \
+	 fastpath=1,1 \
+	 ahb_off=1
 
  KCONFIG:= \
 	CONFIG_CRYPTO_SHA256=y \
