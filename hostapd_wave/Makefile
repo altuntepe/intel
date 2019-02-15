@@ -94,14 +94,16 @@ define Build/Compile
 endef
 
 define Package/$(PKG_NAME)/install
-	$(INSTALL_DIR) $(1)/$(BIN_FOLDER)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd $(1)/$(BIN_FOLDER)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd_cli $(1)/$(BIN_FOLDER)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd.eap_user $(1)/$(BIN_FOLDER)
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd_cli $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR_HAPD)/hostapd.eap_user $(1)/usr/sbin
+	$(INSTALL_DIR) -p $(1)/lib/netifd/wireless
+	$(CP) ./files/lib/* $(1)/lib/
 	$(if $(CONFIG_WIRELESS_STA), \
-		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_supplicant $(1)/$(BIN_FOLDER); \
-		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_cli $(1)/$(BIN_FOLDER); \
-		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_passphrase $(1)/$(BIN_FOLDER) \
+		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_supplicant $(1)/usr/sbin; \
+		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_cli $(1)/usr/sbin; \
+		$(INSTALL_BIN) $(PKG_BUILD_DIR_WPAS)/wpa_passphrase $(1)/usr/sbin \
 	)
 endef
 
