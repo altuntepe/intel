@@ -379,6 +379,12 @@ else
 	 @echo "aligned dir not exist->legacy mode only"
 endif
 
+	$(INSTALL_DIR) -p $(1)/etc/hotplug.d/net/
+	$(INSTALL_DIR) -p $(1)/lib/wifi
+	$(INSTALL_DIR) -p $(1)/lib/netifd/wireless
+	$(CP) ./files/etc/* $(1)/etc/
+	$(CP) ./files/lib/* $(1)/lib/
+
 	# if bin_files.list.mod not exist copy PSD.bin else echo
 
 ifeq ($(wildcard ./$(IMAGES_FOLDER)/PSD/bin_files.list.mod),)

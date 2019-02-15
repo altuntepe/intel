@@ -28,7 +28,7 @@ wifi_device_get_intparam() {
 
 	out=$(iw dev $netdev iwlwav $param)
 	[ "$?" == "0" ] && {
-		echo $out | tr -d 'A-Za-z:'
+		echo $out | sed -e s/${param}://
 	}
 }
 
@@ -142,7 +142,7 @@ detect_intel() {
 		beacon_int=$(wifi_device_get_intparam $dev $radioname gBeaconPeriod)
 		country_ie=$(wifi_device_get_intparam $dev $radioname g11dActive)
 		[ "$country_ie" == "1" ] && {
-			country="EU"	## FIXME
+			country="DE"	## FIXME
 		}
 
 		uci -q batch <<-EOF
@@ -156,7 +156,7 @@ detect_intel() {
 			set wireless.${radioname}.country_ie=${country_ie}
 			${dev_id}
 			${ht_capab}
-			set wireless.${radioname}.disabled=1
+			set wireless.${radioname}.disabled=0
 EOF
 		uci -q commit wireless
 		config_load wireless
