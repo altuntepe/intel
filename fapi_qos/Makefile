@@ -16,22 +16,20 @@ PKG_VERSION:=1.3.0.3
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/qos_service.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/fapi_qos_src.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=1c34b6558e8208f81566773b58a9cea8fd8c389a
+PKG_SOURCE_VERSION:=b536fb81ec17982b4400e224ad7a67d71dbd61ae
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Intel
 
 PKG_LICENSE:=Intel
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_DEFAULT_CUSTOM_SOURCE_DIR:=$(shell pwd)/src
-
 
 #PKG_CONFIG_DEPENDS:=\
 #	$(foreach _mr,$(shell grep -w config Config.in|awk '{ print $$2 }'),CONFIG_$(_mr))
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/package-version-override.mk
+-include $(INCLUDE_DIR)/package-version-override.mk
 $(call include_mk, ugw-loglevel.mk)
 
 ifeq ($(CONFIG_FEATURE_HOST_ENVIR),y)
@@ -113,7 +111,6 @@ CONFIG_OPTS=$(TARGET_CONFIGURE_OPTS)
 CFLAGS="$(TARGET_CFLAGS) $(IFX_CFLAGS) "
 LDFLAGS="$(IFX_LDFLAGS) "
 
-MAKE_PATH:=fapi_qos_src
 PKG_BUILD_DIR_FAPIQOS:=$(PKG_BUILD_DIR)/$(MAKE_PATH)
 MAKE_FLAGS += \
 	QOSAL_DIR="$(PKG_BUILD_DIR)/$(MAKE_PATH)"
