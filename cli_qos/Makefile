@@ -16,19 +16,17 @@ PKG_VERSION:=1.0.2.1
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/qos_service.git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/cli_qos.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=9098835145310785fb402f21b716d91fa259597f
+PKG_SOURCE_VERSION:=7bd2fbdd3b6f07a2b782e179dbbf63b8c667dd06
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Intel
 
 PKG_LICENSE:=Intel
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_DEFAULT_CUSTOM_SOURCE_DIR:=$(shell pwd)/src
-
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/package-version-override.mk
+-include $(INCLUDE_DIR)/package-version-override.mk
 $(call include_mk, ugw-loglevel.mk)
 
 ifeq ($(CONFIG_FEATURE_HOST_ENVIR),y)
@@ -89,7 +87,6 @@ ifeq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
 endif
 
 
-MAKE_PATH:=cli_qos_src
 PKG_BUILD_DIR_CLIQOS:=$(PKG_BUILD_DIR)/$(MAKE_PATH)
 
 #### Target Rules ###############################
