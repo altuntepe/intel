@@ -294,7 +294,7 @@ EOF
 intel_hostapd_setup_bss() {
 	local phy="$1"
 	local ifname="$2"
-	local macaddr="$3"
+	local bssaddr="$3"
 	local type="$4"
 
 	hostapd_cfg=
@@ -312,7 +312,7 @@ intel_hostapd_setup_bss() {
 
 	cat >> /var/run/hostapd-$phy.conf <<EOF
 $hostapd_cfg
-bssid=$macaddr
+bssid=$bssaddr
 ${dtim_period:+dtim_period=$dtim_period}
 ${max_listen_int:+max_listen_interval=$max_listen_int}
 EOF
@@ -401,6 +401,15 @@ intel_iw_interface_add() {
 	local type="$3"
 	local rc
 
+
+	iw dev | grep -q $ifname
+	rc="$?"
+	[ "$rc" = 0 ] && {
+		#skip add interface if already there
+		return $rc
+	}
+
+
 	iw phy "$phy" interface add "$ifname" type "$type"
 	rc="$?"
 
@@ -420,6 +429,18 @@ intel_iw_interface_add() {
 
 	[ "$rc" != 0 ] && wireless_setup_failed INTERFACE_CREATION_FAILED
 	return $rc
+}
+
+intel_generate_bssid() {
+	local ifmac=$1
+	local incr=$2
+
+	octet6=$(echo -n $ifmac | tail -c 2)
+	ifmac=$(echo -n $ifmac | head -c 14)
+	octet6=0x$octet6
+	octet6=$(printf %X $((octet6 + incr)))
+	ifmac=$(printf "%s:%s" $ifmac $octet6)
+	echo $ifmac
 }
 
 intel_prepare_vif() {
@@ -448,21 +469,28 @@ intel_prepare_vif() {
 		ap)
 			# Hostapd will handle recreating the interface and
 			# subsequent virtual APs belonging to the same PHY
+			bssid=
 			if [ -n "$hostapd_ctrl" ]; then
 				type=bss
+				bssid=$(intel_generate_bssid $macaddr $if_idx)
 			else
 				type=interface
+				bssid=$macaddr
 			fi
 
-			intel_hostapd_setup_bss "$phy" "$ifname" "$macaddr" "$type" || {
+			intel_hostapd_setup_bss "$phy" "$ifname" "$bssid" "$type" || {
 				echo "intel_hostap_setup_bss() ret ERROR!" > /dev/console
 				return
 			}
 
-			hostapd_ctrl="/var/run/hostapd/${ifname}"
 			[ -n "$hostapd_ctrl" ] || {
-				intel_iw_interface_add "$phy" "$ifname" __ap || return
-				#hostapd_ctrl="${hostapd_ctrl:-/var/run/hostapd/$ifname}"
+				intel_iw_interface_add "$phy" "$ifname" __ap || {
+					[ "$?" = 1 ] || {
+						echo "add '$ifname' error! ret $?" > /dev/console
+						return
+					}
+				}
+				hostapd_ctrl="${hostapd_ctrl:-/var/run/hostapd/$ifname}"
 			}
 		;;
 	esac
@@ -474,11 +502,9 @@ intel_setup_vif() {
 	local name="$1"
 	local failed
 
-	json_select data
-	json_get_vars ifname
-	json_select ..
-
 	json_select config
+	json_get_vars ifname
+
 	json_get_vars mode
 	json_get_var vif_txpower txpower
 
@@ -506,6 +532,7 @@ intel_interface_cleanup() {
 
 	for wdev in $(list_phy_interfaces "$phy"); do
 		ip link set dev "$wdev" down 2>/dev/null
+		#del only non-main wdevs - TODO
 		iw dev "$wdev" del
 	done
 }
@@ -603,7 +630,12 @@ drv_intel_teardown() {
 	json_get_vars phy
 	json_select ..
 
-	intel_interface_cleanup "$phy"
+	#intel_interface_cleanup "$phy"
+	for _dev in /sys/class/ieee80211/*; do
+                [ -e "$_dev" ] || continue
+                dev="${_dev##*/}"
+		intel_interface_cleanup "$dev"
+        done
 }
 
 add_driver intel
