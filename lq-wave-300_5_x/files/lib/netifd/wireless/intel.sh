@@ -485,10 +485,7 @@ intel_prepare_vif() {
 
 			[ -n "$hostapd_ctrl" ] || {
 				intel_iw_interface_add "$phy" "$ifname" __ap || {
-					[ "$?" = 1 ] || {
-						echo "add '$ifname' error! ret $?" > /dev/console
-						return
-					}
+					[ "$?" = 1 ] || return
 				}
 				hostapd_ctrl="${hostapd_ctrl:-/var/run/hostapd/$ifname}"
 			}
@@ -532,8 +529,8 @@ intel_interface_cleanup() {
 
 	for wdev in $(list_phy_interfaces "$phy"); do
 		ip link set dev "$wdev" down 2>/dev/null
-		#del only non-main wdevs - TODO
-		iw dev "$wdev" del
+		#hostapd will remove bss-ifs
+		#iw dev "$wdev" del
 	done
 }
 
@@ -630,12 +627,9 @@ drv_intel_teardown() {
 	json_get_vars phy
 	json_select ..
 
-	#intel_interface_cleanup "$phy"
-	for _dev in /sys/class/ieee80211/*; do
-                [ -e "$_dev" ] || continue
-                dev="${_dev##*/}"
-		intel_interface_cleanup "$dev"
-        done
+	intel_interface_cleanup "$phy"
+
+	drv_intel_cleanup
 }
 
 add_driver intel
