@@ -342,6 +342,10 @@ endif
 	)
 	### For iw compilation, copy vendor_cmds.h
 	$(CP) $(PKG_FULL_DIR)/wireless/driver/linux/vendor_cmds.h $(STAGING_DIR)/usr/include
+	### additional patches
+	for f in ./iopsys_patches/*.patch; do \
+		patch -d $(PKG_FULL_DIR) -p1 < $$$$f; \
+	done
 endef
 
 define Build/Configure

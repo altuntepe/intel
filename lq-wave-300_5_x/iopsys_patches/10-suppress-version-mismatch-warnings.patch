@@ -1,0 +1,14 @@
+--- a/wireless/driver/linux/mtlk_df_user.c	2019-03-28 13:48:07.201786788 +0100
++++ b/wireless/driver/linux/mtlk_df_user.c	2019-03-28 13:48:49.871131487 +0100
+@@ -4460,9 +4460,9 @@ _mtlk_ioctl_drv_gen_data_exchange (mtlk_
+   if (WE_GEN_DATAEX_PROTO_VER != req.request.ver) {
+     uint32 proto_ver = WE_GEN_DATAEX_PROTO_VER;
+ 
+-    WLOG_DD("Data exchange protocol version mismatch (version is %u, expected %u)",
++   /* WLOG_DD("Data exchange protocol version mismatch (version is %u, expected %u)",
+             req.request.ver,
+-            WE_GEN_DATAEX_PROTO_VER);
++            WE_GEN_DATAEX_PROTO_VER); */  //TODO: why?
+ 
+     resp.status = WE_GEN_DATAEX_PROTO_MISMATCH;
+     resp.datalen = sizeof(uint32);
