@@ -5,5 +5,23 @@ if [ -r /etc/profile.d/ugw_framework_env.sh ]; then
 fi
 
 export DEV_CREAT_PATH=/dev
+CMDLINE=""
+USER_PATH=false;
+while [ $# -ne 0 ]
+do
+        if [ "$1" == "-f" ] ; then
+                CMDLINE="$CMDLINE -f $2"
+                shift 2
+                USER_PATH=true;
+        else
+                CMDLINE="$CMDLINE $1"
+                shift 1
+        fi
+done
 
-$VENDOR_PATH/usr/bin/mtdump "$@" -f $VENDOR_PATH/bin/
+
+if [ $USER_PATH == false ] ;then
+        CMDLINE="$CMDLINE -f $VENDOR_PATH/bin/"
+fi
+
+$VENDOR_PATH/usr/bin/mtdump $CMDLINE

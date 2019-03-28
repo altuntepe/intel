@@ -341,9 +341,6 @@ S 1 13 1 369 CSA Manager STA Manager, STA %d changed from %d to %d
 S 1 13 1 1782 Fatal Error in file: "CsaManager_StaManager.c"; Fatal Print: Csa Manager STA Manager Fatal
 S 1 13 1 1819 Assert in file: "CsaManager_StaManager.c" in line: 1819
 S 1 13 1 1857 Assert in file: "CsaManager_StaManager.c" in line: 1857
-S 1 13 2 268 CSA Manager VAP Manager, VAP %d changed from %d to %d
-S 1 13 2 1280 Assert in file: "CsaManager_VapManager.c" in line: 1280
-S 1 13 2 1676 Fatal Error in file: "CsaManager_VapManager.c"; Fatal Print: CSA Manager VAP Manager Fatal
 S 1 14 0 216 CTS Manager changed from %d to %d
 S 1 14 0 749 Fatal Error in file: "CtsManager.c"; Fatal Print: CTS Manager Fatal
 S 1 14 0 795 Assert in file: "CtsManager.c" in line: 795
@@ -924,17 +921,6 @@ S 1 28 14 1971 ant: %d bin: %d a_k: %d b_k: %d
 S 1 28 14 1986 x: %d, p/2: %d, e: %d
 S 1 28 14 2001 F00: %d, F01: %d, F10: %d, F11: %d
 S 1 28 14 2018 e %d sqrte %d ret %d
-S 1 28 16 356 Assert in file: "CalibrationHandler.c" in line: 356
-S 1 28 16 364 Assert in file: "CalibrationHandler.c" in line: 364
-S 1 28 16 386 Calibrating...
-S 1 28 16 549 Assert in file: "CalibrationHandler.c" in line: 549
-S 1 28 16 564 runCalibration. clbrType: %d dataStoreState: %d
-S 1 28 16 584 runCalibration. proc %d
-S 1 28 16 588 Assert in file: "CalibrationHandler.c" in line: 588
-S 1 28 16 602 Calibrations fragmented
-S 1 28 16 608 Finished Calibrations
-S 1 28 16 710 CalibrationHandler getUpdateOfflineStatus(). StatusVector = 0x%x %d
-S 1 28 16 810 calBitmap:%d
 S 1 28 17 32 Assert in file: "CalibrationHandlerUtils.c" in line: 32
 S 1 28 18 354 Load Store event: LOAD_STORE_EVENT_TRIGGER_LOAD. current state: %d
 S 1 28 18 363 Load Store event: LOAD_STORE_EVENT_DMA_DONE. current state: %d
@@ -1009,37 +995,6 @@ S 1 29 13 849 Fatal Error in file: "PhyDriver.c"; Fatal Print: Tx packet interru
 S 1 29 15 121 Assert in file: "PhyTestBus.c" in line: 121
 S 1 29 15 141 Assert in file: "PhyTestBus.c" in line: 141
 S 1 29 15 165 Fatal Error in file: "PhyTestBus.c"; Fatal Print: PhyTestBus_Read, illegal case
-S 1 29 16 701 Assert in file: "RficDriver.c" in line: 701
-S 1 29 16 748 Assert in file: "RficDriver.c" in line: 748
-S 1 29 16 793 Assert in file: "RficDriver.c" in line: 793
-S 1 29 16 1033 Assert in file: "RficDriver.c" in line: 1033
-S 1 29 16 1152 Assert in file: "RficDriver.c" in line: 1152
-S 1 29 16 1153 Assert in file: "RficDriver.c" in line: 1153
-S 1 29 16 1154 Assert in file: "RficDriver.c" in line: 1154
-S 1 29 16 1230 Assert in file: "RficDriver.c" in line: 1230
-S 1 29 16 1342 Assert in file: "RficDriver.c" in line: 1342
-S 1 29 16 1404 Assert in file: "RficDriver.c" in line: 1404
-S 1 29 16 1452 Assert in file: "RficDriver.c" in line: 1452
-S 1 29 16 1493 Assert in file: "RficDriver.c" in line: 1493
-S 1 29 16 1537 Assert in file: "RficDriver.c" in line: 1537
-S 1 29 16 1577 Assert in file: "RficDriver.c" in line: 1577
-S 1 29 16 1682 Assert in file: "RficDriver.c" in line: 1682
-S 1 29 16 1760 Assert in file: "RficDriver.c" in line: 1760
-S 1 29 16 1775 Assert in file: "RficDriver.c" in line: 1775
-S 1 29 16 1842 Assert in file: "RficDriver.c" in line: 1842
-S 1 29 16 1938 RficDriver_SetFrequency
-S 1 29 16 1965 [RficDriver_SetFrequency], Flo = %d
-S 1 29 16 2124 Assert in file: "RficDriver.c" in line: 2124
-S 1 29 16 2238 Assert in file: "RficDriver.c" in line: 2238
-S 1 29 16 2338 Assert in file: "RficDriver.c" in line: 2338
-S 1 29 16 2396 Assert in file: "RficDriver.c" in line: 2396
-S 1 29 16 2479 Assert in file: "RficDriver.c" in line: 2479
-S 1 29 16 2480 Assert in file: "RficDriver.c" in line: 2480
-S 1 29 16 2520 Assert in file: "RficDriver.c" in line: 2520
-S 1 29 16 2521 Assert in file: "RficDriver.c" in line: 2521
-S 1 29 16 2597 Assert in file: "RficDriver.c" in line: 2597
-S 1 29 16 2637 Assert in file: "RficDriver.c" in line: 2637
-S 1 29 16 2770 Assert in file: "RficDriver.c" in line: 2770
 S 1 29 22 265 Assert in file: "PSD.c" in line: 265
 S 1 29 22 343 Assert in file: "PSD.c" in line: 343
 S 1 29 22 354 Assert in file: "PSD.c" in line: 354
@@ -1863,72 +1818,6 @@ S 1 78 0 3135 Update Group Combination table for Segment 1111, output lines:
 S 1 78 0 3291 Calculated group mark = %d
 S 1 78 0 3340 Group combination table for table index %d is updated!!!
 S 1 78 0 4017 Fatal Error in file: "TrainingManager.c"; Fatal Print: TrainingManager_Init
-S 1 79 0 204 Ts Manager, ADD STA, SID %d, allowed %d, Filter %d
-S 1 79 0 293 tsManagerRemoveVap
-S 1 79 0 343 Assert in file: "TsManager.c" in line: 343
-S 1 79 0 400 Ts Manager, Set Filter, SID %d
-S 1 79 0 443 Ts Manager, Remove STA, SID %d
-S 1 79 0 640 Fatal Error in file: "TsManager.c"; Fatal Print: TS Manager Action Packet Confirmed - Unknown Action
-S 1 79 0 770 Assert in file: "TsManager.c" in line: 770
-S 1 79 0 1145 Ts Manager, Send Confirmation, Client %d, SID %d
-S 1 79 0 1675 Assert in file: "TsManager.c" in line: 1675
-S 1 79 0 1676 Assert in file: "TsManager.c" in line: 1676
-S 1 79 0 1677 Assert in file: "TsManager.c" in line: 1677
-S 1 79 0 1737 Assert in file: "TsManager.c" in line: 1737
-S 1 79 0 1772 Assert in file: "TsManager.c" in line: 1772
-S 1 79 1 542 Fatal Error in file: "TsManagerInitiator.c"; Fatal Print: TS Manager Initiator Fatal
-S 1 79 1 571 TS Manager Initiator Change SID %d, TID %d, State from %d to %d
-S 1 79 1 601 TS Manager Initiator Event SID %d, TID %d, State %d Event %d
-S 1 79 1 1824 Assert in file: "TsManagerInitiator.c" in line: 1824
-S 1 79 1 3141 Assert in file: "TsManagerInitiator.c" in line: 3141
-S 1 79 1 3175 Assert in file: "TsManagerInitiator.c" in line: 3175
-S 1 79 1 3219 Assert in file: "TsManagerInitiator.c" in line: 3219
-S 1 79 1 3723 Assert in file: "TsManagerInitiator.c" in line: 3723
-S 1 79 1 4284 Assert in file: "TsManagerInitiator.c" in line: 4284
-S 1 79 1 4628 Assert in file: "TsManagerInitiator.c" in line: 4628
-S 1 79 1 5082 Assert in file: "TsManagerInitiator.c" in line: 5082
-S 1 79 1 5083 Assert in file: "TsManagerInitiator.c" in line: 5083
-S 1 79 2 410 Fatal Error in file: "TsManagerRecipient.c"; Fatal Print: TS Manager Recipient Fatal
-S 1 79 2 440 TS Manager Recipient SID %d, TID %d, Change State from %d to %d
-S 1 79 2 470 TS Manager Recipient Event SID %d, TID %d, State %d Event %d
-S 1 79 2 952 tsManagerRecipientAddbaRequestReceivedInClosed stationIndex %d tid %d 
-S 1 79 2 986 tsManagerRecipientAddbaRequestReceivedInOpeningthe s
-S 1 79 2 993 tsManagerRecipientAddbaRequestReceivedInOpeningthe same dialog token %d
-S 1 79 2 1034 tsManagerRecipientAddbaRequestReceivedInOpenedthe s
-S 1 79 2 1037 tsManagerRecipientAddbaRequestReceivedInOpenedthe same dialog token %d
-S 1 79 2 1179 tsManagerRecipientDelbaReceivedInOpeningWaitingForPd remove status %d
-S 1 79 2 1224 tsManagerRecipientDelbaReceivedInOpening 
-S 1 79 2 1259 tsManagerRecipientDelbaReceivedInOpened 
-S 1 79 2 1388 tsManagerRecipientAddbaResponseConfirmedInOpening station index %d tid % d
-S 1 79 2 1455 tsManagerRecipientAddbaResponseConfirmedInClosing station index %d tid % d
-S 1 79 2 1522 tsManagerRecipientDelbaConfirmedInClosing station index %d tid % d
-S 1 79 2 1590 tsManagerRecipientAddbaResponseConfirmedInClosingWaitingForConfirmation 
-S 1 79 2 1623 tsManagerRecipientIllegalPacketReceivedInClosed station index %d tid % d
-S 1 79 2 1663 tsManagerRecipientIllegalPacketReceivedInClosedWaitingForMessage station index %d tid % d
-S 1 79 2 1701 tsManagerRecipientIllegalPacketReceivedInOpeningWaitingForPd station index %d tid % d
-S 1 79 2 1743 tsManagerRecipientPdAllocatedInClosedWaitingForMessage station index %d tid % d
-S 1 79 2 1780 tsManagerRecipientPdAllocatedInOpeningWaitingForPd station index %d tid % d
-S 1 79 2 1857 tsManagerRecipientPdAllocatedInClosingWaitingForPdForDelba station index %d tid % d
-S 1 79 2 1897 tsManagerRecipientPdAllocatedInClosingWaitingForPdForAddbaResponse station index %d tid % d
-S 1 79 2 1972 tsManagerRecipientBarReceivedInClosed station index %d tid % d
-S 1 79 2 2010 tsManagerRecipientBarReceivedInClosedWaitingForMessage station index %d tid % d
-S 1 79 2 2048 tsManagerRecipientBarReceivedInOpeningWaitingForPd station index %d tid % d
-S 1 79 2 2085 tsManagerRecipientBarReceivedInOpening station index %d tid % d
-S 1 79 2 2116 tsManagerRecipientBarReceivedInOpened station index %d tid % d
-S 1 79 2 2147 tsManagerRecipientBarReceivedInClosing station index %d tid % d
-S 1 79 2 2179 tsManagerRecipientBarReceivedInClosingWaitingForPdForDelba station index %d tid % d
-S 1 79 2 2211 tsManagerRecipientBarReceivedInClosingWaitingForPdForDelba station index %d tid % d
-S 1 79 2 2466 tsManagerRecipientCloseBaAgreement stationIndex %d tid %d 
-S 1 79 2 2563 tsManagerRecipientProcessAddbaRequest invalid parameters 
-S 1 79 2 2571 tsManagerRecipientProcessAddbaRequest invalid parameters 
-S 1 79 2 2672 tsManagerRecipientProcessAddbaRequest ADDBA request declined allocation status %d
-S 1 79 2 2734 Assert in file: "TsManagerRecipient.c" in line: 2734
-S 1 79 2 3050 Assert in file: "TsManagerRecipient.c" in line: 3050
-S 1 79 2 3242 TsManagerRecipient_BarReceived illegal BAR
-S 1 79 2 3418 Assert in file: "TsManagerRecipient.c" in line: 3418
-S 1 79 2 3456 TsManagerRecipient_PdAllocated stationIndex %d tid %d state %d
-S 1 79 2 3792 Assert in file: "TsManagerRecipient.c" in line: 3792
-S 1 79 2 3794 Assert in file: "TsManagerRecipient.c" in line: 3794
 S 1 81 2 87 Assert in file: "TxHandlerNtd.c" in line: 87
 S 1 82 0 344 Assert in file: "TxManager.c" in line: 344
 S 1 82 0 352 Assert in file: "TxManager.c" in line: 352
@@ -2487,32 +2376,6 @@ S 1 42 13 2129 calcExternalUpperLimit, BW %d, Limit = %d
 S 1 42 13 2318 PowerAdaptationCalcPowerInStaLimits, newPower = %d, isPowerBlocked = %d
 S 1 42 13 2655 Assert in file: "PowerAdaptation.c" in line: 2655
 S 1 42 13 2681 Assert in file: "PowerAdaptation.c" in line: 2681
-S 1 42 8 337 setStaFixedRatesInHwDb 1 isRateInc = %d newRateindex= %d oldRate= %d 
-S 1 42 8 353 setStaFixedRatesInHwDb 2 isRateInc = %d newRateindex= %d oldRate= %d 
-S 1 42 8 1324 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1324
-S 1 42 8 1497 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1497
-S 1 42 8 1529 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1529
-S 1 42 8 1696 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1696
-S 1 42 8 1741 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1741
-S 1 42 8 1743 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1743
-S 1 42 8 1744 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1744
-S 1 42 8 1757 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1757
-S 1 42 8 1825 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1825
-S 1 42 8 1917 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1917
-S 1 42 8 1918 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1918
-S 1 42 8 1919 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1919
-S 1 42 8 1933 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1933
-S 1 42 8 2009 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2009
-S 1 42 8 2098 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2098
-S 1 42 8 2390 bwAdaptationSetBwLimit, changedDataBw = %d
-S 1 42 8 2847 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2847
-S 1 42 8 2974 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2974
-S 1 42 8 3081 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3081
-S 1 42 8 3084 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3084
-S 1 42 8 3124 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3124
-S 1 42 8 3136 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3136
-S 1 42 8 3155 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3155
-S 1 42 8 3190 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3190
 S 1 42 19 145 [QAMplus_ResetCounters]
 S 1 42 19 186 [QAMplus_ResetParams]
 S 1 42 19 233 [QAMplus_SupportedState], LA in steadyState
@@ -2568,6 +2431,264 @@ S 1 42 15 1835 Assert in file: "RateAdaptation.c" in line: 1835
 S 1 42 15 1886 Assert in file: "RateAdaptation.c" in line: 1886
 S 1 42 15 2525 rateAdaptationEnableDisableStaSlowLoop, enableDisable = %d,loopType = %d, probingTaskBitmap[Pr0] = %d, slowProbingTaskBitmap[Pr1] = %d
 S 1 42 15 2765 changeTaskToDefaultPriority, pslowProbingTaskBitmap[SLOW_PROBING_PRIORITY0] = %X, pslowProbingTaskBitmap[SLOW_PROBING_PRIORITY1] = %X
+S 1 42 16 153 linkAdaptationStateMachine: la_state %d, event %d
+S 1 42 16 212 timerAgerEvent
+S 1 42 16 402 waitForNextProbeCycleStateBaTxReportEvent- waitForNextProbeCycleStateBaTxReportEvent == %d
+S 1 42 16 514 processSequencerReportEvent, CALL ProtectionAdaptation_Handler!!
+S 1 42 16 560 processSequencerReportEvent, CALL ProtectionAdaptation_Handler!!
+S 1 42 16 1176 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1176
+S 1 42 16 1227 Probe response ignored after state aging, stationIndex = %d
+S 1 42 16 1259 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1259
+S 1 42 16 1285 updateOverridePendingDb. override %d value %d
+S 1 42 16 1305 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1305
+S 1 42 16 1374 executeParamOverride, staIdx: %d
+S 1 42 16 1556 Fatal Error in file: "LinkAdaptation_StateMachine.c"; Fatal Print: laStateMachineProcessBaaReport
+S 1 42 16 1562 laStateMachineProcessBaaReport, event %d
+S 1 42 16 1567 laStateMachineProcessBaaReport, event %d
+S 1 42 16 1595 laStateMachineProcessSequencerReport, event %d
+S 1 42 16 1600 laStateMachineProcessSequencerReport, event %d
+S 1 42 16 1630 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1630
+S 1 7 12 597 Assert in file: "RxClassifier.c" in line: 597
+S 1 7 12 820 [RxClassifier_ConfigureNormalMode]-------- Rx Classifier RAM configured for NORMAL_AFTER_RSSI --------
+S 1 7 12 829 [RxClassifier_ConfigureNormalMode]--------------------------end
+S 1 7 12 864 [RxClassifier_ConfigureRssiMode]-------- Rx Classifier RAM configured for RSSI --------
+S 1 7 12 871 [RxClassifier_ConfigureRssiMode], StaDB_IsDataEncrypted(%d) = %d, StaDB_IsManagementEncrypted(%d) = %d
+S 1 7 12 879 [RxClassifier_ConfigureRssiMode]------------------------------------end]
+S 1 7 12 945 -------- Rx Classifier configured for Sniffer --------
+S 1 42 17 378 Assert in file: "Beamforming.c" in line: 378
+S 1 42 17 941 linkAdaptationHandleAgingTimerEvent
+S 1 28 15 181 Tx Lo: Executing Calibration: CalibType(offline(1)/online(2)) = %d,
+S 1 28 15 219 Tx Lo: Finished Calibration. Ret Code = %d, Run Time = %d
+S 1 28 15 394 TXLo calibrateSingleAntenna:RF Ant %d,LoopBackRxAnt %d, LoopBackTxAnt %d
+S 1 28 15 409 TxLo calibrateSingleAntenna(): Restore Hw Registers Run Time = %d
+S 1 28 15 687 TxLo calibrateAndVerifySingleTpc: TPC %d
+S 1 28 15 725 Tx Lo calibrateAndVerifySingleTpc(): Verify reference Energy(log) = %d
+S 1 28 15 822 calibrateAndVerifySingleTpc() starting I - Iteration = %d Q = %d
+S 1 28 15 827 TxLo doAxisIteration(). Iteration = %d, I = %d
+S 1 28 15 837 calibrateAndVerifySingleTpc(). starting Q - Iteration = %d I = %d
+S 1 28 15 842 calibrateAndVerifySingleTpc(). Iteration = %d, Q = %d
+S 1 28 15 855 TxLo calibrateAndVerifySingleTpc digitalDacI = %d, digitalDacQ = %d
+S 1 28 15 863 TxLo calibrateAndVerifySingleTpc dacI = %d, dacQ = %d
+S 1 28 15 874 TxLo calibrateAndVerifySingleTpc(): Run Time = %d
+S 1 28 15 909 TxLo digitalDacUpdateRequired() DAC  %d exceeds allowed range but digital DAC max iterations %d exceeded
+S 1 28 15 1064 Tx Lo VerifyCalibrationResults(): TPC Energy(log) = %d Diff from Ref %d
+S 1 28 15 1074 Tx Lo verifyCalibrationResults():Energy diff from ref %d below TH = %d status = %d
+S 1 28 15 1082 TxLo verifyCalibrationResults status = %d
+S 1 28 15 1089 TxLo verifyCalibrationResults(): Single TPC verify Run Time = %d
+S 1 28 15 1202 TxLo updateTpcsToNextCalibTpc: next TPC = %d
+S 1 28 15 1344 Assert in file: "TxLOLeakageClbrHndlr.c" in line: 1344
+S 1 28 15 1393 TxLoLeakage_StoreResults(): Ant %d Digital DAC: I=%d Q=%d
+S 1 28 15 1401 TxLoLeakage_StoreResults(): Ant %d Num Calibrated TPCs=%d
+S 1 28 15 1412 TxLoLeakage_StoreResults(): Ant %d TPC %d DAC: I=%d Q=%d
+S 1 28 16 357 Assert in file: "CalibrationHandler.c" in line: 357
+S 1 28 16 365 Assert in file: "CalibrationHandler.c" in line: 365
+S 1 28 16 387 Calibrating...
+S 1 28 16 550 Assert in file: "CalibrationHandler.c" in line: 550
+S 1 28 16 565 runCalibration. clbrType: %d dataStoreState: %d
+S 1 28 16 585 runCalibration. proc %d
+S 1 28 16 589 Assert in file: "CalibrationHandler.c" in line: 589
+S 1 28 16 603 Calibrations fragmented
+S 1 28 16 609 Finished Calibrations
+S 1 28 16 711 CalibrationHandler getUpdateOfflineStatus(). StatusVector = 0x%x %d
+S 1 28 16 811 calBitmap:%d
+S 1 29 16 704 Assert in file: "RficDriver.c" in line: 704
+S 1 29 16 751 Assert in file: "RficDriver.c" in line: 751
+S 1 29 16 796 Assert in file: "RficDriver.c" in line: 796
+S 1 29 16 1036 Assert in file: "RficDriver.c" in line: 1036
+S 1 29 16 1155 Assert in file: "RficDriver.c" in line: 1155
+S 1 29 16 1156 Assert in file: "RficDriver.c" in line: 1156
+S 1 29 16 1157 Assert in file: "RficDriver.c" in line: 1157
+S 1 29 16 1233 Assert in file: "RficDriver.c" in line: 1233
+S 1 29 16 1345 Assert in file: "RficDriver.c" in line: 1345
+S 1 29 16 1407 Assert in file: "RficDriver.c" in line: 1407
+S 1 29 16 1455 Assert in file: "RficDriver.c" in line: 1455
+S 1 29 16 1496 Assert in file: "RficDriver.c" in line: 1496
+S 1 29 16 1540 Assert in file: "RficDriver.c" in line: 1540
+S 1 29 16 1580 Assert in file: "RficDriver.c" in line: 1580
+S 1 29 16 1685 Assert in file: "RficDriver.c" in line: 1685
+S 1 29 16 1763 Assert in file: "RficDriver.c" in line: 1763
+S 1 29 16 1778 Assert in file: "RficDriver.c" in line: 1778
+S 1 29 16 1845 Assert in file: "RficDriver.c" in line: 1845
+S 1 29 16 1941 RficDriver_SetFrequency
+S 1 29 16 1968 [RficDriver_SetFrequency], Flo = %d
+S 1 29 16 2127 Assert in file: "RficDriver.c" in line: 2127
+S 1 29 16 2241 Assert in file: "RficDriver.c" in line: 2241
+S 1 29 16 2341 Assert in file: "RficDriver.c" in line: 2341
+S 1 29 16 2399 Assert in file: "RficDriver.c" in line: 2399
+S 1 29 16 2482 Assert in file: "RficDriver.c" in line: 2482
+S 1 29 16 2483 Assert in file: "RficDriver.c" in line: 2483
+S 1 29 16 2523 Assert in file: "RficDriver.c" in line: 2523
+S 1 29 16 2524 Assert in file: "RficDriver.c" in line: 2524
+S 1 29 16 2600 Assert in file: "RficDriver.c" in line: 2600
+S 1 29 16 2640 Assert in file: "RficDriver.c" in line: 2640
+S 1 29 16 2773 Assert in file: "RficDriver.c" in line: 2773
+S 1 29 16 3115 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 29 16 3136 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 29 16 3160 Assert in file: "RficDriver.c" in line: 3160
+S 1 29 16 3161 Assert in file: "RficDriver.c" in line: 3161
+S 1 29 16 3162 Assert in file: "RficDriver.c" in line: 3162
+S 1 29 20 757 Assert in file: "RficDriver.c" in line: 757
+S 1 29 20 804 Assert in file: "RficDriver.c" in line: 804
+S 1 29 20 980 Assert in file: "RficDriver.c" in line: 980
+S 1 29 20 1076 Assert in file: "RficDriver.c" in line: 1076
+S 1 29 20 1144 Assert in file: "RficDriver.c" in line: 1144
+S 1 29 20 1393 Assert in file: "RficDriver.c" in line: 1393
+S 1 29 20 1408 Assert in file: "RficDriver.c" in line: 1408
+S 1 29 20 1475 Assert in file: "RficDriver.c" in line: 1475
+S 1 29 20 1573 Assert in file: "RficDriver.c" in line: 1573
+S 1 29 20 1618 Assert in file: "RficDriver.c" in line: 1618
+S 1 29 20 1637 RficDriver_SetFrequency freq = %d, bw = %d
+S 1 29 20 2002 Assert in file: "RficDriver.c" in line: 2002
+S 1 29 20 2063 Assert in file: "RficDriver.c" in line: 2063
+S 1 29 20 2136 Assert in file: "RficDriver.c" in line: 2136
+S 1 29 20 2180 Assert in file: "RficDriver.c" in line: 2180
+S 1 29 20 2265 Assert in file: "RficDriver.c" in line: 2265
+S 1 29 20 2279 Assert in file: "RficDriver.c" in line: 2279
+S 1 29 20 2358 Assert in file: "RficDriver.c" in line: 2358
+S 1 29 20 2393 Assert in file: "RficDriver.c" in line: 2393
+S 1 29 20 3022 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 29 20 3031 doAxisIteration() stepping in GetTxloPivot() outElements_p->params.binaryPivot : %d 
+S 1 29 20 3035 calculating pivot from Hi direction : %d 
+S 1 29 20 3055 outElements_p->params.binaryPivot = %d 
+S 1 29 20 3060 calculating pivot from Lo direction : %d 
+S 1 29 20 3076 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 29 20 3383 GetTxloPivot() pivot : %d 
+S 1 29 20 3384 GetTxloPivot() Maxiteration : %d 
+S 1 29 20 3395 GetTxloPivot() PivotDiv : %d 
+S 1 29 20 3401 GetTxloPivot() itiration: %d fixedcntrl: %d
+S 1 29 20 3405 GetTxloPivot() outElements_p->params.binaryPivot: %d 
+S 1 30 2 762 Assert in file: "RficDriver.c" in line: 762
+S 1 30 2 809 Assert in file: "RficDriver.c" in line: 809
+S 1 30 2 1094 Assert in file: "RficDriver.c" in line: 1094
+S 1 30 2 1190 Assert in file: "RficDriver.c" in line: 1190
+S 1 30 2 1258 Assert in file: "RficDriver.c" in line: 1258
+S 1 30 2 1320 Assert in file: "RficDriver.c" in line: 1320
+S 1 30 2 1368 Assert in file: "RficDriver.c" in line: 1368
+S 1 30 2 1409 Assert in file: "RficDriver.c" in line: 1409
+S 1 30 2 1453 Assert in file: "RficDriver.c" in line: 1453
+S 1 30 2 1493 Assert in file: "RficDriver.c" in line: 1493
+S 1 30 2 1595 Assert in file: "RficDriver.c" in line: 1595
+S 1 30 2 1673 Assert in file: "RficDriver.c" in line: 1673
+S 1 30 2 1688 Assert in file: "RficDriver.c" in line: 1688
+S 1 30 2 1755 Assert in file: "RficDriver.c" in line: 1755
+S 1 30 2 1864 Assert in file: "RficDriver.c" in line: 1864
+S 1 30 2 1909 Assert in file: "RficDriver.c" in line: 1909
+S 1 30 2 1926 RficDriver_SetFrequency freq = %d, bw = %d
+S 1 30 2 1932 DRIVER set frequency %d ....FREQ FOR CALIBRATE, is diffrent from LoFrequencies_G[2]=%d
+S 1 30 2 1934 LoFrequencies_G[1]=%d, .LoFrequencies_G[2]=%d
+S 1 30 2 2101 Assert in file: "RficDriver.c" in line: 2101
+S 1 30 2 2303 Assert in file: "RficDriver.c" in line: 2303
+S 1 30 2 2364 Assert in file: "RficDriver.c" in line: 2364
+S 1 30 2 2437 Assert in file: "RficDriver.c" in line: 2437
+S 1 30 2 2485 Assert in file: "RficDriver.c" in line: 2485
+S 1 30 2 2701 Assert in file: "RficDriver.c" in line: 2701
+S 1 30 2 2736 Assert in file: "RficDriver.c" in line: 2736
+S 1 30 2 3352 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 30 2 3361 doAxisIteration() stepping in GetTxloPivot() outElements_p->params.binaryPivot : %d 
+S 1 30 2 3365 calculating pivot from Hi direction : %d 
+S 1 30 2 3385 outElements_p->params.binaryPivot = %d 
+S 1 30 2 3390 calculating pivot from Lo direction : %d 
+S 1 30 2 3406 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
+S 1 30 2 3649 GetTxloPivot() pivot : %d 
+S 1 30 2 3650 GetTxloPivot() Maxiteration : %d 
+S 1 30 2 3661 GetTxloPivot() PivotDiv : %d 
+S 1 30 2 3667 GetTxloPivot() itiration: %d fixedcntrl: %d
+S 1 30 2 3671 GetTxloPivot() outElements_p->params.binaryPivot: %d 
+S 1 42 8 337 setStaFixedRatesInHwDb 1 isRateInc = %d newRateindex= %d oldRate= %d 
+S 1 42 8 353 setStaFixedRatesInHwDb 2 isRateInc = %d newRateindex= %d oldRate= %d 
+S 1 42 8 1324 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1324
+S 1 42 8 1497 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1497
+S 1 42 8 1529 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1529
+S 1 42 8 1696 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1696
+S 1 42 8 1741 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1741
+S 1 42 8 1743 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1743
+S 1 42 8 1744 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1744
+S 1 42 8 1757 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1757
+S 1 42 8 1825 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1825
+S 1 42 8 1917 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1917
+S 1 42 8 1918 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1918
+S 1 42 8 1919 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1919
+S 1 42 8 1933 Assert in file: "LinkAdaptationPhyDriver.c" in line: 1933
+S 1 42 8 2009 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2009
+S 1 42 8 2098 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2098
+S 1 42 8 2390 bwAdaptationSetBwLimit, changedDataBw = %d
+S 1 42 8 2847 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2847
+S 1 42 8 2974 Assert in file: "LinkAdaptationPhyDriver.c" in line: 2974
+S 1 42 8 3081 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3081
+S 1 42 8 3084 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3084
+S 1 42 8 3124 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3124
+S 1 42 8 3136 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3136
+S 1 42 8 3155 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3155
+S 1 42 8 3190 Assert in file: "LinkAdaptationPhyDriver.c" in line: 3190
+S 1 79 0 205 Ts Manager, ADD STA, SID %d, allowed %d, Filter %d
+S 1 79 0 294 tsManagerRemoveVap
+S 1 79 0 344 Assert in file: "TsManager.c" in line: 344
+S 1 79 0 401 Ts Manager, Set Filter, SID %d
+S 1 79 0 444 Ts Manager, Remove STA, SID %d
+S 1 79 0 641 Fatal Error in file: "TsManager.c"; Fatal Print: TS Manager Action Packet Confirmed - Unknown Action
+S 1 79 0 771 Assert in file: "TsManager.c" in line: 771
+S 1 79 0 1146 Ts Manager, Send Confirmation, Client %d, SID %d
+S 1 79 0 1680 Assert in file: "TsManager.c" in line: 1680
+S 1 79 0 1681 Assert in file: "TsManager.c" in line: 1681
+S 1 79 0 1682 Assert in file: "TsManager.c" in line: 1682
+S 1 79 0 1742 Assert in file: "TsManager.c" in line: 1742
+S 1 79 0 1777 Assert in file: "TsManager.c" in line: 1777
+S 1 79 1 542 Fatal Error in file: "TsManagerInitiator.c"; Fatal Print: TS Manager Initiator Fatal
+S 1 79 1 571 TS Manager Initiator Change SID %d, TID %d, State from %d to %d
+S 1 79 1 601 TS Manager Initiator Event SID %d, TID %d, State %d Event %d
+S 1 79 1 1824 Assert in file: "TsManagerInitiator.c" in line: 1824
+S 1 79 1 3141 Assert in file: "TsManagerInitiator.c" in line: 3141
+S 1 79 1 3175 Assert in file: "TsManagerInitiator.c" in line: 3175
+S 1 79 1 3219 Assert in file: "TsManagerInitiator.c" in line: 3219
+S 1 79 1 3723 Assert in file: "TsManagerInitiator.c" in line: 3723
+S 1 79 1 4284 Assert in file: "TsManagerInitiator.c" in line: 4284
+S 1 79 1 4628 Assert in file: "TsManagerInitiator.c" in line: 4628
+S 1 79 1 5082 Assert in file: "TsManagerInitiator.c" in line: 5082
+S 1 79 1 5083 Assert in file: "TsManagerInitiator.c" in line: 5083
+S 1 79 2 410 Fatal Error in file: "TsManagerRecipient.c"; Fatal Print: TS Manager Recipient Fatal
+S 1 79 2 440 TS Manager Recipient SID %d, TID %d, Change State from %d to %d
+S 1 79 2 470 TS Manager Recipient Event SID %d, TID %d, State %d Event %d
+S 1 79 2 952 tsManagerRecipientAddbaRequestReceivedInClosed stationIndex %d tid %d 
+S 1 79 2 986 tsManagerRecipientAddbaRequestReceivedInOpeningthe s
+S 1 79 2 993 tsManagerRecipientAddbaRequestReceivedInOpeningthe same dialog token %d
+S 1 79 2 1034 tsManagerRecipientAddbaRequestReceivedInOpenedthe s
+S 1 79 2 1037 tsManagerRecipientAddbaRequestReceivedInOpenedthe same dialog token %d
+S 1 79 2 1179 tsManagerRecipientDelbaReceivedInOpeningWaitingForPd remove status %d
+S 1 79 2 1224 tsManagerRecipientDelbaReceivedInOpening 
+S 1 79 2 1259 tsManagerRecipientDelbaReceivedInOpened 
+S 1 79 2 1388 tsManagerRecipientAddbaResponseConfirmedInOpening station index %d tid % d
+S 1 79 2 1455 tsManagerRecipientAddbaResponseConfirmedInClosing station index %d tid % d
+S 1 79 2 1522 tsManagerRecipientDelbaConfirmedInClosing station index %d tid % d
+S 1 79 2 1590 tsManagerRecipientAddbaResponseConfirmedInClosingWaitingForConfirmation 
+S 1 79 2 1623 tsManagerRecipientIllegalPacketReceivedInClosed station index %d tid % d
+S 1 79 2 1663 tsManagerRecipientIllegalPacketReceivedInClosedWaitingForMessage station index %d tid % d
+S 1 79 2 1701 tsManagerRecipientIllegalPacketReceivedInOpeningWaitingForPd station index %d tid % d
+S 1 79 2 1743 tsManagerRecipientPdAllocatedInClosedWaitingForMessage station index %d tid % d
+S 1 79 2 1780 tsManagerRecipientPdAllocatedInOpeningWaitingForPd station index %d tid % d
+S 1 79 2 1857 tsManagerRecipientPdAllocatedInClosingWaitingForPdForDelba station index %d tid % d
+S 1 79 2 1897 tsManagerRecipientPdAllocatedInClosingWaitingForPdForAddbaResponse station index %d tid % d
+S 1 79 2 1972 tsManagerRecipientBarReceivedInClosed station index %d tid % d
+S 1 79 2 2010 tsManagerRecipientBarReceivedInClosedWaitingForMessage station index %d tid % d
+S 1 79 2 2048 tsManagerRecipientBarReceivedInOpeningWaitingForPd station index %d tid % d
+S 1 79 2 2085 tsManagerRecipientBarReceivedInOpening station index %d tid % d
+S 1 79 2 2116 tsManagerRecipientBarReceivedInOpened station index %d tid % d
+S 1 79 2 2147 tsManagerRecipientBarReceivedInClosing station index %d tid % d
+S 1 79 2 2179 tsManagerRecipientBarReceivedInClosingWaitingForPdForDelba station index %d tid % d
+S 1 79 2 2211 tsManagerRecipientBarReceivedInClosingWaitingForPdForDelba station index %d tid % d
+S 1 79 2 2466 tsManagerRecipientCloseBaAgreement stationIndex %d tid %d 
+S 1 79 2 2563 tsManagerRecipientProcessAddbaRequest invalid parameters 
+S 1 79 2 2571 tsManagerRecipientProcessAddbaRequest invalid parameters 
+S 1 79 2 2672 tsManagerRecipientProcessAddbaRequest ADDBA request declined allocation status %d
+S 1 79 2 2734 Assert in file: "TsManagerRecipient.c" in line: 2734
+S 1 79 2 3050 Assert in file: "TsManagerRecipient.c" in line: 3050
+S 1 79 2 3242 TsManagerRecipient_BarReceived illegal BAR
+S 1 79 2 3418 Assert in file: "TsManagerRecipient.c" in line: 3418
+S 1 79 2 3456 TsManagerRecipient_PdAllocated stationIndex %d tid %d state %d
+S 1 79 2 3792 Assert in file: "TsManagerRecipient.c" in line: 3792
+S 1 79 2 3794 Assert in file: "TsManagerRecipient.c" in line: 3794
+S 1 13 2 276 CSA Manager VAP Manager, VAP %d changed from %d to %d
+S 1 13 2 1291 Assert in file: "CsaManager_VapManager.c" in line: 1291
+S 1 13 2 1687 Fatal Error in file: "CsaManager_VapManager.c"; Fatal Print: CSA Manager VAP Manager Fatal
 S 1 42 5 719 Assert in file: "LinkAdaptation.c" in line: 719
 S 1 42 5 793 Assert in file: "LinkAdaptation.c" in line: 793
 S 1 42 5 937 Assert in file: "LinkAdaptation.c" in line: 937
@@ -2601,52 +2722,28 @@ S 1 42 5 4117 Assert in file: "LinkAdaptation.c" in line: 4117
 S 1 42 5 4246 Assert in file: "LinkAdaptation.c" in line: 4246
 S 1 42 5 4278 Assert in file: "LinkAdaptation.c" in line: 4278
 S 1 42 5 4308 Assert in file: "LinkAdaptation.c" in line: 4308
-S 1 42 5 4610 [FAST DROP] linkAdaptationFastDropConfig enableFastDrop = %d pFastDropCfg->enableFastDrop = %d 
-S 1 42 5 4895 [updateTransmissionTimeParams] rate is above threshold: %d
-S 1 42 5 4901 [updateTransmissionTimeParams] rate is below threshold: %d. limit transmission time
-S 1 42 5 4939 clientIsolationRateIsChanged oldPhyRate: %d newPhyRate: %d oldPhymode %d newPhyMode %d
-S 1 42 5 5027 Assert in file: "LinkAdaptation.c" in line: 5027
-S 1 42 5 5150 Assert in file: "LinkAdaptation.c" in line: 5150
-S 1 42 5 5170 pTcrPowerModified = %d
-S 1 42 5 5296 Assert in file: "LinkAdaptation.c" in line: 5296
-S 1 42 5 5311 Assert in file: "LinkAdaptation.c" in line: 5311
-S 1 42 5 5318 Fatal Error in file: "LinkAdaptation.c"; Fatal Print: linkAdaptationProcessCurrentBaaReport
-S 1 42 5 5361 Assert in file: "LinkAdaptation.c" in line: 5361
-S 1 42 5 5591 Assert in file: "LinkAdaptation.c" in line: 5591
-S 1 42 5 5630 [ChangeStaToSteadyStateConfigurationParams]
-S 1 42 5 5666 Assert in file: "LinkAdaptation.c" in line: 5666
-S 1 42 5 5674 Fatal Error in file: "LinkAdaptation.c"; Fatal Print: updateLaDbDistributionParam
-S 1 42 5 5800 Assert in file: "LinkAdaptation.c" in line: 5800
-S 1 42 5 5875 Assert in file: "LinkAdaptation.c" in line: 5875
-S 1 42 5 5917 Assert in file: "LinkAdaptation.c" in line: 5917
-S 1 42 5 5944 Assert in file: "LinkAdaptation.c" in line: 5944
-S 1 42 5 6124 Assert in file: "LinkAdaptation.c" in line: 6124
-S 1 42 5 6127 Assert in file: "LinkAdaptation.c" in line: 6127
-S 1 42 5 6133 Assert in file: "LinkAdaptation.c" in line: 6133
-S 1 42 16 153 linkAdaptationStateMachine: la_state %d, event %d
-S 1 42 16 212 timerAgerEvent
-S 1 42 16 402 waitForNextProbeCycleStateBaTxReportEvent- waitForNextProbeCycleStateBaTxReportEvent == %d
-S 1 42 16 514 processSequencerReportEvent, CALL ProtectionAdaptation_Handler!!
-S 1 42 16 560 processSequencerReportEvent, CALL ProtectionAdaptation_Handler!!
-S 1 42 16 1176 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1176
-S 1 42 16 1227 Probe response ignored after state aging, stationIndex = %d
-S 1 42 16 1259 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1259
-S 1 42 16 1285 updateOverridePendingDb. override %d value %d
-S 1 42 16 1305 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1305
-S 1 42 16 1374 executeParamOverride, staIdx: %d
-S 1 42 16 1556 Fatal Error in file: "LinkAdaptation_StateMachine.c"; Fatal Print: laStateMachineProcessBaaReport
-S 1 42 16 1562 laStateMachineProcessBaaReport, event %d
-S 1 42 16 1567 laStateMachineProcessBaaReport, event %d
-S 1 42 16 1595 laStateMachineProcessSequencerReport, event %d
-S 1 42 16 1600 laStateMachineProcessSequencerReport, event %d
-S 1 42 16 1630 Assert in file: "LinkAdaptation_StateMachine.c" in line: 1630
-S 1 7 12 597 Assert in file: "RxClassifier.c" in line: 597
-S 1 7 12 820 [RxClassifier_ConfigureNormalMode]-------- Rx Classifier RAM configured for NORMAL_AFTER_RSSI --------
-S 1 7 12 829 [RxClassifier_ConfigureNormalMode]--------------------------end
-S 1 7 12 864 [RxClassifier_ConfigureRssiMode]-------- Rx Classifier RAM configured for RSSI --------
-S 1 7 12 871 [RxClassifier_ConfigureRssiMode], StaDB_IsDataEncrypted(%d) = %d, StaDB_IsManagementEncrypted(%d) = %d
-S 1 7 12 879 [RxClassifier_ConfigureRssiMode]------------------------------------end]
-S 1 7 12 945 -------- Rx Classifier configured for Sniffer --------
+S 1 42 5 4615 [FAST DROP] linkAdaptationFastDropConfig enableFastDrop = %d pFastDropCfg->enableFastDrop = %d 
+S 1 42 5 4900 [updateTransmissionTimeParams] rate is above threshold: %d
+S 1 42 5 4906 [updateTransmissionTimeParams] rate is below threshold: %d. limit transmission time
+S 1 42 5 4944 clientIsolationRateIsChanged oldPhyRate: %d newPhyRate: %d oldPhymode %d newPhyMode %d
+S 1 42 5 5032 Assert in file: "LinkAdaptation.c" in line: 5032
+S 1 42 5 5155 Assert in file: "LinkAdaptation.c" in line: 5155
+S 1 42 5 5175 pTcrPowerModified = %d
+S 1 42 5 5301 Assert in file: "LinkAdaptation.c" in line: 5301
+S 1 42 5 5316 Assert in file: "LinkAdaptation.c" in line: 5316
+S 1 42 5 5323 Fatal Error in file: "LinkAdaptation.c"; Fatal Print: linkAdaptationProcessCurrentBaaReport
+S 1 42 5 5366 Assert in file: "LinkAdaptation.c" in line: 5366
+S 1 42 5 5596 Assert in file: "LinkAdaptation.c" in line: 5596
+S 1 42 5 5635 [ChangeStaToSteadyStateConfigurationParams]
+S 1 42 5 5671 Assert in file: "LinkAdaptation.c" in line: 5671
+S 1 42 5 5679 Fatal Error in file: "LinkAdaptation.c"; Fatal Print: updateLaDbDistributionParam
+S 1 42 5 5805 Assert in file: "LinkAdaptation.c" in line: 5805
+S 1 42 5 5880 Assert in file: "LinkAdaptation.c" in line: 5880
+S 1 42 5 5922 Assert in file: "LinkAdaptation.c" in line: 5922
+S 1 42 5 5949 Assert in file: "LinkAdaptation.c" in line: 5949
+S 1 42 5 6129 Assert in file: "LinkAdaptation.c" in line: 6129
+S 1 42 5 6132 Assert in file: "LinkAdaptation.c" in line: 6132
+S 1 42 5 6138 Assert in file: "LinkAdaptation.c" in line: 6138
 S 1 85 0 914 [UMI_ADD_VAP_REQ LA]
 S 1 85 0 1130 UMI_SET_INTERFERER_DETECTION_PARAMS_REQ: time %u
 S 1 85 0 1263 [vUM_PHY_RX_STATUS_REQ]
@@ -2688,96 +2785,26 @@ S 1 85 0 2982 Assert in file: "um_interface_task.c" in line: 2982
 S 1 85 0 2995 Assert in file: "um_interface_task.c" in line: 2995
 S 1 85 0 3007 Assert in file: "um_interface_task.c" in line: 3007
 S 1 85 0 3008 Assert in file: "um_interface_task.c" in line: 3008
-S 1 85 0 3036 Assert in file: "um_interface_task.c" in line: 3036
-S 1 85 0 3049 Assert in file: "um_interface_task.c" in line: 3049
-S 1 85 0 3059 Assert in file: "um_interface_task.c" in line: 3059
-S 1 85 0 3216 [vUMI_MAN_STA_ADD_REQ]
-S 1 85 0 3237 [vUMI_MAN_STA_ADD_CFM]
-S 1 85 0 3264 [vUMI_MAN_STA_REMOVE_REQ]
-S 1 85 0 3285 [vUMI_MAN_STA_REMOVE_CFM]
-S 1 85 0 3349 Assert in file: "um_interface_task.c" in line: 3349
-S 1 85 0 3597 [vUMI_MAN_REQUEST_SID_REQ]
-S 1 85 0 3616 [vUMI_MAN_REQUEST_SID_CFM]
-S 1 85 0 3653 [vUMI_MAN_REMOVE_SID_REQ]
-S 1 85 0 3834 Assert in file: "um_interface_task.c" in line: 3834
-S 1 85 0 4029 Assert in file: "um_interface_task.c" in line: 4029
-S 1 85 0 4323 [vUMI_MAN_REMOVE_SID_CFM]
-S 1 85 0 4346 [vUMI_MAN_STOP_TRAFFIC_REQ]
-S 1 85 0 4364 [vUMI_MAN_STOP_TRAFFIC_CFM]
-S 1 85 0 5038 Fatal Error in file: "um_interface_task.c"; Fatal Print: UMI_GROUP_LOCK_CFM
-S 1 85 0 5587 Assert in file: "um_interface_task.c" in line: 5587
-S 1 85 0 5624 Assert in file: "um_interface_task.c" in line: 5624
+S 1 85 0 3038 Assert in file: "um_interface_task.c" in line: 3038
+S 1 85 0 3051 Assert in file: "um_interface_task.c" in line: 3051
+S 1 85 0 3061 Assert in file: "um_interface_task.c" in line: 3061
+S 1 85 0 3218 [vUMI_MAN_STA_ADD_REQ]
+S 1 85 0 3239 [vUMI_MAN_STA_ADD_CFM]
+S 1 85 0 3266 [vUMI_MAN_STA_REMOVE_REQ]
+S 1 85 0 3287 [vUMI_MAN_STA_REMOVE_CFM]
+S 1 85 0 3351 Assert in file: "um_interface_task.c" in line: 3351
+S 1 85 0 3599 [vUMI_MAN_REQUEST_SID_REQ]
+S 1 85 0 3618 [vUMI_MAN_REQUEST_SID_CFM]
+S 1 85 0 3655 [vUMI_MAN_REMOVE_SID_REQ]
+S 1 85 0 3836 Assert in file: "um_interface_task.c" in line: 3836
+S 1 85 0 4031 Assert in file: "um_interface_task.c" in line: 4031
+S 1 85 0 4325 [vUMI_MAN_REMOVE_SID_CFM]
+S 1 85 0 4348 [vUMI_MAN_STOP_TRAFFIC_REQ]
+S 1 85 0 4366 [vUMI_MAN_STOP_TRAFFIC_CFM]
+S 1 85 0 5040 Fatal Error in file: "um_interface_task.c"; Fatal Print: UMI_GROUP_LOCK_CFM
+S 1 85 0 5589 Assert in file: "um_interface_task.c" in line: 5589
 S 1 85 0 5626 Assert in file: "um_interface_task.c" in line: 5626
-S 1 42 17 378 Assert in file: "Beamforming.c" in line: 378
-S 1 42 17 941 linkAdaptationHandleAgingTimerEvent
-S 1 29 20 752 Assert in file: "RficDriver.c" in line: 752
-S 1 29 20 799 Assert in file: "RficDriver.c" in line: 799
-S 1 29 20 975 Assert in file: "RficDriver.c" in line: 975
-S 1 29 20 1071 Assert in file: "RficDriver.c" in line: 1071
-S 1 29 20 1139 Assert in file: "RficDriver.c" in line: 1139
-S 1 29 20 1388 Assert in file: "RficDriver.c" in line: 1388
-S 1 29 20 1403 Assert in file: "RficDriver.c" in line: 1403
-S 1 29 20 1470 Assert in file: "RficDriver.c" in line: 1470
-S 1 29 20 1568 Assert in file: "RficDriver.c" in line: 1568
-S 1 29 20 1613 Assert in file: "RficDriver.c" in line: 1613
-S 1 29 20 1632 RficDriver_SetFrequency freq = %d, bw = %d
-S 1 29 20 1997 Assert in file: "RficDriver.c" in line: 1997
-S 1 29 20 2058 Assert in file: "RficDriver.c" in line: 2058
-S 1 29 20 2131 Assert in file: "RficDriver.c" in line: 2131
-S 1 29 20 2175 Assert in file: "RficDriver.c" in line: 2175
-S 1 29 20 2250 Assert in file: "RficDriver.c" in line: 2250
-S 1 29 20 2264 Assert in file: "RficDriver.c" in line: 2264
-S 1 29 20 2343 Assert in file: "RficDriver.c" in line: 2343
-S 1 29 20 2378 Assert in file: "RficDriver.c" in line: 2378
-S 1 30 2 757 Assert in file: "RficDriver.c" in line: 757
-S 1 30 2 804 Assert in file: "RficDriver.c" in line: 804
-S 1 30 2 1089 Assert in file: "RficDriver.c" in line: 1089
-S 1 30 2 1185 Assert in file: "RficDriver.c" in line: 1185
-S 1 30 2 1253 Assert in file: "RficDriver.c" in line: 1253
-S 1 30 2 1315 Assert in file: "RficDriver.c" in line: 1315
-S 1 30 2 1363 Assert in file: "RficDriver.c" in line: 1363
-S 1 30 2 1404 Assert in file: "RficDriver.c" in line: 1404
-S 1 30 2 1448 Assert in file: "RficDriver.c" in line: 1448
-S 1 30 2 1488 Assert in file: "RficDriver.c" in line: 1488
-S 1 30 2 1590 Assert in file: "RficDriver.c" in line: 1590
-S 1 30 2 1668 Assert in file: "RficDriver.c" in line: 1668
-S 1 30 2 1683 Assert in file: "RficDriver.c" in line: 1683
-S 1 30 2 1750 Assert in file: "RficDriver.c" in line: 1750
-S 1 30 2 1859 Assert in file: "RficDriver.c" in line: 1859
-S 1 30 2 1904 Assert in file: "RficDriver.c" in line: 1904
-S 1 30 2 1921 RficDriver_SetFrequency freq = %d, bw = %d
-S 1 30 2 1927 DRIVER set frequency %d ....FREQ FOR CALIBRATE, is diffrent from LoFrequencies_G[2]=%d
-S 1 30 2 1929 LoFrequencies_G[1]=%d, .LoFrequencies_G[2]=%d
-S 1 30 2 2096 Assert in file: "RficDriver.c" in line: 2096
-S 1 30 2 2298 Assert in file: "RficDriver.c" in line: 2298
-S 1 30 2 2359 Assert in file: "RficDriver.c" in line: 2359
-S 1 30 2 2432 Assert in file: "RficDriver.c" in line: 2432
-S 1 30 2 2480 Assert in file: "RficDriver.c" in line: 2480
-S 1 30 2 2691 Assert in file: "RficDriver.c" in line: 2691
-S 1 30 2 2726 Assert in file: "RficDriver.c" in line: 2726
-S 1 28 15 139 Tx Lo: Executing Calibration: CalibType(offline(1)/online(2)) = %d,
-S 1 28 15 177 Tx Lo: Finished Calibration. Ret Code = %d, Run Time = %d
-S 1 28 15 352 TXLo calibrateSingleAntenna:RF Ant %d,LoopBackRxAnt %d, LoopBackTxAnt %d
-S 1 28 15 367 TxLo calibrateSingleAntenna(): Restore Hw Registers Run Time = %d
-S 1 28 15 638 TxLo calibrateAndVerifySingleTpc: TPC %d
-S 1 28 15 676 Tx Lo calibrateAndVerifySingleTpc(): Verify reference Energy(log) = %d
-S 1 28 15 744 TxLo doAxisIteration(). Iteration = %d, I = %d
-S 1 28 15 756 TxLo doAxisIteration(). Iteration = %d, Q = %d
-S 1 28 15 769 TxLo calibrateAndVerifySingleTpc digitalDacI = %d, digitalDacQ = %d
-S 1 28 15 777 TxLo calibrateAndVerifySingleTpc dacI = %d, dacQ = %d
-S 1 28 15 788 TxLo calibrateAndVerifySingleTpc(): Run Time = %d
-S 1 28 15 841 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
-S 1 28 15 880 ant: %d. inHi: %d inLow %d energy high %d energy low: %d
-S 1 28 15 974 TxLo digitalDacUpdateRequired() DAC  %d exceeds allowed range but digital DAC max iterations %d exceeded
-S 1 28 15 1129 Tx Lo VerifyCalibrationResults(): TPC Energy(log) = %d Diff from Ref %d
-S 1 28 15 1139 Tx Lo verifyCalibrationResults():Energy diff from ref %d below TH = %d status = %d
-S 1 28 15 1147 TxLo verifyCalibrationResults status = %d
-S 1 28 15 1154 TxLo verifyCalibrationResults(): Single TPC verify Run Time = %d
-S 1 28 15 1309 TxLo updateTpcsToNextCalibTpc: next TPC = %d
-S 1 28 15 1408 Assert in file: "TxLOLeakageClbrHndlr.c" in line: 1408
-S 1 28 15 1457 TxLoLeakage_StoreResults(): Ant %d Digital DAC: I=%d Q=%d
-S 1 28 15 1465 TxLoLeakage_StoreResults(): Ant %d Num Calibrated TPCs=%d
-S 1 28 15 1476 TxLoLeakage_StoreResults(): Ant %d TPC %d DAC: I=%d Q=%d
+S 1 85 0 5628 Assert in file: "um_interface_task.c" in line: 5628
 T 1 6 0 255 BaaTxReport_t
 T 1 7 1 305 BaaTxReport_t
 T 1 9 0 227 PacManagerStart_t
@@ -2902,9 +2929,11 @@ T 1 42 19 748 RateMask_t
 T 1 42 19 772 RateMask_t
 T 1 42 19 791 RateMask_t
 T 1 42 19 792 RateMask_t
+T 1 42 16 1329 overridePendingDb_t
+T 1 29 20 1635 SetChannelParams_t
+T 1 30 2 1933 SetChannelParams_t
 T 1 42 5 944 SequencerTxReport_t
 T 1 42 5 2370 RateMask_t
-T 1 42 16 1329 overridePendingDb_t
 T 1 85 0 737 UMI_SET_ANTENNAS
 T 1 85 0 817 UMI_MBSS_PRE_ACTIVATE
 T 1 85 0 874 UMI_CALIBRATE_PARAMS
@@ -2922,23 +2951,21 @@ T 1 85 0 1365 UMI_SET_KEY
 T 1 85 0 1482 UM_SET_CHAN_PARAMS
 T 1 85 0 1523 UMI_GROUP_PN
 T 1 85 0 1682 UMI_AOCS_INFO_t
-T 1 85 0 3211 UMI_STA_ADD
-T 1 85 0 3259 UMI_STA_REMOVE
-T 1 85 0 3306 UMI_BEACON_SET
-T 1 85 0 3599 UMI_REQUEST_SID
-T 1 85 0 3651 UMI_REMOVE_SID
-T 1 85 0 3689 UMI_AOCS_INFO_t
-T 1 85 0 3927 UMI_FIXED_RATE_CONFIG
-T 1 85 0 4109 UMI_BeaconBlockTimerInterval_t
-T 1 85 0 4341 UMI_STOP_TRAFFIC
-T 1 85 0 4385 UMI_FRAME_CLASS_ERROR
-T 1 85 0 4425 UMI_TKIP_MIC_FAILURE
-T 1 85 0 4463 UMI_SET_WMM_PARAMETERS
-T 1 85 0 4986 UMI_CCA_TH_t
-T 1 85 0 5451 UMI_MULTICAST_MODE
-T 1 85 0 5485 UMI_MULTICAST_ACTION
-T 1 29 20 1630 SetChannelParams_t
-T 1 30 2 1928 SetChannelParams_t
+T 1 85 0 3213 UMI_STA_ADD
+T 1 85 0 3261 UMI_STA_REMOVE
+T 1 85 0 3308 UMI_BEACON_SET
+T 1 85 0 3601 UMI_REQUEST_SID
+T 1 85 0 3653 UMI_REMOVE_SID
+T 1 85 0 3691 UMI_AOCS_INFO_t
+T 1 85 0 3929 UMI_FIXED_RATE_CONFIG
+T 1 85 0 4111 UMI_BeaconBlockTimerInterval_t
+T 1 85 0 4343 UMI_STOP_TRAFFIC
+T 1 85 0 4387 UMI_FRAME_CLASS_ERROR
+T 1 85 0 4427 UMI_TKIP_MIC_FAILURE
+T 1 85 0 4465 UMI_SET_WMM_PARAMETERS
+T 1 85 0 4988 UMI_CCA_TH_t
+T 1 85 0 5453 UMI_MULTICAST_MODE
+T 1 85 0 5487 UMI_MULTICAST_ACTION
 ----------------------------OSAL LIST asic_lower_mac_cpu_wave500b_ap_real_phy_wrx500_none---------------------------
 U 1 0 20 0 NULL OSAL_TASK_UNUSED_MSG
 U 1 0 20 1 NULL TASK_LOGGER_START
@@ -3430,7 +3457,7 @@ U 1 0 20 465 UMI_BCL_REQUEST LINK_ADAPTATION_SET_BCL_REQ
 U 1 0 20 466 NULL LINK_ADAPTATION_ERR_HANDLER
 U 1 0 20 467 UMI_ADD_STREAM_REQ_t LINK_ADAPTATION_LOG_FILL_HDR_TEMPLATE
 U 1 0 20 468 UMI_MSDU_IN_AMSDU_CONFIG LINK_ADAPTATION_MSDU_IN_AMSDU_CONFIG_REQ
-U 1 0 20 469 uint8 LINK_ADAPTATION_DO_SIMPLE_CLI_CONFIG_REQ
+U 1 0 20 469 uint8 LINK_ADAPTATION_SET_MPDU_IN_AMPDU_REQ
 U 1 0 20 470 UMI_RTS_MODE_CONFIG LINK_ADAPTATION_RTS_MODE_CONFIG_REQ
 U 1 0 20 471 UMI_MAX_MPDU LINK_ADAPTATION_MAX_MPDU_LEN_REQ
 U 1 0 20 472 LmFreqJumpMode_t LINK_ADAPTATION_SET_FREQ_JUMP_MODE_REQ
@@ -4094,7 +4121,7 @@ U 1 0 22 468 UMI_BCL_REQUEST LINK_ADAPTATION_SET_BCL_REQ
 U 1 0 22 469 NULL LINK_ADAPTATION_ERR_HANDLER
 U 1 0 22 470 UMI_ADD_STREAM_REQ_t LINK_ADAPTATION_LOG_FILL_HDR_TEMPLATE
 U 1 0 22 471 UMI_MSDU_IN_AMSDU_CONFIG LINK_ADAPTATION_MSDU_IN_AMSDU_CONFIG_REQ
-U 1 0 22 472 uint8 LINK_ADAPTATION_DO_SIMPLE_CLI_CONFIG_REQ
+U 1 0 22 472 uint8 LINK_ADAPTATION_SET_MPDU_IN_AMPDU_REQ
 U 1 0 22 473 UMI_RTS_MODE_CONFIG LINK_ADAPTATION_RTS_MODE_CONFIG_REQ
 U 1 0 22 474 UMI_MAX_MPDU LINK_ADAPTATION_MAX_MPDU_LEN_REQ
 U 1 0 22 475 LmFreqJumpMode_t LINK_ADAPTATION_SET_FREQ_JUMP_MODE_REQ
@@ -4754,7 +4781,7 @@ U 1 0 20 465 UMI_BCL_REQUEST LINK_ADAPTATION_SET_BCL_REQ
 U 1 0 20 466 NULL LINK_ADAPTATION_ERR_HANDLER
 U 1 0 20 467 UMI_ADD_STREAM_REQ_t LINK_ADAPTATION_LOG_FILL_HDR_TEMPLATE
 U 1 0 20 468 UMI_MSDU_IN_AMSDU_CONFIG LINK_ADAPTATION_MSDU_IN_AMSDU_CONFIG_REQ
-U 1 0 20 469 uint8 LINK_ADAPTATION_DO_SIMPLE_CLI_CONFIG_REQ
+U 1 0 20 469 uint8 LINK_ADAPTATION_SET_MPDU_IN_AMPDU_REQ
 U 1 0 20 470 UMI_RTS_MODE_CONFIG LINK_ADAPTATION_RTS_MODE_CONFIG_REQ
 U 1 0 20 471 UMI_MAX_MPDU LINK_ADAPTATION_MAX_MPDU_LEN_REQ
 U 1 0 20 472 LmFreqJumpMode_t LINK_ADAPTATION_SET_FREQ_JUMP_MODE_REQ
@@ -5418,7 +5445,7 @@ U 1 0 22 468 UMI_BCL_REQUEST LINK_ADAPTATION_SET_BCL_REQ
 U 1 0 22 469 NULL LINK_ADAPTATION_ERR_HANDLER
 U 1 0 22 470 UMI_ADD_STREAM_REQ_t LINK_ADAPTATION_LOG_FILL_HDR_TEMPLATE
 U 1 0 22 471 UMI_MSDU_IN_AMSDU_CONFIG LINK_ADAPTATION_MSDU_IN_AMSDU_CONFIG_REQ
-U 1 0 22 472 uint8 LINK_ADAPTATION_DO_SIMPLE_CLI_CONFIG_REQ
+U 1 0 22 472 uint8 LINK_ADAPTATION_SET_MPDU_IN_AMPDU_REQ
 U 1 0 22 473 UMI_RTS_MODE_CONFIG LINK_ADAPTATION_RTS_MODE_CONFIG_REQ
 U 1 0 22 474 UMI_MAX_MPDU LINK_ADAPTATION_MAX_MPDU_LEN_REQ
 U 1 0 22 475 LmFreqJumpMode_t LINK_ADAPTATION_SET_FREQ_JUMP_MODE_REQ
