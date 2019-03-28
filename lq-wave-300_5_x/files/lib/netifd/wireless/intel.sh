@@ -73,7 +73,11 @@ intel_hostapd_setup_base() {
 
 	json_select config
 
-	[ "$auto_channel" -gt 0 ] && channel=acs_survey
+	[ "$auto_channel" -gt 0 ] && {
+		channel=acs_smart
+		append base_cfg "acs_num_scans=1" "$N"
+	}
+
 	[ "$auto_channel" -gt 0 ] && json_get_values channel_list channels
 
 	json_get_vars noscan

@@ -148,7 +148,7 @@ detect_intel() {
 		uci -q batch <<-EOF
 			set wireless.${radioname}=wifi-device
 			set wireless.${radioname}.type=intel
-			set wireless.${radioname}.channel=${channel}
+			set wireless.${radioname}.channel=auto
 			set wireless.${radioname}.hwmode=11${mode_band}
 			set wireless.${radioname}.macaddr=${macaddr}
 			set wireless.${radioname}.beacon_int=${beacon_int}
@@ -158,6 +158,12 @@ detect_intel() {
 			${ht_capab}
 			set wireless.${radioname}.disabled=0
 EOF
+		[ "${mode_band}" == "a" ] && {
+			uci set wireless.${radioname}.channels="36-48 52-64 100-112"
+		} || {
+			uci set wireless.${radioname}.channels="1 6 11"
+		}
+
 		uci -q commit wireless
 		config_load wireless
 
