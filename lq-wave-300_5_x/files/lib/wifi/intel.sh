@@ -149,7 +149,7 @@ detect_intel() {
 			set wireless.${radioname}=wifi-device
 			set wireless.${radioname}.type=intel
 			set wireless.${radioname}.channel=auto
-			set wireless.${radioname}.hwmode=11${mode_band}
+			set wireless.${radioname}.hwmode=auto
 			set wireless.${radioname}.macaddr=${macaddr}
 			set wireless.${radioname}.beacon_int=${beacon_int}
 			set wireless.${radioname}.country=${country}
@@ -160,11 +160,13 @@ detect_intel() {
 EOF
 		[ "${mode_band}" == "a" ] && {
 			uci set wireless.${radioname}.band=a
+			uci set wireless.${radioname}.bandwidth=80
 			uci set wireless.${radioname}.doth=1
-			uci set wireless.${radioname}.dfsc=1
+			uci set wireless.${radioname}.dfsc=0
 			uci set wireless.${radioname}.channels="36-48 52-64 100-112"
 		} || {
 			uci set wireless.${radioname}.band=b
+			uci set wireless.${radioname}.bandwidth=20
 			uci set wireless.${radioname}.doth=0
 			uci set wireless.${radioname}.channels="1 6 11"
 		}

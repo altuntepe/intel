@@ -1,6 +1,7 @@
 #!/bin/sh
 . /lib/netifd/netifd-wireless.sh
 . /lib/netifd/hostapd.sh
+. /lib/netifd/wireless/iopsys_fixup_hwmode.sh
 
 init_wireless_driver "$@"
 
@@ -8,10 +9,10 @@ drv_intel_init_device_config() {
 	hostapd_common_add_device_config
 
 	config_add_string path phy 'macaddr:macaddr'
-	config_add_string hwmode
-	config_add_int beacon_int chanbw frag rts
+	config_add_string hwmode band
+	config_add_int beacon_int chanbw bandwidth frag rts
 	config_add_int rxantenna txantenna antenna_gain txpower distance
-	config_add_boolean noscan
+	config_add_boolean noscan dfsc
 	config_add_array ht_capab
 	config_add_array channels
 	config_add_boolean \
@@ -80,39 +81,16 @@ intel_hostapd_setup_base() {
 
 	[ "$auto_channel" -gt 0 ] && json_get_values channel_list channels
 
-	json_get_vars noscan
+	json_get_vars noscan dfsc
 	json_get_values ht_capab_list ht_capab
 
-	ieee80211n=1
+	#echo "band = $band  bw = $bandwidth  hwmode = $hwmode" > /dev/console
+	#echo "dfsc = $dfsc" > /dev/console
+
+	ieee80211n=
 	ht_capab=
-	case "$htmode" in
-		VHT20|HT20) ;;
-		HT40*|VHT40|VHT80|VHT160)
-			case "$hwmode" in
-				a)
-					case "$(( ($channel / 4) % 2 ))" in
-						1) ht_capab="[HT40+]";;
-						0) ht_capab="[HT40-]";;
-					esac
-				;;
-				*)
-					case "$htmode" in
-						HT40+) ht_capab="[HT40+]";;
-						HT40-) ht_capab="[HT40-]";;
-						*)
-							if [ "$channel" -lt 7 ]; then
-								ht_capab="[HT40+]"
-							else
-								ht_capab="[HT40-]"
-							fi
-						;;
-					esac
-				;;
-			esac
-			[ "$auto_channel" -gt 0 ] && ht_capab="[HT40+]"
-		;;
-		*) ieee80211n= ;;
-	esac
+	[ "$auto_channel" -gt 0 ] && ch=auto
+	fixup_hwmode_band_${band} $hwmode $ch $bandwidth
 
 	[ -n "$ieee80211n" ] && {
 		append base_cfg "ieee80211n=1" "$N"
@@ -152,43 +130,21 @@ intel_hostapd_setup_base() {
 		[ -n "$ht_capab" ] && append base_cfg "ht_capab=$ht_capab" "$N"
 	}
 
-	# 802.11ac
-	enable_ac=0
-	idx="$channel"
-	case "$htmode" in
-		VHT20) enable_ac=1;;
-		VHT40)
-			case "$(( ($channel / 4) % 2 ))" in
-				1) idx=$(($channel + 2));;
-				0) idx=$(($channel - 2));;
-			esac
-			enable_ac=1
-			append base_cfg "vht_oper_chwidth=0" "$N"
-			append base_cfg "vht_oper_centr_freq_seg0_idx=$idx" "$N"
-		;;
-		VHT80)
-			case "$(( ($channel / 4) % 4 ))" in
-				1) idx=$(($channel + 6));;
-				2) idx=$(($channel + 2));;
-				3) idx=$(($channel - 2));;
-				0) idx=$(($channel - 6));;
-			esac
-			enable_ac=1
-			append base_cfg "vht_oper_chwidth=1" "$N"
-			append base_cfg "vht_oper_centr_freq_seg0_idx=$idx" "$N"
-		;;
-		VHT160)
-			case "$channel" in
-				36|40|44|48|52|56|60|64) idx=50;;
-				100|104|108|112|116|120|124|128) idx=114;;
-			esac
-			enable_ac=1
-			append base_cfg "vht_oper_chwidth=2" "$N"
-			append base_cfg "vht_oper_centr_freq_seg0_idx=$idx" "$N"
-		;;
-	esac
 
-	if [ "$enable_ac" != "0" ]; then
+	ieee80211ac=0
+	[ "$auto_channel" -gt 0 ] && ch=auto
+	fixup_hwmode_band_${band} $hwmode $ch $bandwidth
+
+	if [ "$ieee80211ac" != "0" ]; then
+		[ -n $vht_oper_chwidth ] && {
+			append base_cfg "vht_oper_chwidth=${vht_oper_chwidth}" "$N"
+		}
+		[ -n $vht_oper_centr_freq_seg0_idx ] && {
+			append base_cfg "vht_oper_centr_freq_seg0_idx=${vht_oper_centr_freq_seg0_idx}" "$N"
+		}
+	fi
+
+	if [ "$ieee80211ac" != "0" ]; then
 		json_get_vars \
 			rxldpc:1 \
 			short_gi_80:1 \
@@ -283,6 +239,15 @@ intel_hostapd_setup_base() {
 
 		[ -n "$vht_capab" ] && append base_cfg "vht_capab=$vht_capab" "$N"
 	fi
+
+	### restore hwmode the way hostapd likes it
+	if [ "$band" == "a" ]; then
+		hwmode=a
+	else
+		hwmode=g
+	fi
+	###
+	[ "$dfsc" == "1" -a "$band" == "a" ] && channel_list="36-48"
 
 	hostapd_prepare_device_config "$hostapd_conf_file" nl80211
 	cat >> "$hostapd_conf_file" <<EOF
@@ -546,7 +511,7 @@ drv_intel_setup() {
 	json_select config
 	json_get_vars \
 		phy macaddr path \
-		country chanbw distance \
+		country chanbw distance bandwidth band \
 		txpower antenna_gain \
 		rxantenna txantenna \
 		frag rts beacon_int:100 htmode
