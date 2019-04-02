@@ -162,7 +162,7 @@ EOF
 			uci set wireless.${radioname}.band=a
 			uci set wireless.${radioname}.bandwidth=80
 			uci set wireless.${radioname}.doth=1
-			uci set wireless.${radioname}.dfsc=0
+			uci set wireless.${radioname}.dfsc=1
 			uci set wireless.${radioname}.channels="36-48 52-64 100-112"
 		} || {
 			uci set wireless.${radioname}.band=b

@@ -247,7 +247,7 @@ intel_hostapd_setup_base() {
 		hwmode=g
 	fi
 	###
-	[ "$dfsc" == "1" -a "$band" == "a" ] && channel_list="36-48"
+	[ "$dfsc" == "0" -a "$band" == "a" ] && channel_list="36-48"
 
 	hostapd_prepare_device_config "$hostapd_conf_file" nl80211
 	cat >> "$hostapd_conf_file" <<EOF
