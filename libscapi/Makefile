@@ -1,6 +1,7 @@
 #
 # Copyright (C) 2009 OpenWrt.org
-# Copyright (C) 2017 Intel Corporation
+# Copyright (C) 2018 Intel Corporation
+# Copyright (C) 2017-2018 Intel Corporation
 #
 # Openwrt Makefile for libscapi
 #
@@ -12,14 +13,14 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ############################### 
 PKG_NAME:=libscapi
-PKG_VERSION:=1.5.1.3
-PKG_SOURCE_VERSION:=bc57b46e70a8c41302a77243e1c412d8fbea6863
+PKG_VERSION:=1.5.1.4
+PKG_SOURCE_VERSION:=dfd4ee90f6578ad4a2db3ae432277a377c8544f2
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Intel
-PKG_LICENSE:=Intel
+PKG_LICENSE:=LGPL2.1
 
 include $(INCLUDE_DIR)/package.mk
 -include $(INCLUDE_DIR)/package-version-override.mk

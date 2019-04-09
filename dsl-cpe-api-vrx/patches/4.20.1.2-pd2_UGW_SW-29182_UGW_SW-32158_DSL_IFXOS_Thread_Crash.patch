@@ -1,0 +1,76 @@
+diff -Naur org/configure.in new/configure.in
+--- org/configure.in
++++ new/configure.in
+@@ -1,7 +1,7 @@
+ 
+ AC_REVISION($Revision: 1.177 $)
+ 
+-AC_INIT([DSL CPE API driver],[4.20.1.2-pd1],[],[drv_dsl_cpe_api])
++AC_INIT([DSL CPE API driver],[4.20.1.2-pd2],[],[drv_dsl_cpe_api])
+ 
+ AC_CONFIG_SRCDIR(src/Makefile.am)
+ AM_INIT_AUTOMAKE
+--- org/src/pm/drv_dsl_cpe_api_pm.c	2018-08-16 22:45:01.000000000 +0530
++++ new/src/pm/drv_dsl_cpe_api_pm.c	2018-10-25 14:54:29.346325705 +0530
+@@ -19,6 +19,8 @@
+ 
+ #undef DSL_DBG_BLOCK
+ #define DSL_DBG_BLOCK DSL_DBG_PM
++#include <linux/delay.h>
++#define DSL_PM_THREAD_COUNT  50
+ 
+ /** \addtogroup DRV_DSL_CPE_PM
+  @{ */
+@@ -160,7 +162,7 @@
+ #if defined(INCLUDE_DSL_CPE_PM_OPTIONAL_PARAMETERS) && defined (INCLUDE_DSL_CPE_PM_RETX_THRESHOLDS)
+    DSL_XTUDir_t dir;
+ #endif
+-
++   unsigned int count = DSL_PM_THREAD_COUNT;
+    DSL_CHECK_CTX_POINTER(pContext);
+    DSL_CHECK_ERR_CODE();
+ 
+@@ -556,18 +558,32 @@
+          DSL_DRV_CRLF, DSL_DEV_NUM(pContext), nErrCode));
+    }
+ 
+-   /* Check the PM module Near-End and Far-End thread active flag */
+-   if( DSL_DRV_PM_CONTEXT(pContext)->pmThreadFe.bRun == DSL_FALSE &&
+-       DSL_DRV_PM_CONTEXT(pContext)->pmThreadNe.bRun == DSL_FALSE )
+-   {
+-      DSL_DEBUG(DSL_DBG_ERR,
+-         (pContext, SYS_DBG_ERR"DSL[%02d]: ERROR - PM module NE and FE threads start failed!"
+-         DSL_DRV_CRLF, DSL_DEV_NUM(pContext)));
+ 
+-      DSL_DRV_MemFree(DSL_DRV_PM_CONTEXT(pContext)->pCounters);
+-      DSL_DRV_MemFree(DSL_DRV_PM_CONTEXT(pContext)->pCountersDump);
+-      DSL_DRV_MemFree(pContext->PM);
+-   }
++   /* Check the PM module Near-End and Far-End thread active flag */
++    while(count > 0) {
++    count --;
++    msleep (100);
++    if( DSL_DRV_PM_CONTEXT(pContext)->pmThreadFe.bRun == DSL_TRUE &&
++        DSL_DRV_PM_CONTEXT(pContext)->pmThreadNe.bRun == DSL_TRUE )
++        {
++         DSL_DEBUG(DSL_DBG_MSG,
++                  (pContext, SYS_DBG_MSG"DSL[%02d]: PM module NE and FE threads start success!"
++                  DSL_DRV_CRLF, DSL_DEV_NUM(pContext)));
++         break;
++
++        }
++   } //end of while
++	
++   if( count == 0 )
++   {
++    DSL_DEBUG(DSL_DBG_ERR,
++             (pContext, SYS_DBG_ERR"DSL[%02d]: ERROR - PM module NE and FE threads start failed!"
++              DSL_DRV_CRLF, DSL_DEV_NUM(pContext)));
++
++    DSL_DRV_MemFree(DSL_DRV_PM_CONTEXT(pContext)->pCounters);
++    DSL_DRV_MemFree(DSL_DRV_PM_CONTEXT(pContext)->pCountersDump);
++    DSL_DRV_MemFree(pContext->PM);
++    }
+ 
+    DSL_DEBUG(DSL_DBG_MSG,
+       (pContext, SYS_DBG_MSG"DSL[%02d]: PM module started..." DSL_DRV_CRLF,

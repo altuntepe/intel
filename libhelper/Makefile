@@ -1,6 +1,7 @@
 #
 # Copyright (C) 2009 OpenWrt.org
-# Copyright (C) 2017 Intel Corporation
+# Copyright (C) 2018 Intel Corporation
+# Copyright (C) 2017-2018 Intel Corporation
 #
 # Openwrt Makefile for libhelper
 #
@@ -12,15 +13,15 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ############################### 
 PKG_NAME:=libhelper
-PKG_VERSION:=1.4.0.3
+PKG_VERSION:=1.4.0.4
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=977db7808825f6382bb667a0dd62c528042f047a
+PKG_SOURCE_VERSION:=2ea2bb0af8179de13592d5d5212446097e79e159
 PKG_SOURCE_INNERDIR:=helper/libhelper
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Intel
-PKG_LICENSE:=Intel
+PKG_LICENSE:=LGPL2.1
 
 include $(INCLUDE_DIR)/package.mk
 -include $(INCLUDE_DIR)/package-version-override.mk

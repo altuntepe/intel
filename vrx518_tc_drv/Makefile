@@ -8,11 +8,10 @@ PKG_RELEASE:=1
 PKG_IS_KERNEL_MODULE=y
 
 PKG_SOURCE_PROTO:=git
-#PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/vrx518_tc_drv.git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/vrx518_tc_drv.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 
-PKG_SOURCE_VERSION:=1d1d49f10be8f2fb88e106efcbba1ae366489f3a
+PKG_SOURCE_VERSION:=2ecae11862885b4c7526b7a7a1f1b5505242c72d
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_BASE_NAME:=vrx518_tc
 #PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
@@ -26,7 +25,7 @@ include $(INCLUDE_DIR)/package.mk
 
 KCONFIG_TC:=$(KCONFIG_TC_BASE)
 ifneq ($(CONFIG_TARGET_intel_mips_xrx500),)
-	PLAT_DIR:=grx500
+    PLAT_DIR:=grx500
 else ifneq ($(CONFIG_TARGET_lantiq_xrx500),)
     PLAT_DIR:=grx500
 else
@@ -45,10 +44,11 @@ define KernelPackage/$(PKG_NAME)
     CONFIG_ATM_CLIP=y \
     CONFIG_ATM_MPOA=y \
     CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT=y \
+    CONFIG_ATM_MPOA_INTEL_DSL_PHY_SUPPORT=y \
     CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND=y
   DEPENDS:=@TARGET_lantiq_xrx500||TARGET_intel_mips_xrx500||TARGET_x86||TARGET_lantiq_xrx330 +PACKAGE_kmod-directconnect_dp:kmod-directconnect_dp +kmod-vrx518_ep +vrx518_ppe_fw +vrx518_aca_fw
 #ifeq ($(CONFIG_TARGET_lantiq_xrx330),y)
-#  AUTOLOAD:=$(call AutoLoad,42,vrx518)
+# AUTOLOAD:=$(call AutoLoad,42,vrx518)
 #else
 #  AUTOLOAD:=$(call AutoLoad,26,vrx518)
 #endif
