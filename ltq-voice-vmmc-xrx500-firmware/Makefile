@@ -9,8 +9,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ltq-voice-vmmc-xrx500-firmware
-PKG_VERSION:=1.2.8.10.0
-PKG_MD5SUM:=6ba9caa1561d69b8e855ffcab125b886
+PKG_VERSION:=1.2.10.10.0
+PKG_MD5SUM:=21eb3e7155bdcd2dfaa18a5479fdea31
 PKG_BASE_NAME:=fw_voip_xrx500
 
 # IMPORTANT - include the version-override here after PKG_VERSION definition
@@ -18,7 +18,7 @@ PKG_BASE_NAME:=fw_voip_xrx500
 # IMPORTANT - ... and before using PKG_VERSION below
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=e3db0e4c3c1ad583cc10c3faeb91f7ccef315414
+PKG_SOURCE_VERSION:=4caab2aa137836591f46d636da05c3e42da03a7e
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_RELEASE:=1
