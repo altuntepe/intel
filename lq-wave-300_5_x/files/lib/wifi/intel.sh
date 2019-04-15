@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. /lib/wifi/iopsys_wifi_addons.sh
+
 append DRIVERS "intel"
 
 HARDWARE=$(db -q get hw.board.hardware)
@@ -144,6 +146,10 @@ detect_intel() {
 		[ "$country_ie" == "1" ] && {
 			country="DE"	## FIXME
 		}
+
+		## include iopsys addons
+		wifi_add_section_status
+		wifi_add_section_bandsteering
 
 		uci -q batch <<-EOF
 			set wireless.${radioname}=wifi-device
