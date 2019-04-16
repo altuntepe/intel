@@ -89,7 +89,7 @@ intel_hostapd_setup_base() {
 
 	ieee80211n=
 	ht_capab=
-	[ "$auto_channel" -gt 0 ] && ch=auto
+	[ "$auto_channel" -gt 0 ] && ch=auto || ch=$channel
 	fixup_hwmode_band_${band} $hwmode $ch $bandwidth
 
 	[ -n "$ieee80211n" ] && {
