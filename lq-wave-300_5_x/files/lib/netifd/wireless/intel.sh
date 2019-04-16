@@ -416,7 +416,13 @@ intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid
 
-	[ -n "$ifname" ] || ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
+	[ -n "$ifname" ] || {
+		ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
+		#update uci config with ifname
+		uci -q set wireless.@wifi-iface[-1].ifname="$ifname"
+		uci commit wireless
+		uci reload wireless
+	}
 	if_idx=$((${if_idx:-0} + 1))
 
 	set_default powersave 0
