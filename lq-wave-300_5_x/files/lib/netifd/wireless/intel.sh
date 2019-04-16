@@ -414,16 +414,22 @@ intel_generate_bssid() {
 
 intel_prepare_vif() {
 	json_select config
-	json_get_vars ifname mode ssid
+	json_get_vars device ifname mode ssid
 
+	gidx=$((${gidx:-0} + 1))
+	if_idx=$((${if_idx:-0} + 1))
 	[ -n "$ifname" ] || {
-		ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
-		#update uci config with ifname
-		uci -q set wireless.@wifi-iface[-1].ifname="$ifname"
+		#ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
+		ifname="wlan${phy#phy}.${if_idx}"
+		uci -q set wireless.@wifi-iface[$gidx].ifname="$ifname"
 		uci commit wireless
 		uci reload wireless
+	} && {
+		[ "$ifname" == "$device" ] && if_idx=0 || {
+			if_idx=$(echo $ifname | cut -d '.' -f2)
+		}
 	}
-	if_idx=$((${if_idx:-0} + 1))
+	#if_idx=$((${if_idx:-0} + 1))
 
 	set_default powersave 0
 
