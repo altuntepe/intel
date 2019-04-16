@@ -578,6 +578,9 @@ drv_intel_setup() {
 	#for_each_interface "ap" intel_setup_vif
 
 	wireless_set_up
+
+	## +++iopsys
+	ubus -t 5 call router.network reload
 }
 
 list_phy_interfaces() {
