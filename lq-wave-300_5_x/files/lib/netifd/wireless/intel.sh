@@ -414,22 +414,10 @@ intel_generate_bssid() {
 
 intel_prepare_vif() {
 	json_select config
-	json_get_vars device ifname mode ssid
+	json_get_vars ifname mode ssid
 
-	gidx=$((${gidx:-0} + 1))
+	[ -n "$ifname" ] || ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
 	if_idx=$((${if_idx:-0} + 1))
-	[ -n "$ifname" ] || {
-		#ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
-		ifname="wlan${phy#phy}.${if_idx}"
-		uci -q set wireless.@wifi-iface[$gidx].ifname="$ifname"
-		uci commit wireless
-		uci reload wireless
-	} && {
-		[ "$ifname" == "$device" ] && if_idx=0 || {
-			if_idx=$(echo $ifname | cut -d '.' -f2)
-		}
-	}
-	#if_idx=$((${if_idx:-0} + 1))
 
 	set_default powersave 0
 
@@ -519,6 +507,27 @@ drv_intel_cleanup() {
 	hostapd_common_cleanup
 }
 
+ifname_fixup() {
+	local radio vifno vn vdev
+	local vnos="0 1 2 3 4 5 6 7"
+
+	for radio in "wlan0" "wlan2"; do
+		vifno=0
+		for vn in $vnos; do
+			vdev="$(uci get wireless.@wifi-iface[$vn].device)"
+			[ $vdev == "$radio" ] || continue
+			if [ $vifno -eq 0 ]; then
+				vifname="$vdev"
+			else
+				vifname="$vdev"."$vifno"
+			fi
+			vifno=$((vifno+1))
+			uci -q set wireless.@wifi-iface[$vn].ifname="$vifname"
+		done
+	done
+	uci -q commit wireless
+}
+
 drv_intel_setup() {
 	json_select config
 	json_get_vars \
@@ -573,6 +582,8 @@ drv_intel_setup() {
 
 	rm -f "$hostapd_conf_file"
 	[ -n "$has_ap" ] && intel_hostapd_setup_base "$phy"
+
+	ifname_fixup
 
 	for_each_interface "ap" intel_prepare_vif
 
