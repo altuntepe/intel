@@ -2,6 +2,7 @@
 . /lib/netifd/netifd-wireless.sh
 . /lib/netifd/hostapd.sh
 . /lib/netifd/wireless/iopsys_fixup_hwmode.sh
+. /lib/netifd/wireless/iopsys_utils.sh
 
 init_wireless_driver "$@"
 
@@ -416,8 +417,11 @@ intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid
 
-	[ -n "$ifname" ] || ifname="wlan${phy#phy}${if_idx:+-$if_idx}"
 	if_idx=$((${if_idx:-0} + 1))
+	[ -n "$ifname" ] || {
+		device=wlan${phy#phy}
+		ifname="$(wifi_generate_ifname $device)"
+	}
 
 	set_default powersave 0
 
@@ -583,7 +587,7 @@ drv_intel_setup() {
 	rm -f "$hostapd_conf_file"
 	[ -n "$has_ap" ] && intel_hostapd_setup_base "$phy"
 
-	ifname_fixup
+	#ifname_fixup
 
 	for_each_interface "ap" intel_prepare_vif
 
