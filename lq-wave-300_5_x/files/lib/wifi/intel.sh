@@ -11,6 +11,8 @@ BASEMAC=${BASEMAC//:/}
 ssid="$HARDWARE-$BASEMAC"
 key="1234567890"
 encryption="psk2"
+wps_manufacturer="iopsys"
+wps_device_name="iopsys-AP"
 
 wifi_interface_is_ap() {
 	iw dev ${1} info | grep -q 'type AP'
@@ -84,6 +86,11 @@ detect_intel_interfaces() {
 		uci -q set wireless.@wifi-iface[${ifidx}].isolate=${isolate}
 		uci -q set wireless.@wifi-iface[${ifidx}].encryption=${encryption}
 		uci -q set wireless.@wifi-iface[${ifidx}].key=${key}
+		uci -q set wireless.@wifi-iface[${ifidx}].macfilter=disable
+		uci -q set wireless.@wifi-iface[${ifidx}].wps_pushbutton=0
+		uci -q set wireless.@wifi-iface[${ifidx}].wps_label=0
+		uci -q set wireless.@wifi-iface[${ifidx}].wps_manufacturer=${wps_manufacturer}
+		uci -q set wireless.@wifi-iface[${ifidx}].wps_device_name="${wps_device_name}"
 		uci -q commit wireless
 		ifidx=$(($ifidx + 1))
 	done
