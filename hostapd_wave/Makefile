@@ -55,6 +55,7 @@ define Package/$(PKG_NAME)
   TITLE:=IEEE 802.1x Authenticator
   URL:=http://hostap.epitest.fi/
   DEPENDS:=+libopenssl +libnl3 +librt +libnl
+  DEPENDS+=+libubox +ubus
   MENU:=1
 endef
 
@@ -79,7 +80,7 @@ LIBRT_DIR:=$(wildcard $(BUILD_DIR)/toolchain/ipkg-lantiq/librt)
 
 IFX_CFLAGS += -I$(OPENSSL_DIR)/include -I$(LIBNL_DIR)/include
 IFX_LDFLAGS += -L$(OPENSSL_DIR)/ -L$(LIBNL_DIR)/lib/.libs -lnl-3 -L$(LIBRT_DIR)/lib -lrt
-
+IFX_LDFLAGS += -L$(STAGING_DIR)/usr/lib -lubus -lubox -ljson-c -lblobmsg_json
 
 #### Target Rules ###############################
 define Build/Compile

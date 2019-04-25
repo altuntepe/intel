@@ -1,0 +1,157 @@
+From 47a9cf550546a20c203e54c01be76c91c53cd458 Mon Sep 17 00:00:00 2001
+From: Anjan Chanda <anjan.chanda@iopsys.eu>
+Date: Thu, 25 Apr 2019 20:39:31 +0200
+Subject: [PATCH] wps ubus notify events
+
+---
+ hostapd/Makefile     |  2 ++
+ src/ap/ubus_iface.c  | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/ap/ubus_iface.h  |  8 ++++++++
+ src/ap/wps_hostapd.c | 17 +++++++++++++++++
+ 4 files changed, 74 insertions(+)
+ create mode 100644 src/ap/ubus_iface.c
+ create mode 100644 src/ap/ubus_iface.h
+
+diff --git a/hostapd/Makefile b/hostapd/Makefile
+index 9d051ca..6de3e96 100644
+--- a/hostapd/Makefile
++++ b/hostapd/Makefile
+@@ -502,6 +502,8 @@ NEED_AES_CBC=y
+ NEED_MODEXP=y
+ CONFIG_EAP=y
+ 
++OBJS += ../src/ap/ubus_iface.o
++
+ ifdef CONFIG_WPS_NFC
+ CFLAGS += -DCONFIG_WPS_NFC
+ OBJS += ../src/wps/ndef.o
+diff --git a/src/ap/ubus_iface.c b/src/ap/ubus_iface.c
+new file mode 100644
+index 0000000..c963bd7
+--- /dev/null
++++ b/src/ap/ubus_iface.c
+@@ -0,0 +1,47 @@
++/*
++ * ubus_iface.c - publish ubus events
++ *
++ * Copyright (C) 2019 iopsys Software Solutions AB. All rights reserved.
++ *
++ */
++#include <stdio.h>
++#include <stdlib.h>
++
++#include <libubox/blobmsg_json.h>
++#include "libubus.h"
++
++struct ubus_context *ubus_ctx = NULL;
++
++int notify_ubus_event(char *message)
++{
++	char event[128] = {0};
++	char data[512] = {0};
++	struct blob_buf b;
++	int ret;
++
++	if (!ubus_ctx) {
++		ubus_ctx = ubus_connect(NULL);
++		if (!ubus_ctx)
++			return -1;
++	}
++
++	sscanf(message, "%s '%[^\n]s'", event, data);
++
++	memset(&b, 0, sizeof(b));
++	blob_buf_init(&b, 0);
++	if (!blobmsg_add_json_from_string(&b, data)) {
++		fprintf(stderr, "%s: Error parse message data: %s\n",
++				__func__, data);
++		return -1;
++	}
++
++	ret = ubus_send_event(ubus_ctx, event, b.head);
++	blob_buf_free(&b);
++	return ret;
++}
++
++void __attribute__ ((destructor)) _ubus_iface_exit(void)
++{
++	if (ubus_ctx)
++		ubus_free(ubus_ctx);
++}
+diff --git a/src/ap/ubus_iface.h b/src/ap/ubus_iface.h
+new file mode 100644
+index 0000000..2bf89a0
+--- /dev/null
++++ b/src/ap/ubus_iface.h
+@@ -0,0 +1,8 @@
++
++
++#ifndef UBUS_IFACE_H
++#define UBUS_IFACE_H
++
++extern int notify_ubus_event(char *message);
++
++#endif
+diff --git a/src/ap/wps_hostapd.c b/src/ap/wps_hostapd.c
+index 84d4e81..8255c3f 100644
+--- a/src/ap/wps_hostapd.c
++++ b/src/ap/wps_hostapd.c
+@@ -27,6 +27,8 @@
+ #include "sta_info.h"
+ #include "wps_hostapd.h"
+ 
++#include "ubus_iface.h"
++
+ 
+ #ifdef CONFIG_WPS_UPNP
+ #include "wps/wps_upnp.h"
+@@ -820,16 +822,28 @@ static void hostapd_wps_event_cb(void *ctx, enum wps_event event,
+ {
+ 	struct hostapd_data *hapd = ctx;
+ 
++#define notify_ubus_event_wps_state(x)					\
++do {									\
++	char _msg[256] = {0};						\
++									\
++	snprintf(_msg, 256,						\
++	"wifi.wps '{ \"state\" : \"%s\", \"interface\" : \"%s\" }'",	\
++			x, hapd->conf->iface);				\
++	notify_ubus_event(_msg);					\
++} while(0)
++
+ 	switch (event) {
+ 	case WPS_EV_M2D:
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_M2D);
+ 		break;
+ 	case WPS_EV_FAIL:
+ 		hostapd_wps_event_fail(hapd, &data->fail);
++		notify_ubus_event_wps_state("error");
+ 		break;
+ 	case WPS_EV_SUCCESS:
+ 		hostapd_wps_event_success(hapd, &data->success);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_SUCCESS);
++		notify_ubus_event_wps_state("success");
+ 		break;
+ 	case WPS_EV_PWD_AUTH_FAIL:
+ 		hostapd_pwd_auth_fail(hapd, &data->pwd_auth_fail);
+@@ -837,14 +851,17 @@ static void hostapd_wps_event_cb(void *ctx, enum wps_event event,
+ 	case WPS_EV_PBC_OVERLAP:
+ 		hostapd_wps_event_pbc_overlap(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_OVERLAP);
++		notify_ubus_event_wps_state("overlap");
+ 		break;
+ 	case WPS_EV_PBC_TIMEOUT:
+ 		hostapd_wps_event_pbc_timeout(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_TIMEOUT);
++		notify_ubus_event_wps_state("off");
+ 		break;
+ 	case WPS_EV_PBC_ACTIVE:
+ 		hostapd_wps_event_pbc_active(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_ACTIVE);
++		notify_ubus_event_wps_state("in process");
+ 		break;
+ 	case WPS_EV_PBC_DISABLE:
+ 		hostapd_wps_event_pbc_disable(hapd);
+-- 
+2.7.4
+
