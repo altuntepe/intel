@@ -37,6 +37,7 @@ drv_intel_init_device_config() {
 		short_gi_40 \
 		max_amsdu \
 		dsss_cck_40
+	config_add_boolean wmm_apsd atf
 }
 
 drv_intel_init_iface_config() {
@@ -432,6 +433,8 @@ intel_prepare_vif() {
 		macidx="$(($macidx + 1))"
 	}
 
+	[ "$uapsd" -eq 0 ] && json_add_boolean uapsd 0
+
 	#json_add_object data
 	#json_add_string ifname "$ifname"
 	#json_close_object
@@ -539,7 +542,7 @@ drv_intel_setup() {
 		country chanbw distance bandwidth band \
 		txpower antenna_gain \
 		rxantenna txantenna \
-		frag rts beacon_int:100 htmode
+		frag rts beacon_int:100 htmode wmm_apsd:1
 	json_get_values basic_rate_list basic_rate
 	json_select ..
 
@@ -581,6 +584,7 @@ drv_intel_setup() {
 	[ -n "$rts" ] && iw phy "$phy" set rts "${rts%%.*}"
 
 	has_ap=
+	uapsd=${wmm_apsd}
 	hostapd_ctrl=
 	for_each_interface "ap" intel_check_ap
 
