@@ -71,6 +71,25 @@ intel_add_capabilities() {
 	export -n -- "$__var=$__out"
 }
 
+intel_setup_atf() {
+	atf_conf_file="/var/run/atf-$1.conf"
+
+	cat >> "$atf_conf_file" <<EOF
+#[<vap_name>]
+debug=1
+distr_type=1
+algo_type=1
+weighted_type=0
+#interval
+#free_time
+vap_enabled=0
+station_enabled=0
+#vap_grant
+
+EOF
+	append base_cfg "atf_config_file=$atf_conf_file" "$N"
+}
+
 intel_hostapd_setup_base() {
 	local phy="$1"
 
@@ -88,6 +107,8 @@ intel_hostapd_setup_base() {
 
 	#echo "band = $band  bw = $bandwidth  hwmode = $hwmode" > /dev/console
 	#echo "dfsc = $dfsc" > /dev/console
+
+	[ "$atf" -eq 1 ] && intel_setup_atf $phy
 
 	ieee80211n=
 	ht_capab=
@@ -542,7 +563,7 @@ drv_intel_setup() {
 		country chanbw distance bandwidth band \
 		txpower antenna_gain \
 		rxantenna txantenna \
-		frag rts beacon_int:100 htmode wmm_apsd:1
+		frag rts beacon_int:100 htmode wmm_apsd:1 atf:0
 	json_get_values basic_rate_list basic_rate
 	json_select ..
 
@@ -566,6 +587,7 @@ drv_intel_setup() {
 	}
 
 	hostapd_conf_file="/var/run/hostapd-$phy.conf"
+	atf_conf_file="/var/run/atf-$phy.conf"
 
 	no_ap=1
 	macidx=0
@@ -589,6 +611,7 @@ drv_intel_setup() {
 	for_each_interface "ap" intel_check_ap
 
 	rm -f "$hostapd_conf_file"
+	rm -f "$atf_conf_file"
 	[ -n "$has_ap" ] && intel_hostapd_setup_base "$phy"
 
 	#ifname_fixup
