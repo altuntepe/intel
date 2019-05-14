@@ -8,15 +8,16 @@ include $(INCLUDE_DIR)/kernel.mk
 
 #### Package Info ############################### 
 PKG_NAME:=fapi_wlan_common
-PKG_SOURCE_VERSION:=05.04.02.50
-PKG_VERSION:=$(PKG_SOURCE_VERSION)
+PKG_VERSION:=05.04.02.50
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/fapi_wlan_common.git
 PKG_SOURCE_VERSION:=69126274a6c03aa091e9858e64b79fab8d0dede5
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/package-version-override.mk
+-include $(INCLUDE_DIR)/package-version-override.mk
 $(call include_mk, ugw-loglevel.mk)
 
 PKG_BUILD_DEPENDS:=+PACKAGE_ltq-wlan-wave_5_x:hostapd_wave PACKAGE_safeclibs
