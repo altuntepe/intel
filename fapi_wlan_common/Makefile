@@ -29,7 +29,7 @@ define Package/$(PKG_NAME)
   TITLE:=Intel WLAN Common FAPI
   URL:=http://www.intel.com
   MAINTAINER:=Intel Corporation
-  DEPENDS:= +libhelper +libncurses +libreadline +librt +PACKAGE_luci:luci-mod-admin-full +PACKAGE_luci:luci-mod-admin-mini +hostapd_wave +libsafec
+  DEPENDS:= +libhelper +libncurses +libreadline +librt +hostapd_wave +libsafec
   MENU:=1
 endef
 
@@ -73,22 +73,19 @@ ifneq ($(COMMON_WAVE_BUILD),)
 	$(CP) $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh $(1)/$(VENDOR_PATH)/wave/scripts/
 	chmod 555 $(1)/usr/sbin/fapi_wlan_debug_cli
 
-	$(if $(CONFIG_PACKAGE_servd),, \
-		$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/db/ ; \
-		$(CP) $(PKG_BUILD_DIR)/output $(1)/$(VENDOR_PATH)/wave/db/default ; \
-	)
+#	$(if $(CONFIG_PACKAGE_servd),, \
+#		$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/db/ ; \
+#		$(CP) $(PKG_BUILD_DIR)/output $(1)/$(VENDOR_PATH)/wave/db/default ; \
+#	)
 endif
 	$(INSTALL_DIR) $(STAGING_DIR)/usr/docs
 	$(CP) $(PKG_BUILD_DIR)/include/fapi_wlan.h $(STAGING_DIR)/usr/docs/.
-ifeq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
-	$(INSTALL_DIR) $(1)/lib
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(CP) ./files/openwrt/etc/init.d/*  $(1)/etc/init.d/
-	$(CP) ./files/openwrt/lib/wifi  $(1)/lib
-	$(if $(CONFIG_PACKAGE_luci-mod-admin-full)$(CONFIG_PACKAGE_luci-mod-admin-mini), \
-		$(CP) ./files/openwrt/usr/lib/lua $(1)/usr/lib/; \
-	)
-endif
+#ifeq ($(CONFIG_LANTIQ_OPENWRT_FIRMWARE),y)
+#	$(INSTALL_DIR) $(1)/lib
+#	$(INSTALL_DIR) $(1)/etc/init.d
+#	$(CP) ./files/openwrt/etc/init.d/*  $(1)/etc/init.d/
+#	$(CP) ./files/openwrt/lib/wifi  $(1)/lib
+#endif
 endef
 
 define Build/Clean
