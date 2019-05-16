@@ -438,6 +438,7 @@ intel_generate_bssid() {
 intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid
+	local radio_macaddr=$1
 
 	if_idx=$((${if_idx:-0} + 1))
 	[ -n "$ifname" ] || {
@@ -449,7 +450,7 @@ intel_prepare_vif() {
 
 	#json_select ..
 
-	[ -n "$macaddr" ] || {
+	[ -n "$radio_macaddr" ] || {
 		macaddr="$(intel_generate_mac $phy)"
 		macidx="$(($macidx + 1))"
 	}
@@ -467,12 +468,16 @@ intel_prepare_vif() {
 			# Hostapd will handle recreating the interface and
 			# subsequent virtual APs belonging to the same PHY
 			bssid=
+			json_get_vars macaddr
+
 			if [ -n "$hostapd_ctrl" ]; then
 				type=bss
-				bssid=$(intel_generate_bssid $macaddr $if_idx)
+				[ -n "$macaddr" ] && bssid=$macaddr || \
+					bssid=$(intel_generate_bssid $radio_macaddr $if_idx)
 			else
 				type=interface
-				bssid=$macaddr
+				[ -n "$macaddr" ] && bssid=$macaddr || \
+					bssid=$radio_macaddr
 			fi
 
 			intel_hostapd_setup_bss "$phy" "$ifname" "$bssid" "$type" || {
@@ -616,7 +621,7 @@ drv_intel_setup() {
 
 	#ifname_fixup
 
-	for_each_interface "ap" intel_prepare_vif
+	for_each_interface "ap" intel_prepare_vif $macaddr
 
 	[ -n "$hostapd_ctrl" ] && {
 		/usr/sbin/hostapd -P /var/run/wifi-$phy.pid -B "$hostapd_conf_file"
