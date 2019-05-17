@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view viewid="wifidebug">
+  <header>
+    <image>images/icons/wireless.png</image>
+    <name>Advanced</name>
+    <description>Settings to configure general WiFi parameters</description>
+  </header>
+  <object viewtype="form">
+    <object name="Device.WiFi"  url="cgi_get_nosubobj?Object=Device.WiFi"  title="General Paramters" >
+      <row>
+        <col>
+          <parameter name="WaveUseSinglePCI" required="false" type="toggle" webname="Use 1 PCIe card"/>
+        </col>
+        <col>
+          <parameter name="WaveDisableAHB" required="false" type="toggle" webname="Disable Internal Radio"/>
+        </col>
+        <col>
+          <parameter name="WaveFapiDaemonEnable" required="false" type="toggle" webname="Enable FAPI Daemon"/>
+        </col>
+      </row>
+    </object>
+    <parameter name="Modify" type="submitbutton" routeurl="Apply($event)" webname="Apply"/>
+  </object>
+</view>

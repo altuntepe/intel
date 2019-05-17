@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view viewid="wifidebug">
+  <header>
+    <image>images/icons/wireless.png</image>
+    <name>EndPoint Debug</name>
+    <description>Settings to configure debug parameters of EndPoint</description>
+  </header>
+  <object viewtype="form">
+    <object name="Device.WiFi.EndPoint.3"  url="cgi_get_nosubobj?Object=Device.WiFi.EndPoint.3"  title="Debug Paramters" >
+      <row>
+        <col>
+          <parameter name="X_LANTIQ_COM_Vendor_SupplicantLoglevel" required="false" type="dropdown" validvalues="0,1,2,3,4,5,6,7"  webname="Supplicant log level"/>
+        </col>
+        <col>
+          <parameter name="X_LANTIQ_COM_Vendor_SupplicantLogOutput" required="false" type="string"  webname="Supplicant log output (syslog/usb/full path)"/>
+        </col>
+      </row>
+    </object>
+    <parameter name="Modify" type="submitbutton" routeurl="Apply($event)" webname="Apply"/>
+  </object>
+</view>

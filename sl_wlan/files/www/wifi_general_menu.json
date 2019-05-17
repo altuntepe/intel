@@ -1,0 +1,14 @@
+{
+	"menu": [{
+		"name": "Advanced",
+		"id": "profile",
+		"childrens": [{
+			"name": "WiFi General",
+			"icon": "wireless",
+			"order": "3.99",
+			"viewtype": "tableform",
+			"view": "wifi_general",
+			"childrens": []
+		}]
+	}]
+}

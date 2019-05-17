@@ -1,0 +1,153 @@
+{
+    "menu": [
+        {
+            "name": "Basic",
+            "id": "home",
+            "childrens": [
+                {
+                    "name": "WiFi 2.4GHz",
+                    "icon": "wireless",
+                    "order": "2",
+                    "checkurl": "cgi_get_nosubobj?Object=Device.WiFi.Radio.1&Status=",
+                    "checkvalue": "NotPresent",
+                    "viewtype": "tableform",
+                    "view": "wifi2.4_basic",
+                    "childrens": []
+                }
+            ]
+        },
+        {
+            "name": "Advanced",
+            "id": "profile",
+            "childrens": [
+                {
+                    "name": "WiFi 2.4GHz",
+                    "icon": "wireless",
+                    "order": "4",
+                    "checkurl": "cgi_get_nosubobj?Object=Device.WiFi.Radio.1&Status=",
+                    "checkvalue": "NotPresent",
+                    "childrens": [
+                        {
+                            "name": "Fortgeschritten",
+                            "order": "1",
+                            "viewtype": "tableform",
+                            "view": "wifi2.4_advanced",
+                            "childrens": []
+                        },
+                        {
+                            "name": "SSIDs",
+                            "order": "2",
+                            "viewtype": "tableform",
+                            "view": "adv_ssid",
+                            "childrens": []
+                        },
+                        {
+                            "name": "WPS",
+                            "order": "3",
+                            "viewtype": "tableform",
+                            "view": "adv_wps",
+                            "childrens": []
+                        },
+                        {
+                            "name": "MAC Filtern",
+                            "order": "4",
+                            "viewtype": "tableform",
+                            "view": "adv_macFiltering",
+                            "childrens": []
+                        },
+                        {
+                            "name": "WDS",
+                            "order": "5",
+                            "viewtype": "custom",
+                            "view": "wdspage",
+                            "childrens": []
+                        },
+                        {
+                            "name": "Statistiken",
+                            "order": "7",
+                            "viewtype": "tableform",
+                            "view": "adv_statistics",
+                            "childrens": []
+                        },
+                        {
+                            "name": "WLAN Logger",
+                            "order": "8",
+                            "viewtype": "tableform",
+                            "view": "wifi2.4_wlanLogger",
+                            "childrens": []
+                        },
+                        {
+                            "name": "Airtime Fairness",
+                            "icon": "wireless",
+                            "order": "9",
+                            "viewtype": "custom",
+                            "view": "airtime2.4",
+                            "childrens": []
+                        },
+                        {
+                            "name": "HS2.0",
+                            "order": "10",
+                            "childrens": [{
+                                "name": "Aufbau",
+                                "order": "1",
+                                "viewtype": "tableform",
+                                "view": "hotspot_configuration",
+                                "childrens": []
+                            },
+                            {
+                                "name": "Veranstaltungsort Info",
+                                "order": "2",
+                                "viewtype": "custom",
+                                "view": "hotspot_venueinfo",
+                                "childrens": []
+                            },
+                            {
+                                "name": "Roaming Konsortium",
+                                "order": "3",
+                                "viewtype": "tableform",
+                                "view": "hotspot_roamingconsortium",
+                                "childrens": []
+                            },
+                            {
+                                "name": "Anschlussfähigkeit",
+                                "order": "4",
+                                "viewtype": "tableform",
+                                "view": "hotspot_connectioncapability",
+                                "childrens": []
+                            },
+                            {
+                                "name": "NAI Reich",
+                                "order": "5",
+                                "viewtype": "tableform",
+                                "view": "hotspot_nairealm",
+                                "childrens": []
+                            },
+                            {
+                                "name": "Wan Metriken",
+                                "order": "6",
+                                "viewtype": "tableform",
+                                "view": "hotspot_wanmetrics",
+                                "childrens": []
+                            },
+                            {
+                                "name": "OSU",
+                                "order": "7",
+                                "viewtype": "tableform",
+                                "view": "hotspot_osuicons",
+                                "childrens": []
+                            },
+                            {
+                                "name": "L2 Firewall",
+                                "order": "8",
+                                "viewtype": "tableform",
+                                "view": "hotspot_l2firewall",
+                                "childrens": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
+}
