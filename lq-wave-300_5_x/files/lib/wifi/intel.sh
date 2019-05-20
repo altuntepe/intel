@@ -4,12 +4,13 @@
 
 append DRIVERS "intel"
 
-HARDWARE=$(db -q get hw.board.hardware)
-BASEMAC=$(db -q get hw.board.BaseMacAddr)
+HARDWARE="$(db -q get hw.board.hardware)"
+BASEMAC="$(db -q get hw.board.BaseMacAddr)"
+WPAKEY="$(db -q get hw.board.wpaKey)"
 
 BASEMAC=${BASEMAC//:/}
 ssid="$HARDWARE-$BASEMAC"
-key="1234567890"
+key="${WPAKEY:-00000000}"
 encryption="psk2"
 wps_manufacturer="iopsys"
 wps_device_name="iopsys-AP"
