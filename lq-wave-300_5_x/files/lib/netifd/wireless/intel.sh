@@ -631,6 +631,9 @@ drv_intel_setup() {
 			wireless_setup_failed HOSTAPD_START_FAILED
 			return
 		}
+
+		## +++iopsys
+		ubus call led.wifi set '{"state":"ok"}'
 	}
 
 	# FIXME: Anjan
@@ -661,6 +664,9 @@ drv_intel_teardown() {
 	intel_interface_cleanup "$phy"
 
 	drv_intel_cleanup
+
+	## +++iopsys
+	ubus call led.wifi set '{"state":"off"}'
 }
 
 add_driver intel
