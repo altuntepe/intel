@@ -43,9 +43,9 @@ drv_intel_init_device_config() {
 drv_intel_init_iface_config() {
 	hostapd_common_add_bss_config
 
-	config_add_string 'macaddr:macaddr' ifname
+	config_add_string 'macaddr:macaddr' ifname wps_manufacturer wps_device_name
 
-	config_add_boolean powersave
+	config_add_boolean powersave wps
 	config_add_int maxassoc
 	config_add_int max_listen_int
 	config_add_int dtim_period
@@ -308,11 +308,20 @@ intel_hostapd_setup_bss() {
 		echo "hostapd_bss_options ERROR!" > /dev/console
 		return 1
 	}
-	json_get_vars dtim_period max_listen_int start_disabled
 
+	json_get_vars dtim_period max_listen_int start_disabled wps:0 \
+		wps_manufacturer wps_device_name
+
+	set_default wps_device_name "iopsys"
+	set_default wps_manufacturer "iopsys-AP"
 	set_default start_disabled 0
 
 	[ "$staidx" -gt 0 -o "$start_disabled" -eq 1 ] && append hostapd_cfg "start_disabled=1" "$N"
+	if [ "$wps" -gt 0 ]; then
+		append hostapd_cfg "device_name=$wps_device_name" "$N"
+		append hostapd_cfg "manufacturer=$wps_manufacturer" "$N"
+		append hostapd_cfg "config_methods=push_button label" "$N"
+	fi
 
 	cat >> /var/run/hostapd-$phy.conf <<EOF
 $hostapd_cfg
