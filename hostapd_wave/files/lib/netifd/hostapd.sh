@@ -173,7 +173,7 @@ hostapd_common_add_bss_config() {
 
 	config_add_string wpa_psk_file
 
-	config_add_boolean wps_pushbutton wps_label ext_registrar wps_pbc_in_m1
+	config_add_boolean wps ext_registrar wps_pbc_in_m1
 	config_add_int wps_ap_setup_locked wps_independent
 	config_add_string wps_device_type wps_device_name wps_manufacturer wps_pin
 
@@ -209,7 +209,7 @@ hostapd_set_bss_options() {
 		wep_rekey wpa_group_rekey wpa_pair_rekey wpa_master_rekey \
 		wpa_disable_eapol_key_retries \
 		maxassoc max_inactivity disassoc_low_ack isolate auth_cache \
-		wps_pushbutton wps_label ext_registrar wps_pbc_in_m1 wps_ap_setup_locked \
+		wps ext_registrar wps_pbc_in_m1 wps_ap_setup_locked \
 		wps_independent wps_device_type wps_device_name wps_manufacturer wps_pin \
 		macfilter ssid wmm uapsd hidden short_preamble rsn_preauth \
 		iapp_interface eapol_version dynamic_vlan ieee80211w nasid \
@@ -337,13 +337,11 @@ hostapd_set_bss_options() {
 	append bss_conf "wpa=$wpa" "$N"
 	[ -n "$wpa_pairwise" ] && append bss_conf "wpa_pairwise=$wpa_pairwise" "$N"
 
-	set_default wps_pushbutton 0
-	set_default wps_label 0
+	set_default wps 0
 	set_default wps_pbc_in_m1 0
 
 	config_methods=
-	[ "$wps_pushbutton" -gt 0 ] && append config_methods push_button
-	[ "$wps_label" -gt 0 ] && append config_methods label
+	[ "$wps" -gt 0 ] && append config_methods wps
 
 	[ -n "$wps_possible" -a -n "$config_methods" ] && {
 		set_default ext_registrar 0
