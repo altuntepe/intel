@@ -150,7 +150,16 @@ intel_hostapd_setup_base() {
 			DSSS_CCK-40:0x1000::$dsss_cck_40
 
 		ht_capab="$ht_capab$ht_capab_flags"
-		[ -n "$ht_capab" ] && append base_cfg "ht_capab=$ht_capab" "$N"
+		[ -n "$ht_capab" ] && {
+			append base_cfg "ht_capab=$ht_capab" "$N"
+
+			ht_tx_bf_capab_flags="[IMPL-TXBF-RX][EXPL-COMPR-STEER][EXPL-COMPR-FB-FBACK-IMM]"
+			ht_tx_bf_capab_flags=$ht_tx_bf_capab_flags"[MIN-GROUP-124][CSI-BF-ANT-1]"
+			ht_tx_bf_capab_flags=$ht_tx_bf_capab_flags"[NONCOMPS-BF-ANT-1][COMPS-BF-ANT-3]"
+			ht_tx_bf_capab_flags=$ht_tx_bf_capab_flags"[CSI-MAX-ROWS-BF-1][CHE-SPACE-TIME-STR-1][TX-NDP][RX-NDP]"
+			append base_cfg "ht_tx_bf_capab=$ht_tx_bf_capab_flags" "$N"
+			append base_cfg "ht_rifs=1" "$N"
+		}
 	}
 
 
@@ -260,7 +269,10 @@ intel_hostapd_setup_base() {
 		[ "$vht_link_adapt_hw" != 0 ] && \
 			vht_capab="$vht_capab[VHT-LINK-ADAPT-$vht_link_adapt_hw]"
 
-		[ -n "$vht_capab" ] && append base_cfg "vht_capab=$vht_capab" "$N"
+		[ -n "$vht_capab" ] && {
+			vht_capab="$vht_capab[BF-ANTENNA-4][SOUNDING-DIMENSION-4]"
+			append base_cfg "vht_capab=$vht_capab" "$N"
+		}
 	fi
 
 	### restore hwmode the way hostapd likes it
