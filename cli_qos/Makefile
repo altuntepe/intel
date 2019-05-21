@@ -16,7 +16,7 @@ PKG_VERSION:=1.0.2.1
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/cli_qos.git
+PKG_SOURCE_URL:=https://dev.iopsys.eu/intel/cli_qos.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=7bd2fbdd3b6f07a2b782e179dbbf63b8c667dd06
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
