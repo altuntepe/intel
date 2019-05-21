@@ -312,8 +312,8 @@ intel_hostapd_setup_bss() {
 	json_get_vars dtim_period max_listen_int start_disabled wps:0 \
 		wps_manufacturer wps_device_name
 
-	set_default wps_device_name "iopsys"
-	set_default wps_manufacturer "iopsys-AP"
+	set_default wps_device_name "iopsys-AP"
+	set_default wps_manufacturer "iopsys"
 	set_default start_disabled 0
 
 	[ "$staidx" -gt 0 -o "$start_disabled" -eq 1 ] && append hostapd_cfg "start_disabled=1" "$N"
