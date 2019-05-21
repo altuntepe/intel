@@ -16,7 +16,7 @@ PKG_RELEASE:=1
 PKG_IS_KERNEL_MODULE=y
 
 PKG_SOURCE_VERSION:=16f24f787fc0ee21723f7bc6803bb480097f8d50
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/dc_dp_drv.git
+PKG_SOURCE_URL:=https://dev.iopsys.eu/intel/dc_dp_drv.git
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_MIRROR:=1
 PKG_MIRROR:=0
@@ -58,8 +58,6 @@ EXTRA_CFLAGS += \
 	$(if $(CONFIG_TARGET_intel_mips_xrx500), \
 		-DHAVE_DATAPATH_API \
 	)
-	
-	
 
 export CONFIG_DIRECTCONNECT_DP_LITEPATH=y
 export CONFIG_SW_DCMODE1_BUILTIN=y
