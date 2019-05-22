@@ -1,0 +1,301 @@
+From 32d09fb463937865522f429cf09d22f002f80734 Mon Sep 17 00:00:00 2001
+From: Anjan Chanda <anjan.chanda@iopsys.eu>
+Date: Wed, 22 May 2019 15:58:48 +0200
+Subject: [PATCH] add ubus events' notification
+
+---
+ hostapd/Makefile     |  2 ++
+ src/ap/ap_mlme.c     | 30 +++++++++++++++++++++++++++
+ src/ap/dfs.c         | 14 +++++++++++++
+ src/ap/ubus_iface.c  | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/ap/ubus_iface.h  |  9 +++++++++
+ src/ap/wps_hostapd.c | 20 ++++++++++++++++++
+ 6 files changed, 132 insertions(+)
+ create mode 100644 src/ap/ubus_iface.c
+ create mode 100644 src/ap/ubus_iface.h
+
+diff --git a/hostapd/Makefile b/hostapd/Makefile
+index 9d051ca..6de3e96 100644
+--- a/hostapd/Makefile
++++ b/hostapd/Makefile
+@@ -502,6 +502,8 @@ NEED_AES_CBC=y
+ NEED_MODEXP=y
+ CONFIG_EAP=y
+ 
++OBJS += ../src/ap/ubus_iface.o
++
+ ifdef CONFIG_WPS_NFC
+ CFLAGS += -DCONFIG_WPS_NFC
+ OBJS += ../src/wps/ndef.o
+diff --git a/src/ap/ap_mlme.c b/src/ap/ap_mlme.c
+index e7308a0..89ffc96 100644
+--- a/src/ap/ap_mlme.c
++++ b/src/ap/ap_mlme.c
+@@ -18,6 +18,7 @@
+ #include "ap_mlme.h"
+ #include "hostapd.h"
+ 
++#include "ubus_iface.h"
+ 
+ #ifndef CONFIG_NO_HOSTAPD_LOGGER
+ static const char * mlme_auth_alg_str(int alg)
+@@ -82,6 +83,13 @@ void mlme_deauthenticate_indication(struct hostapd_data *hapd,
+ 		       HOSTAPD_LEVEL_DEBUG,
+ 		       "MLME-DEAUTHENTICATE.indication(" MACSTR ", %d)",
+ 		       MAC2STR(sta->addr), reason_code);
++
++	notify_ubus_event("wifi.sta {\"macaddr\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"vif\":\"%s\",\"action\":\"deauthenticated\", "
++		"\"bssid\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"reason\":%d}", MAC2STR(sta->addr), hapd->conf->iface,
++		MAC2STR(hapd->conf->bssid), reason_code);
++
+ 	if (!hapd->iface->driver_ap_teardown)
+ 		mlme_deletekeys_request(hapd, sta);
+ }
+@@ -105,6 +113,13 @@ void mlme_associate_indication(struct hostapd_data *hapd, struct sta_info *sta)
+ 		       HOSTAPD_LEVEL_DEBUG,
+ 		       "MLME-ASSOCIATE.indication(" MACSTR ")",
+ 		       MAC2STR(sta->addr));
++
++	notify_ubus_event("wifi.sta {\"macaddr\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"vif\":\"%s\",\"action\":\"associated\", "
++		"\"bssid\":\"%02x:%02x:%02x:%02x:%02x:%02x\"}",
++		MAC2STR(sta->addr), hapd->conf->iface,
++		MAC2STR(hapd->conf->bssid));
++
+ 	if (sta->auth_alg != WLAN_AUTH_FT)
+ 		mlme_deletekeys_request(hapd, sta);
+ 	ap_sta_clear_disconnect_timeouts(hapd, sta);
+@@ -130,6 +145,13 @@ void mlme_reassociate_indication(struct hostapd_data *hapd,
+ 		       HOSTAPD_LEVEL_DEBUG,
+ 		       "MLME-REASSOCIATE.indication(" MACSTR ")",
+ 		       MAC2STR(sta->addr));
++
++	notify_ubus_event("wifi.sta {\"macaddr\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"vif\":\"%s\",\"action\":\"associated\", "
++		"\"bssid\":\"%02x:%02x:%02x:%02x:%02x:%02x\"}",
++		MAC2STR(sta->addr), hapd->conf->iface,
++		MAC2STR(hapd->conf->bssid));
++
+ 	if (sta->auth_alg != WLAN_AUTH_FT)
+ 		mlme_deletekeys_request(hapd, sta);
+ 	ap_sta_clear_disconnect_timeouts(hapd, sta);
+@@ -155,6 +177,14 @@ void mlme_disassociate_indication(struct hostapd_data *hapd,
+ 		       HOSTAPD_LEVEL_DEBUG,
+ 		       "MLME-DISASSOCIATE.indication(" MACSTR ", %d)",
+ 		       MAC2STR(sta->addr), reason_code);
++
++	notify_ubus_event("wifi.sta {\"macaddr\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"vif\":\"%s\",\"action\":\"disassociated\", "
++		"\"bssid\":\"%02x:%02x:%02x:%02x:%02x:%02x\", "
++		"\"reason\":%d}", MAC2STR(sta->addr), hapd->conf->iface,
++		MAC2STR(hapd->conf->bssid), reason_code);
++
++
+ 	mlme_deletekeys_request(hapd, sta);
+ }
+ 
+diff --git a/src/ap/dfs.c b/src/ap/dfs.c
+index 7bbd20f..5f10103 100644
+--- a/src/ap/dfs.c
++++ b/src/ap/dfs.c
+@@ -23,6 +23,8 @@
+ #include "../hostapd/ctrl_iface.h"
+ #include "drivers/nl80211_copy.h"
+ 
++#include "ubus_iface.h"
++
+ /* Must be aligned with driver structure */
+ struct vendor_cac_data
+ {
+@@ -787,6 +789,10 @@ int hostapd_handle_dfs(struct hostapd_iface *iface, Boolean *dfs_dbg_set_beacon)
+ 		iface->conf->vht_oper_centr_freq_seg1_idx,
+ 		iface->dfs_cac_ms / 1000);
+ 
++	notify_ubus_event("wifi.dfs {\"radio\":\"%s\","
++		       "\"action\":\"cac_started\"}",
++		       iface->conf->bss[0]->iface);
++
+ 	res = hostapd_start_dfs_cac(iface, iface->conf->hw_mode,
+ 				    iface->freq,
+ 				    iface->conf->channel,
+@@ -836,6 +842,10 @@ int hostapd_dfs_complete_cac(struct hostapd_iface *iface, int success, int freq,
+ 		success, freq, ht_enabled, chan_offset, chan_width, cf1, cf2,
+ 		iface->dfs_cac_ms / 1000);
+ 
++	notify_ubus_event("wifi.dfs {\"radio\":\"%s\","
++		       "\"action\":\"cac_finished\"}",
++		       iface->conf->bss[0]->iface);
++
+ 	if (success) {
+ 		/* Complete iface/ap configuration */
+ 		if (iface->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) {
+@@ -1866,6 +1876,10 @@ int hostapd_dfs_start_cac(struct hostapd_iface *iface, int freq,
+ 		"seg1=%d cac_time=%ds",
+ 		freq, (freq - 5000) / 5, chan_offset, chan_width, cf1, cf2, 60);
+ 	iface->cac_started = 1;
++
++	notify_ubus_event("wifi.dfs {\"radio\":\"%s\","
++		       "\"action\":\"cac_started\"}",
++		       iface->conf->bss[0]->iface);
+ 	return 0;
+ }
+ 
+diff --git a/src/ap/ubus_iface.c b/src/ap/ubus_iface.c
+new file mode 100644
+index 0000000..03cf762
+--- /dev/null
++++ b/src/ap/ubus_iface.c
+@@ -0,0 +1,57 @@
++/*
++ * ubus_iface.c - publish ubus events
++ *
++ * Copyright (C) 2019 iopsys Software Solutions AB. All rights reserved.
++ *
++ */
++#include <stdio.h>
++#include <stdlib.h>
++#include <stdarg.h>
++
++#include <libubox/blobmsg_json.h>
++#include "libubus.h"
++
++struct ubus_context *ubus_ctx = NULL;
++
++int _notify_ubus_event(const char *fmt, ...)
++{
++	char evtdata[512] = {0};
++	struct blob_buf b;
++	va_list args;
++	char *event;
++	char *data;
++	int ret;
++
++	if (!ubus_ctx) {
++		ubus_ctx = ubus_connect(NULL);
++		if (!ubus_ctx)
++			return -1;
++	}
++
++	va_start(args, fmt);
++	vsnprintf(evtdata, 512, fmt, args);
++	va_end(args);
++
++	event = strtok(evtdata, " ");
++	if (!event)
++		return -1;
++
++	data = evtdata + strlen(event) + 1;
++	memset(&b, 0, sizeof(b));
++	blob_buf_init(&b, 0);
++	if (!blobmsg_add_json_from_string(&b, data)) {
++		fprintf(stderr, "%s: Error parse message data: %s\n",
++				__func__, data);
++		return -1;
++	}
++
++	ret = ubus_send_event(ubus_ctx, event, b.head);
++	blob_buf_free(&b);
++	return ret;
++}
++
++void __attribute__ ((destructor)) _ubus_iface_exit(void)
++{
++	if (ubus_ctx)
++		ubus_free(ubus_ctx);
++}
+diff --git a/src/ap/ubus_iface.h b/src/ap/ubus_iface.h
+new file mode 100644
+index 0000000..7f72acc
+--- /dev/null
++++ b/src/ap/ubus_iface.h
+@@ -0,0 +1,9 @@
++
++#ifndef UBUS_IFACE_H
++#define UBUS_IFACE_H
++
++extern int _notify_ubus_event(const char *fmt, ...);
++
++#define notify_ubus_event(fmt, ...)	_notify_ubus_event(fmt, ## __VA_ARGS__)
++
++#endif /* UBUS_IFACE_H */
+diff --git a/src/ap/wps_hostapd.c b/src/ap/wps_hostapd.c
+index 84d4e81..e1a8ed5 100644
+--- a/src/ap/wps_hostapd.c
++++ b/src/ap/wps_hostapd.c
+@@ -27,6 +27,8 @@
+ #include "sta_info.h"
+ #include "wps_hostapd.h"
+ 
++#include "ubus_iface.h"
++
+ 
+ #ifdef CONFIG_WPS_UPNP
+ #include "wps/wps_upnp.h"
+@@ -820,16 +822,29 @@ static void hostapd_wps_event_cb(void *ctx, enum wps_event event,
+ {
+ 	struct hostapd_data *hapd = ctx;
+ 
++#define notify_ubus_event_wps_state(r, m, x)				\
++do {									\
++	char _msg[256] = {0};						\
++									\
++	snprintf(_msg, 256,						\
++	"wifi.wps { \"state\" : \"%s\", \"interface\" : \"%s\", "	\
++		"\"role\":\"%s\", \"method\":\"%s\"}",			\
++		x, hapd->conf->iface, r, m);				\
++	notify_ubus_event(_msg);					\
++} while(0)
++
+ 	switch (event) {
+ 	case WPS_EV_M2D:
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_M2D);
+ 		break;
+ 	case WPS_EV_FAIL:
+ 		hostapd_wps_event_fail(hapd, &data->fail);
++		notify_ubus_event_wps_state("registrar", "pbc", "error");
+ 		break;
+ 	case WPS_EV_SUCCESS:
+ 		hostapd_wps_event_success(hapd, &data->success);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_SUCCESS);
++		notify_ubus_event_wps_state("registrar", "pbc", "success");
+ 		break;
+ 	case WPS_EV_PWD_AUTH_FAIL:
+ 		hostapd_pwd_auth_fail(hapd, &data->pwd_auth_fail);
+@@ -837,20 +852,24 @@ static void hostapd_wps_event_cb(void *ctx, enum wps_event event,
+ 	case WPS_EV_PBC_OVERLAP:
+ 		hostapd_wps_event_pbc_overlap(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_OVERLAP);
++		notify_ubus_event_wps_state("registrar", "pbc", "overlap");
+ 		break;
+ 	case WPS_EV_PBC_TIMEOUT:
+ 		hostapd_wps_event_pbc_timeout(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_TIMEOUT);
++		notify_ubus_event_wps_state("registrar", "pbc", "off");
+ 		break;
+ 	case WPS_EV_PBC_ACTIVE:
+ 		hostapd_wps_event_pbc_active(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_ACTIVE);
++		notify_ubus_event_wps_state("registrar", "pbc", "in process");
+ 		break;
+ 	case WPS_EV_PBC_DISABLE:
+ 		hostapd_wps_event_pbc_disable(hapd);
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_DISABLE);
+ 		break;
+ 	case WPS_EV_ER_AP_ADD:
++		notify_ubus_event_wps_state("enrollee", "pin", "success");
+ 		break;
+ 	case WPS_EV_ER_AP_REMOVE:
+ 		break;
+@@ -859,6 +878,7 @@ static void hostapd_wps_event_cb(void *ctx, enum wps_event event,
+ 	case WPS_EV_ER_ENROLLEE_REMOVE:
+ 		break;
+ 	case WPS_EV_ER_AP_SETTINGS:
++		notify_ubus_event_wps_state("enrollee", "pin", "success");
+ 		break;
+ 	case WPS_EV_ER_SET_SELECTED_REGISTRAR:
+ 		break;
+-- 
+2.7.4
+
