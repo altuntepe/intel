@@ -19,7 +19,7 @@ PKG_BASE_NAME:=dsl_cpe_control_vrx
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/dsl_cpe_control-$(PKG_VERSION)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
+PKG_SOURCE_URL:=https://dev.iopsys.eu/intel/$(PKG_BASE_NAME).git
 
 DSL_BIN_DIR=$(VENDOR_PATH)/bin
 DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
