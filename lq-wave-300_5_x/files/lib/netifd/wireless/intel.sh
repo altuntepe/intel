@@ -655,6 +655,7 @@ drv_intel_setup() {
 
 		## +++iopsys
 		ubus call led.wifi set '{"state":"ok"}'
+		date > /tmp/wifi.started
 	}
 
 	# FIXME: Anjan
