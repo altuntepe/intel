@@ -1,5 +1,8 @@
 #!/bin/sh /etc/rc.common
 
+
+. /usr/share/libubox/jshn.sh
+
 START=90
 STOP=90
 
@@ -8,11 +11,30 @@ NAME=mcast-pa
 PROG=/sbin/mcast-pa
 
 start_service() {
-	# Is mcproxy configured?
-	wan=$(uci get mcproxy.@instance[0].upstream)
-	if [ -n $wan ]; then
+	UPSTREAM=""
+
+	active_upstream() {
+		[ -n "$UPSTREAM" ] && return
+
+		config_get upstream $1 upstream
+
+		if [ -n "$upstream" ]; then
+			json_load "$(devstatus $upstream)"
+			json_get_var up up
+			if [ $up -eq 1 ]; then
+				UPSTREAM="$upstream"
+			fi
+		fi
+	}
+
+	config_load mcproxy
+	config_foreach active_upstream instance
+
+	[ -z "$UPSTREAM" ] && UPSTREAM="$(uci -q get mcproxy.@instance[0].upstream)"
+
+	if [ -n $UPSTREAM ]; then
 		procd_open_instance
-		procd_set_param command $PROG --wan $wan
+		procd_set_param command $PROG --wan $UPSTREAM
 		procd_set_param respawn
 		procd_close_instance
 	fi
