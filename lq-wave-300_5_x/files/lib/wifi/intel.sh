@@ -88,6 +88,7 @@ detect_intel_interfaces() {
 		uci -q set wireless.@wifi-iface[${ifidx}].encryption=${encryption}
 		uci -q set wireless.@wifi-iface[${ifidx}].key=${key}
 		uci -q set wireless.@wifi-iface[${ifidx}].macfilter=disable
+		uci -q set wireless.@wifi-iface[${ifidx}].wps=1
 		uci -q commit wireless
 		ifidx=$(($ifidx + 1))
 	done
