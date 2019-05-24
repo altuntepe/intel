@@ -1,0 +1,35 @@
+From 42b9ea2f09edc808737e2cb8b2a0fe52d02adcd0 Mon Sep 17 00:00:00 2001
+From: Anjan Chanda <anjan.chanda@iopsys.eu>
+Date: Fri, 24 May 2019 11:46:06 +0200
+Subject: [PATCH] mtdump - fix mtlk_irb cdev name
+
+---
+ tools/shared/linux/mtlkirba.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/tools/shared/linux/mtlkirba.c b/tools/shared/linux/mtlkirba.c
+index 3f47f54..ac9db34 100644
+--- a/tools/shared/linux/mtlkirba.c
++++ b/tools/shared/linux/mtlkirba.c
+@@ -634,6 +634,9 @@ mtlk_irba_init (mtlk_irba_t           *irba,
+     return res;
+   unlink(irba->fname); /* "just in case" - nobody can now use this file (it contains PID and cntr) */
+ 
++  /* TODO: read from /proc/devices */
++  sprintf(irba->fname, "%s", "mtlk_irb");
++
+   len = strlen(unique_desc);
+   /* RM handler related assignment must be done before the IRBA_INTERNAL_HANDLERS */
+   irba->rm_handler     = handler;
+@@ -660,6 +663,8 @@ mtlk_irba_init (mtlk_irba_t           *irba,
+                       irba->unique_desc,
+                       irba->unique_desc != NULL,
+                       MTLK_ERR_NO_MEM);
++    fprintf(stderr, "%s: cdev = %s (%d, %d)\n", __func__,
++                      irba->fname, irba->major, irba->minor);
+     memcpy(irba->unique_desc, unique_desc, len + 1);
+     MTLK_INIT_STEP_EX(irba, IRBA_MKNOD, MTLK_OBJ_PTR(irba), 
+                       mknod, (irba->fname, S_IRUSR | S_IFCHR, MKDEV(irba->major, irba->minor)),
+-- 
+2.7.4
+
