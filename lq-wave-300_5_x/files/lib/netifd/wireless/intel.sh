@@ -309,19 +309,11 @@ intel_hostapd_setup_bss() {
 		return 1
 	}
 
-	json_get_vars dtim_period max_listen_int start_disabled wps:0 \
-		wps_manufacturer wps_device_name
+	json_get_vars dtim_period max_listen_int start_disabled
 
-	set_default wps_device_name "iopsys-AP"
-	set_default wps_manufacturer "iopsys"
 	set_default start_disabled 0
 
 	[ "$staidx" -gt 0 -o "$start_disabled" -eq 1 ] && append hostapd_cfg "start_disabled=1" "$N"
-	if [ "$wps" -gt 0 ]; then
-		append hostapd_cfg "device_name=$wps_device_name" "$N"
-		append hostapd_cfg "manufacturer=$wps_manufacturer" "$N"
-		append hostapd_cfg "config_methods=push_button label" "$N"
-	fi
 
 	cat >> /var/run/hostapd-$phy.conf <<EOF
 $hostapd_cfg
@@ -458,7 +450,7 @@ intel_generate_bssid() {
 
 intel_prepare_vif() {
 	json_select config
-	json_get_vars ifname mode ssid
+	json_get_vars ifname mode ssid wps:0
 	local radio_macaddr=$1
 
 	if_idx=$((${if_idx:-0} + 1))
@@ -477,6 +469,13 @@ intel_prepare_vif() {
 	}
 
 	[ "$uapsd" -eq 0 ] && json_add_boolean uapsd 0
+
+	[ "$wps" -gt 0 ] && {
+		json_add_boolean wps_label 1
+		json_add_boolean wps_pushbutton 1
+		json_add_string wps_manufacturer "iopsys"
+		json_add_string wps_device_name "iopsys-AP"
+	}
 
 	#json_add_object data
 	#json_add_string ifname "$ifname"
