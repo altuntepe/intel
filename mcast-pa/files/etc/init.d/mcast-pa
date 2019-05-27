@@ -18,19 +18,20 @@ start_service() {
 
 		config_get upstream $1 upstream
 
-		if [ -n "$upstream" ]; then
-			json_load "$(devstatus $upstream)"
-			json_get_var up up
+		for upstrm in $upstream; do
+			[ "$(cat /sys/class/net/$upstrm/operstate 2>/dev/null)" == "up" ] || continue
+
+			json_load "$(devstatus $upstrm 2>/dev/null)" 2>/dev/null
+			json_get_var up up 0
 			if [ $up -eq 1 ]; then
-				UPSTREAM="$upstream"
+				UPSTREAM="$upstrm"
+				break
 			fi
-		fi
+		done
 	}
 
 	config_load mcproxy
 	config_foreach active_upstream instance
-
-	[ -z "$UPSTREAM" ] && UPSTREAM="$(uci -q get mcproxy.@instance[0].upstream)"
 
 	if [ -n $UPSTREAM ]; then
 		procd_open_instance
