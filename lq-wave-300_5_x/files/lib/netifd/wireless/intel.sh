@@ -50,6 +50,7 @@ drv_intel_init_iface_config() {
 	config_add_int max_listen_int
 	config_add_int dtim_period
 	config_add_int start_disabled
+	config_add_int disabled
 }
 
 intel_add_capabilities() {
@@ -98,6 +99,13 @@ intel_hostapd_setup_base() {
 	[ "$auto_channel" -gt 0 ] && {
 		channel=acs_smart
 		append base_cfg "acs_num_scans=1" "$N"
+		append base_cfg "acs_vht_dynamic_bw=0" "$N"
+		append base_cfg "acs_policy=0" "$N"
+		append_base_cfg "acs_penalty_factors=1 0 0 0 1 0 1 0 1 1 0" "$N"
+		append base_cfg "acs_scan_mode=0" "$N"
+		[ "$band" == "a" ] \
+			&& append base_cfg "acs_fallback_chan=36 40 40" "$N" \
+			|| append base_cfg "acs_fallback_chan=1 1 20" "$N"
 	}
 
 	[ "$auto_channel" -gt 0 ] && json_get_values channel_list channels
@@ -450,7 +458,7 @@ intel_generate_bssid() {
 
 intel_prepare_vif() {
 	json_select config
-	json_get_vars ifname mode ssid wps:0
+	json_get_vars ifname mode ssid wps:0 disabled:0
 	local radio_macaddr=$1
 
 	if_idx=$((${if_idx:-0} + 1))
@@ -481,6 +489,11 @@ intel_prepare_vif() {
 	#json_add_string ifname "$ifname"
 	#json_close_object
 	#json_select config
+
+	[ "$disabled" -eq 1 ] && {
+		json_select ..
+		return
+	}
 
 	# It is far easier to delete and create the desired interface
 	case "$mode" in
@@ -550,9 +563,18 @@ intel_interface_cleanup() {
 	local phy="$1"
 
 	for wdev in $(list_phy_interfaces "$phy"); do
+		wifi_interface_is_ap $wdev
+		[ "$?" == "0" ] || continue
+
 		ip link set dev "$wdev" down 2>/dev/null
-		#hostapd will remove bss-ifs
-		#iw dev "$wdev" del
+		#hostapd will remove bss-ifs if running on this wdev
+		pidfname=$(cat /var/run/wifi-$phy.pid 2>/dev/null)
+		ret="$?"
+		[ "$ret" = 0 ] && {
+			cat /proc/${pidfname}/cmdline 2>/dev/null | grep -q 'hostapd'
+			ret="$?"
+		}
+		[ "$ret" = 0 ] || iw dev "$wdev" del
 	done
 }
 
