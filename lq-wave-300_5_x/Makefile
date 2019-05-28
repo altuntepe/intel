@@ -76,15 +76,15 @@ DRIVER_FOLDER:=lib/modules/$(LINUX_VERSION)/net
 SBIN_FOLDER:=sbin
 UBIN_FOLDER:=/usr/bin
 
-ifneq ($(CONFIG_PACKAGE_fapi_wlan_vendor_wave),)
- COPY_SCRIPTS:=
- SCRIPTS_FOLDER=$(VENDOR_PATH)/wave/scripts
- BIN_FOLDER:=$(VENDOR_PATH)/bin
- BINS_FOLDER:=$(VENDOR_PATH)/wave/images
- DRIVER_FOLDER:=$(VENDOR_PATH)/lib/modules/$(LINUX_VERSION)/net
- SBIN_FOLDER:=$(VENDOR_PATH)/sbin
- UBIN_FOLDER:=$(VENDOR_PATH)/usr/bin
-endif
+#ifneq ($(CONFIG_PACKAGE_fapi_wlan_vendor_wave),)
+ #COPY_SCRIPTS:=
+ #SCRIPTS_FOLDER=$(VENDOR_PATH)/wave/scripts
+ #BIN_FOLDER:=$(VENDOR_PATH)/bin
+ #BINS_FOLDER:=$(VENDOR_PATH)/wave/images
+ #DRIVER_FOLDER:=$(VENDOR_PATH)/lib/modules/$(LINUX_VERSION)/net
+ #SBIN_FOLDER:=$(VENDOR_PATH)/sbin
+ #UBIN_FOLDER:=$(VENDOR_PATH)/usr/bin
+#endif
 ifeq ($(CONFIG_FEATURE_LTQ_WAVE_300),y)
  COPY_WAVE300:=y
  WAVE_CFG_SFX:=
