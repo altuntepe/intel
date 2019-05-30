@@ -6,7 +6,7 @@ add_imonitor_hostapd_rule() {
 	uci -q get imonitor.hostapd || {
 		uci -q set imonitor.hostapd="monitor"
 		uci -q set imonitor.hostapd.app="wifimon"
-		uci -q set imonitor.hostapd.test="[ \$((\$(uci show wireless | grep wireless.wlan.*htmode | wc -l)-\$(uci show wireless | grep wireless.wlan.*disabled=.*1 | wc -l))) -eq \"\$(pidof hostapd | wc -w)\" ] || echo crashed"
+		uci -q set imonitor.hostapd.test="[ \$((\$(uci show wireless | grep wireless.wlan.*htmode | wc -l)-\$(uci show wireless | grep wireless.wlan.*disabled=.*1 | wc -l))) -ne \"\$(pidof hostapd | wc -w)\" -a -z \"\$(uci show wireless | grep wireless.@wifi-iface.*disabled=.*1)\" ] && echo crashed"
 		uci -q set imonitor.hostapd.stream="stdout"
 		uci -q set imonitor.hostapd.string_match="crashed"
 		uci -q set imonitor.hostapd.execute="logger -t \"imonitor\" \"Restarting WiFi\" && wifi &"
@@ -17,3 +17,4 @@ add_imonitor_hostapd_rule() {
 }
 
 add_imonitor_hostapd_rule
+
