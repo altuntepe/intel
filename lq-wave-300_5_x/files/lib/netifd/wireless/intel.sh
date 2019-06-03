@@ -4,6 +4,10 @@
 . /lib/netifd/wireless/iopsys_fixup_hwmode.sh
 . /lib/netifd/wireless/iopsys_utils.sh
 
+wifi_interface_is_ap() {
+        iw dev ${1} info | grep -q 'type AP'
+}
+
 init_wireless_driver "$@"
 
 drv_intel_init_device_config() {
@@ -101,7 +105,7 @@ intel_hostapd_setup_base() {
 		append base_cfg "acs_num_scans=1" "$N"
 		append base_cfg "acs_vht_dynamic_bw=0" "$N"
 		append base_cfg "acs_policy=0" "$N"
-		append_base_cfg "acs_penalty_factors=1 0 0 0 1 0 1 0 1 1 0" "$N"
+		append base_cfg "acs_penalty_factors=1 0 0 0 1 0 1 0 1 1 0" "$N"
 		append base_cfg "acs_scan_mode=0" "$N"
 		[ "$band" == "a" ] \
 			&& append base_cfg "acs_fallback_chan=36 40 40" "$N" \
@@ -666,8 +670,18 @@ drv_intel_setup() {
 	for_each_interface "ap" intel_prepare_vif $macaddr
 
 	[ -n "$hostapd_ctrl" ] && {
-		/usr/sbin/hostapd -P /var/run/wifi-$phy.pid -B "$hostapd_conf_file"
-		ret="$?"
+		local ret=1
+		local retry=0
+		while [ "$ret" != 0 -a "$retry" -lt 4 ]; do
+			echo "Starting hostapd on $phy  (retry = $retry)" > /dev/console
+			/usr/sbin/hostapd -P /var/run/wifi-$phy.pid -B "$hostapd_conf_file"
+			ret="$?"
+			[ "$ret" != 0 ] && {
+				retry=$((retry + 1))
+				sleep 5
+			}
+		done
+		sleep 2
 		wireless_add_process "$(cat /var/run/wifi-$phy.pid)" "/usr/sbin/hostapd" 1
 		[ "$ret" != 0 ] && {
 			wireless_setup_failed HOSTAPD_START_FAILED
