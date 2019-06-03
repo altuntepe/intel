@@ -6,13 +6,14 @@ _generate_ht_config() {
 
 	ieee80211n=1
 	if [ "$bw" -ge 40 ]; then
-		[ "$ch" == "auto" -o "$ch" == "0" ] &&
-			ht_capab="[HT40+]" || {
-			if [ "$ch" -lt 7 ]; then
-				ht_capab="[HT40+]"
-			else
-				ht_capab="[HT40-]"
-			fi
+		[ "$ch" == "auto" -o "$ch" == "0" ] && \
+			ht_capab="[HT40+][HT40-]" || {
+				case "$ch" in
+					36|44|52|60|100|108|116|124|132|149|157) ht_capab="[HT40+]";;
+					40|48|56|64|104|112|120|128|136|153|161) ht_capab="[HT40-]";;
+					1|2|3|4|5|6|7) ht_capab="[HT40+]";;
+					8|9|10|11|12|13) ht_capab="[HT40-]";;
+				esac
 		}
 	fi
 }
