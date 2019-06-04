@@ -146,7 +146,7 @@ ifeq ($(CONFIG_PACKAGE_kmod-gphy_event),y)
 TARGET_CFLAGS +=-DENABLE_LAN_PORT_LINK_EVENT
 endif
 
-ifeq ($(CONFIG_PACKAGE_kmod-vrx518-dp-mod),y)
+ifeq ($(CONFIG_PACKAGE_kmod-vrx518_tc_drv),y)
   TARGET_CFLAGS += -DCONFIG_VRX518_SUPPORT
 endif
 

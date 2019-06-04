@@ -9,10 +9,10 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=dsl-cpe-mei-vrx
-PKG_VERSION:=1.8.1.1
+PKG_VERSION:=1.8.1.1.0
 #PKG_MD5SUM:=37caf38002b82bf92d8e62659254197a
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=6b6c877a44fd4dee6aea25857d0821e13fb41160
+PKG_SOURCE_VERSION:=dde1a3f205f84160109e99a6eeed957da5bc6e55
 
 # re-define PATCH_DIR to get version-specific patches
 PATCH_DIR:=./patches-$(PKG_VERSION)

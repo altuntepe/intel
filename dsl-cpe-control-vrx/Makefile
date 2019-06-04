@@ -10,16 +10,16 @@ include $(INCLUDE_DIR)/kernel.mk
 
 
 PKG_NAME:=dsl-cpe-control-vrx
-PKG_VERSION:=4.20.1.2
+PKG_VERSION:=4.20.1.2.0
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=114b68c50f0e2b52af61fdf0ea2de29e55b64495
+PKG_SOURCE_VERSION:=5e45d5fbfa5dd2a93a888b53ae811cafa59dab4b
 #PKG_MD5SUM:=85d293ee43f01ba367301a7fe7c46156
 PKG_RELEASE:=1
 PKG_BASE_NAME:=dsl_cpe_control_vrx
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/dsl_cpe_control-$(PKG_VERSION)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=https://dev.iopsys.eu/intel/$(PKG_BASE_NAME).git
+PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
 
 DSL_BIN_DIR=$(VENDOR_PATH)/bin
 DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
