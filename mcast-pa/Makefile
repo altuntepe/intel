@@ -33,7 +33,7 @@ define Package/mcast-pa
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Multicast Packet Accelerator
-  DEPENDS:=+libpcap +librt +ip-full +mcproxy
+  DEPENDS:=@TARGET_intel_mips +libpcap +librt +ip-full +mcproxy
 endef
 
 define Package/mcast-pa/description
