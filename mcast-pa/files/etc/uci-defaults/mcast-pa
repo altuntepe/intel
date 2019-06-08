@@ -1,4 +1,0 @@
-uci -q get network.lan && {
-	uci -q set network.lan.igmp_snooping=1
-	uci commit
-}

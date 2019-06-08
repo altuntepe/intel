@@ -53,9 +53,6 @@ define Package/mcast-pa/install
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/mcast-pa $(1)/etc/init.d/mcast-pa
-
-	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_BIN) ./files/etc/uci-defaults/mcast-pa $(1)/etc/uci-defaults/99-mcast-pa
 endef
 
 $(eval $(call BuildPackage,mcast-pa))
