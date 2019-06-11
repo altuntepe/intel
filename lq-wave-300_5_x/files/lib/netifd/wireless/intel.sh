@@ -460,6 +460,21 @@ intel_generate_bssid() {
 	echo $ifmac
 }
 
+intel_cert_config() {
+	[ "$band" == "a" ] && {
+		iwpriv $ifname sAlgoCalibrMask 1928
+		iwpriv $ifname sRadarRssiTh -66
+		iwpriv $ifname sTxopConfig 255 0
+		iwpriv $ifname sInterfDetThresh -68 -68 -68 -68 5 -68
+		iwpriv $ifname sCcaAdapt 10 5 -69 10 5 30 60
+		iwpriv $ifname sCcaTh -69 -69 -72 -72 -62
+	} || {
+		iwpriv $ifname sInterfDetThresh -68 -68 -68 -68 5 -68
+		iwpriv $ifname sCcaAdapt 10 5 -62 10 5 30 60
+		iwpriv $ifname sCcaTh -62 -62 -72 -72 -62
+	}
+}
+
 intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid wps:0 disabled:0
@@ -470,6 +485,8 @@ intel_prepare_vif() {
 		device=wlan${phy#phy}
 		ifname="$(wifi_generate_ifname $device)"
 	}
+
+	intel_cert_config
 
 	set_default powersave 0
 
