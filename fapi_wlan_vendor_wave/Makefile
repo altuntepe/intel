@@ -10,7 +10,7 @@ include $(INCLUDE_DIR)/kernel.mk
 #### Package Info ############################### 
 PKG_NAME:=fapi_wlan_vendor_wave
 PKG_VERSION:=05.04.02.49
-PKG_SOURCE_VERSION:=c34771501bb01e436559df01c0ccf333fc6239d9
+PKG_SOURCE_VERSION:=f0c4ef9bccc9db40f30723b8844e345880cc023f
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/fapi_wlan_vendor_wave.git
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
