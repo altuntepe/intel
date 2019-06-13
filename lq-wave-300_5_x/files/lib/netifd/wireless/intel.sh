@@ -460,11 +460,19 @@ intel_generate_bssid() {
 	echo $ifmac
 }
 
-intel_cert_config() {
+intel_config_pre_up() {
 	[ "$band" == "a" ] && {
 		iwpriv $ifname sAlgoCalibrMask 1928
+		iwpriv $ifname gAlgoCalibrMask > /dev/console
 		iwpriv $ifname sRadarRssiTh -66
+		iwpriv $ifname gRadarRssiTh > /dev/console
 		iwpriv $ifname sTxopConfig 255 0
+		iwpriv $ifname gTxopConfig > /dev/console
+	}
+}
+
+intel_config_post_up() {
+	[ "$band" == "a" ] && {
 		iwpriv $ifname sInterfDetThresh -68 -68 -68 -68 5 -68
 		iwpriv $ifname sCcaAdapt 10 5 -69 10 5 30 60
 		iwpriv $ifname sCcaTh -69 -69 -72 -72 -62
@@ -473,6 +481,8 @@ intel_cert_config() {
 		iwpriv $ifname sCcaAdapt 10 5 -62 10 5 30 60
 		iwpriv $ifname sCcaTh -62 -62 -72 -72 -62
 	}
+	iwpriv $ifname gCcaAdapt > /dev/console
+	iwpriv $ifname gCcaTh > /dev/console
 }
 
 intel_prepare_vif() {
@@ -486,7 +496,7 @@ intel_prepare_vif() {
 		ifname="$(wifi_generate_ifname $device)"
 	}
 
-	intel_cert_config
+	intel_config_pre_up
 
 	set_default powersave 0
 
@@ -706,6 +716,7 @@ drv_intel_setup() {
 		}
 
 		## +++iopsys
+		intel_config_post_up
 		ubus call led.wifi set '{"state":"ok"}'
 		date > /tmp/wifi.started
 	}
