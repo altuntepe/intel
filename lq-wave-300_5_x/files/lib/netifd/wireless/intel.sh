@@ -468,6 +468,8 @@ intel_config_pre_up() {
 		iwpriv $ifname gRadarRssiTh > /dev/console
 		iwpriv $ifname sTxopConfig 255 0
 		iwpriv $ifname gTxopConfig > /dev/console
+		iwpriv $ifname s11hRadarDetect 1
+		iwpriv $ifname g11hRadarDetect > /dev/console
 	}
 }
 
