@@ -56,11 +56,11 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/lib
 	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/usr/sbin
-	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/scripts
+#	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/scripts
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libfapiwave.so $(1)/$(VENDOR_PATH)/lib
 	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/test_wlan $(1)/$(VENDOR_PATH)/usr/sbin
 	# Copy Scripts
-	$(CP) $(PKG_BUILD_DIR)/scripts/fapi* $(1)/$(VENDOR_PATH)/wave/scripts
+	#$(CP) $(PKG_BUILD_DIR)/scripts/fapi* $(1)/$(VENDOR_PATH)/wave/scripts
 	$(INSTALL_DIR) $(STAGING_DIR)/usr/docs
 	$(CP) $(PKG_BUILD_DIR)/fapi_wlan_wave.h $(STAGING_DIR)/usr/docs/.
 endef

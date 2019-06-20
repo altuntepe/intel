@@ -11,7 +11,7 @@ PKG_NAME:=fapi_wlan_common
 PKG_VERSION:=05.04.02.50
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/fapi_wlan_common.git
-PKG_SOURCE_VERSION:=068d99ed0e253c4e0669efcdb1d2b54752177b3b
+PKG_SOURCE_VERSION:=aca66d02e57a0cbaf573ecbadda35773a22445ed
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
@@ -55,7 +55,7 @@ define Build/Prepare
 	$(eval THISPATH=$(shell pwd))
 	$(eval INXML=$(shell pwd)/../feed_sl_wlan/files/db_xml)
 	$(if $(CONFIG_PACKAGE_servd),, \
-		cd $(PKG_BUILD_DIR)/; $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh -x $(INXML) -b $(PKG_BUILD_DIR)/scripts ; cd -; \
+#		cd $(PKG_BUILD_DIR)/; $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh -x $(INXML) -b $(PKG_BUILD_DIR)/scripts ; cd -; \
 	)
 endef
 
@@ -63,14 +63,14 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/scripts/
+#	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/scripts/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libfapiwlancommon.so $(1)/usr/lib/
 ifneq ($(COMMON_WAVE_BUILD),)
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_daemon $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_debug_cli $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_cli $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_dbXml $(1)/usr/sbin/
-	$(CP) $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh $(1)/$(VENDOR_PATH)/wave/scripts/
+#	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_dbXml $(1)/usr/sbin/
+#	$(CP) $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh $(1)/$(VENDOR_PATH)/wave/scripts/
 	chmod 555 $(1)/usr/sbin/fapi_wlan_debug_cli
 
 #	$(if $(CONFIG_PACKAGE_servd),, \
