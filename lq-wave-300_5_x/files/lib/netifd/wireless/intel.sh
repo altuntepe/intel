@@ -728,10 +728,13 @@ drv_intel_setup() {
 
 	wireless_set_up
 
+	## +++iopsys
 	killall -q -9  fapi_wlan_debug_cli 2>/dev/null
-	if [ $(uci -q get wireless.bandsteering.enabled) == 1 ]
+	if [ "$(uci -q get wireless.bandsteering.enabled)" == "1" ]
 	then
-		fapi_wlan_debug_cli BAND_STEERING &
+		rssi_threshold="$(uci -q get wireless.bandsteering.rssi_threshold)"
+		rssi_threshold=${rssi_threshold:--75}
+		fapi_wlan_debug_cli BAND_STEERING -40 $rssi_threshold 5 15 &
 	fi
 
 	## +++iopsys
