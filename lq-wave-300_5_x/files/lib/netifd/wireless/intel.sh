@@ -728,6 +728,12 @@ drv_intel_setup() {
 
 	wireless_set_up
 
+	killall -q -9  fapi_wlan_debug_cli 2>/dev/null
+	if [ $(uci -q get wireless.bandsteering.enabled) == 1 ]
+	then
+		fapi_wlan_debug_cli BAND_STEERING &
+	fi
+
 	## +++iopsys
 	ubus -t 5 call router.network reload
 }
