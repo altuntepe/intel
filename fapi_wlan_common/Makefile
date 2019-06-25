@@ -66,9 +66,9 @@ define Package/$(PKG_NAME)/install
 #	$(INSTALL_DIR) $(1)/$(VENDOR_PATH)/wave/scripts/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libfapiwlancommon.so $(1)/usr/lib/
 ifneq ($(COMMON_WAVE_BUILD),)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_daemon $(1)/usr/lib/
+#	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_daemon $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_debug_cli $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_cli $(1)/usr/sbin
+#	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_cli $(1)/usr/sbin
 #	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fapi_wlan_dbXml $(1)/usr/sbin/
 #	$(CP) $(PKG_BUILD_DIR)/scripts/fapi_wlan_wave_createDB.sh $(1)/$(VENDOR_PATH)/wave/scripts/
 	chmod 555 $(1)/usr/sbin/fapi_wlan_debug_cli
