@@ -17,7 +17,7 @@ drv_intel_init_device_config() {
 	config_add_string hwmode band
 	config_add_int beacon_int chanbw bandwidth frag rts
 	config_add_int rxantenna txantenna antenna_gain txpower distance
-	config_add_boolean noscan dfsc
+	config_add_boolean noscan dfsc beamforming
 	config_add_array ht_capab
 	config_add_array channels
 	config_add_boolean \
@@ -461,30 +461,40 @@ intel_generate_bssid() {
 }
 
 intel_config_pre_up() {
+	local _vif=$1
+
 	[ "$band" == "a" ] && {
-		iwpriv $ifname sAlgoCalibrMask 1928
-		iwpriv $ifname gAlgoCalibrMask > /dev/console
-		iwpriv $ifname sRadarRssiTh -66
-		iwpriv $ifname gRadarRssiTh > /dev/console
-		iwpriv $ifname sTxopConfig 255 0
-		iwpriv $ifname gTxopConfig > /dev/console
-		iwpriv $ifname s11hRadarDetect 1
-		iwpriv $ifname g11hRadarDetect > /dev/console
+		iwpriv $_vif sAlgoCalibrMask 1928
+		iwpriv $_vif gAlgoCalibrMask > /dev/console
+		iwpriv $_vif sRadarRssiTh -66
+		iwpriv $_vif gRadarRssiTh > /dev/console
+		iwpriv $_vif sTxopConfig 255 0
+		iwpriv $_vif gTxopConfig > /dev/console
+		iwpriv $_vif s11hRadarDetect 1
+		iwpriv $_vif g11hRadarDetect > /dev/console
 	}
+
+	[ "$beamforming" -eq 0 ] \
+		&& iwpriv $_vif sBfMode 4 \
+		|| iwpriv $_vif sBfMode 255
+
+	iwpriv $_vif gBfMode > /dev/console
 }
 
 intel_config_post_up() {
+	local _vif=$1
+
 	[ "$band" == "a" ] && {
-		iwpriv $ifname sInterfDetThresh -68 -68 -68 -68 5 -68
-		iwpriv $ifname sCcaAdapt 10 5 -69 10 5 30 60
-		iwpriv $ifname sCcaTh -69 -69 -72 -72 -62
+		iwpriv $_vif sInterfDetThresh -68 -68 -68 -68 5 -68
+		iwpriv $_vif sCcaAdapt 10 5 -69 10 5 30 60
+		iwpriv $_vif sCcaTh -69 -69 -72 -72 -62
 	} || {
-		iwpriv $ifname sInterfDetThresh -68 -68 -68 -68 5 -68
-		iwpriv $ifname sCcaAdapt 10 5 -62 10 5 30 60
-		iwpriv $ifname sCcaTh -62 -62 -72 -72 -62
+		iwpriv $_vif sInterfDetThresh -68 -68 -68 -68 5 -68
+		iwpriv $_vif sCcaAdapt 10 5 -62 10 5 30 60
+		iwpriv $_vif sCcaTh -62 -62 -72 -72 -62
 	}
-	iwpriv $ifname gCcaAdapt > /dev/console
-	iwpriv $ifname gCcaTh > /dev/console
+	iwpriv $_vif gCcaAdapt > /dev/console
+	iwpriv $_vif gCcaTh > /dev/console
 }
 
 intel_prepare_vif() {
@@ -498,7 +508,8 @@ intel_prepare_vif() {
 		ifname="$(wifi_generate_ifname $device)"
 	}
 
-	intel_config_pre_up
+	vifs="$vifs $ifname"
+	intel_config_pre_up $ifname
 
 	set_default powersave 0
 
@@ -643,7 +654,8 @@ drv_intel_setup() {
 		country chanbw distance bandwidth band \
 		txpower antenna_gain \
 		rxantenna txantenna \
-		frag rts beacon_int:100 htmode wmm_apsd:1 atf:0
+		frag rts beacon_int:100 htmode wmm_apsd:1 atf:0 \
+		beamforming:1
 	json_get_values basic_rate_list basic_rate
 	json_select ..
 
@@ -688,6 +700,7 @@ drv_intel_setup() {
 	has_ap=
 	uapsd=${wmm_apsd}
 	hostapd_ctrl=
+	vifs=
 	for_each_interface "ap" intel_check_ap
 
 	rm -f "$hostapd_conf_file"
@@ -718,7 +731,11 @@ drv_intel_setup() {
 		}
 
 		## +++iopsys
-		intel_config_post_up
+		echo "<$phy> vifs = $vifs" > /dev/console
+		for _vif in $vifs; do
+			intel_config_post_up $_vif
+		done
+
 		ubus call led.wifi set '{"state":"ok"}'
 		date > /tmp/wifi.started
 	}
