@@ -472,6 +472,10 @@ intel_config_pre_up() {
 		iwpriv $_vif gTxopConfig > /dev/console
 		iwpriv $_vif s11hRadarDetect 1
 		iwpriv $_vif g11hRadarDetect > /dev/console
+
+		iwpriv $_vif sMaxMpduLen 7000
+		iwpriv $_vif gMaxMpduLen > /dev/console
+		iwpriv $_vif sNumMsduInAmsdu 7 7
 	}
 
 	[ "$beamforming" -eq 0 ] \
