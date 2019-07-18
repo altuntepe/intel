@@ -462,6 +462,7 @@ intel_generate_bssid() {
 
 intel_config_pre_up() {
 	local _vif=$1
+	local powerdiff
 
 	[ "$band" == "a" ] && {
 		iwpriv $_vif sAlgoCalibrMask 1928
@@ -477,6 +478,23 @@ intel_config_pre_up() {
 		iwpriv $_vif gMaxMpduLen > /dev/console
 		iwpriv $_vif sNumMsduInAmsdu 7 7
 	}
+
+	if [ "$txpower" -gt 90 ]; then
+		powerdiff=0
+	elif [ "$txpower" -gt 60 -a "$txpower" -le 90 ]; then
+		powerdiff=1
+	elif [ "$txpower" -gt 30 -a "$txpower" -le 60 ]; then
+		powerdiff=3
+	elif [ "$txpower" -gt 15 -a "$txpower" -le 30 ]; then
+		powerdiff=6
+	elif [ "$txpower" -gt 9 -a "$txpower" -le 15 ]; then
+		powerdiff=9
+	else
+		powerdiff=12
+	fi
+
+	iwpriv $_vif sPowerSelection $powerdiff
+	iwpriv $_vif gPowerSelection > /dev/console
 
 	[ "$beamforming" -eq 0 ] \
 		&& iwpriv $_vif sBfMode 4 \
@@ -656,7 +674,7 @@ drv_intel_setup() {
 	json_get_vars \
 		phy macaddr path \
 		country chanbw distance bandwidth band \
-		txpower antenna_gain \
+		txpower:100 antenna_gain \
 		rxantenna txantenna \
 		frag rts beacon_int:100 htmode wmm_apsd:1 atf:0 \
 		beamforming:1
