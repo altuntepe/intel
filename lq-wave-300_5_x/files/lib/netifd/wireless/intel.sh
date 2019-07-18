@@ -481,16 +481,12 @@ intel_config_pre_up() {
 
 	if [ "$txpower" -gt 90 ]; then
 		powerdiff=0
-	elif [ "$txpower" -gt 60 -a "$txpower" -le 90 ]; then
-		powerdiff=1
-	elif [ "$txpower" -gt 30 -a "$txpower" -le 60 ]; then
+	elif [ "$txpower" -gt 40 -a "$txpower" -le 90 ]; then
 		powerdiff=3
-	elif [ "$txpower" -gt 15 -a "$txpower" -le 30 ]; then
+	elif [ "$txpower" -gt 15 -a "$txpower" -le 40 ]; then
 		powerdiff=6
-	elif [ "$txpower" -gt 9 -a "$txpower" -le 15 ]; then
-		powerdiff=9
 	else
-		powerdiff=12
+		powerdiff=9
 	fi
 
 	iwpriv $_vif sPowerSelection $powerdiff
