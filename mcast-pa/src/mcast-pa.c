@@ -993,7 +993,7 @@ mcg_br_entry_join(struct mcg_br_mdb_entry_t *head)
 		list_for_each(pos, &head->mcg_entry) {
 			mjl.flags |= MJL_FLAG_LAN;
 			mcge = (struct mcg_br_mdb_entry_t *) list_entry(pos, struct mcg_br_mdb_entry_t, mcg_entry);
-			len += sprintf((char *) (&mjl.lan + len), " %s ", (char *) ll_index_to_name(mcge->e.ifindex));
+			len += sprintf((char *) (mjl.lan + len), " %s ", (char *) ll_index_to_name(mcge->e.ifindex));
 			if (mcge->joined == 1) {
 				/* at least one group has been joined already */
 				mjl.flags |= MJL_FLAG_UPDATE;
@@ -1058,7 +1058,7 @@ mcg_br_entry_leave(struct mcg_br_mdb_entry_t *head, struct br_mdb_entry *e)
 		list_for_each(pos, &head->mcg_entry) {
 			mjl.flags |= MJL_FLAG_LAN;
 			mcge = (struct mcg_br_mdb_entry_t *) list_entry(pos, struct mcg_br_mdb_entry_t, mcg_entry);
-			len += sprintf((char *) (&mjl.lan + len), " %s ", (char *) ll_index_to_name(mcge->e.ifindex));
+			len += sprintf((char *) (mjl.lan + len), " %s ", (char *) ll_index_to_name(mcge->e.ifindex));
 		}
 		list_for_each(pos, &head->mcg_entry) {
 			mcge = (struct mcg_br_mdb_entry_t *) list_entry(pos, struct mcg_br_mdb_entry_t, mcg_entry);
