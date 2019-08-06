@@ -497,6 +497,10 @@ intel_config_pre_up() {
 		|| iwpriv $_vif sBfMode 255
 
 	iwpriv $_vif gBfMode > /dev/console
+
+	iwpriv $_vif sScanParams 600 60 3 5 60 6
+	iwpriv $_vif sScanParamsBG 300 20 1 1 1 1000
+	iwpriv $_vif sScanExpTime 300
 }
 
 intel_config_post_up() {
