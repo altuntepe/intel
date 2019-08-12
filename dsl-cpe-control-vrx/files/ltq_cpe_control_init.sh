@@ -420,7 +420,8 @@ start() {
          DBG_TEST_IF=`dsl_get_lan_network_interface_ip`
          if [ "$DBG_TEST_IF" != "" ]; then
             DTI_IF_STR="-d${DBG_TEST_IF}"
-            TCPM_IF_STR="-t${DBG_TEST_IF}"
+            # Disable dbgtool completely due to a security concern
+            #TCPM_IF_STR="-t${DBG_TEST_IF}"
          else
             echo -e "\033[5m"
             echo "*********************************************************************************************"
@@ -437,7 +438,8 @@ start() {
          # Use all interfaces for debug and test communication
          DBG_TEST_IF="0.0.0.0"
          DTI_IF_STR="-d${DBG_TEST_IF}"
-         TCPM_IF_STR="-t${DBG_TEST_IF}"
+         # Disable dbgtool completely due to a security concern
+         #TCPM_IF_STR="-t${DBG_TEST_IF}"
          ;;
    esac
 
