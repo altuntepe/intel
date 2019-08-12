@@ -30,6 +30,7 @@ start_service() {
 		done
 	}
 
+	switch_cli GSW_MULTICAST_SNOOP_CFG_SET eIGMP_Mode=2 eForwardPort=2
 	config_load mcproxy
 	config_foreach active_upstream instance
 
@@ -39,6 +40,7 @@ start_service() {
 		procd_set_param respawn
 		procd_close_instance
 	fi
+
 }
 
 service_triggers()
