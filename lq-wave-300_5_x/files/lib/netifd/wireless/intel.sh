@@ -85,7 +85,7 @@ debug=1
 distr_type=1
 algo_type=1
 weighted_type=0
-#interval
+interval=1000
 #free_time
 vap_enabled=0
 station_enabled=0
@@ -469,7 +469,7 @@ intel_config_pre_up() {
 		iwpriv $_vif gAlgoCalibrMask > /dev/console
 		iwpriv $_vif sRadarRssiTh -66
 		iwpriv $_vif gRadarRssiTh > /dev/console
-		iwpriv $_vif sTxopConfig 255 0
+		iwpriv $_vif sTxopConfig 255 1
 		iwpriv $_vif gTxopConfig > /dev/console
 		iwpriv $_vif s11hRadarDetect 1
 		iwpriv $_vif g11hRadarDetect > /dev/console
