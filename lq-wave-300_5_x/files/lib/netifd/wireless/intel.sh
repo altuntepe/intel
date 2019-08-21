@@ -48,6 +48,7 @@ drv_intel_init_iface_config() {
 	hostapd_common_add_bss_config
 
 	config_add_string 'macaddr:macaddr' ifname wps_manufacturer wps_device_name
+	config_add_string network_bridge
 
 	config_add_boolean powersave wps
 	config_add_int maxassoc
@@ -525,12 +526,21 @@ intel_config_post_up() {
 intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid wps:0 disabled:0
+	json_get_vars network:0
+
 	local radio_macaddr=$1
 
 	if_idx=$((${if_idx:-0} + 1))
 	[ -n "$ifname" ] || {
 		device=wlan${phy#phy}
 		ifname="$(wifi_generate_ifname $device)"
+	}
+
+	[ "$network" -eq 0 -a "$mode" == "ap" ] && {
+		uci -q set wireless.@wifi-iface[$if_idx].network="lan"
+		uci commit wireless
+		uci reload wireless
+		set_default network_bridge "br-lan"
 	}
 
 	vifs="$vifs $ifname"
