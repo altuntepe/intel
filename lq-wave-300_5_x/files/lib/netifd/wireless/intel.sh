@@ -527,6 +527,7 @@ intel_prepare_vif() {
 	json_select config
 	json_get_vars ifname mode ssid wps:0 disabled:0
 	json_get_vars network:0
+	json_get_vars isolate
 
 	local radio_macaddr=$1
 
@@ -537,11 +538,19 @@ intel_prepare_vif() {
 	}
 
 	[ "$network" -eq 0 -a "$mode" == "ap" ] && {
-		uci -q set wireless.@wifi-iface[$if_idx].network="lan"
-		uci commit wireless
-		uci reload wireless
+		#uci -q set wireless.@wifi-iface[$if_idx].network="lan"
+		#uci commit wireless
+		#uci reload wireless
 		set_default network_bridge "br-lan"
 	}
+
+	[ "$isolate" -eq 0 ] && {
+		iwpriv $ifname sAPforwarding 1
+	} || {
+		iwpriv $ifname sAPforwarding 0
+	}
+
+	iwpriv $ifname gAPforwarding > /dev/console
 
 	vifs="$vifs $ifname"
 	intel_config_pre_up $ifname
