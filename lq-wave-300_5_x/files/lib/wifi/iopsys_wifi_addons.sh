@@ -50,10 +50,6 @@ add_to_network() {
 
 	config_get network $cfg network
 	config_get iface $cfg ifname
-	config_get is_lan $cfg is_lan "0"
-	config_get type $cfg type
-
-	[ "$is_lan" == "0" -o  "$type" != "bridge" ] && return
 
 	for net in $(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}'); do
 		ifname="$(uci -q get network.$net.ifname)"
