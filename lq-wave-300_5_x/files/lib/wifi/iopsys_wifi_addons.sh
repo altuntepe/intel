@@ -4,8 +4,6 @@ remove_from_networks() {
 	local iface=$1
 	local ifname=""
 
-	echo removing iface=$iface > /dev/console
-
 	for net in $(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}' | tr '\n' ' '); do
 		ifname=""
 		for ifc in $(uci -q get network.$net.ifname); do
@@ -63,12 +61,10 @@ add_to_network() {
 	[ "$radio_disabled" == "1" ] && return
 
 	for net in $(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}'); do
-		echo net=$net > /dev/console
 		is_lan="$(uci -q get network.$net.is_lan)"
 		is_lan=${is_lan:-0}
 		type="$(uci -q get network.$net.type)"
 
-		echo is_lan=$is_lan type=$type > /dev/console
 
 		[ "$is_lan" == "1" -a "$type" == "bridge" ] || continue
 
