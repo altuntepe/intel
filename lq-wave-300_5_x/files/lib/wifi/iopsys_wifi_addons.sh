@@ -13,7 +13,7 @@ remove_from_networks() {
 				ifname="$ifname $ifc"
 			fi
 		done
-		uci -q set network.$net.ifname="$(echo $ifname | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[ \t]*$//')"
+		uci -q set network.$net.ifname="$(echo $ifname | sed 's/[ \t]*$//')"
 		uci commit network
 	done
 }
@@ -32,9 +32,13 @@ remove_disabled_vifs() {
 
 	for ifc in $ifname; do
 		vif_cfg=$(uci show wireless | grep @wifi-iface | grep "ifname=\'$ifc\'" | awk -F '.' '{print $2}')
+
+		device=$(uci -q get wireless.$vif_cfg.device)
+		radio_disabled=$(uci -q get wireless.$device.disabled)
 		disabled=$(uci -q get wireless.$vif_cfg.disabled)
 		net=$(uci -q get wireless.$vif_cfg.network)
-		[ "$disabled" == "1" -o "$net" != "$cfg" ] || continue
+		[ "$disabled" == "1" -o "$net" != "$cfg" -o "$radio_disabled" == "1" ] || continue
+
 		if [ $ifc == $vif ]; then
 			#echo "wifi: remove $ifc from $interface" >/dev/console
 			remove_from_networks $interface $ifc
@@ -50,12 +54,29 @@ add_to_network() {
 
 	config_get network $cfg network
 	config_get iface $cfg ifname
+	config_get disabled $cfg disabled "0"
+
+	[ "$disabled" == "1" ] && return
+
+	config_get device $cfg device
+	radio_disabled=$(uci -q get wireless.$device.disabled)
+	[ "$radio_disabled" == "1" ] && return
 
 	for net in $(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}'); do
+		echo net=$net > /dev/console
+		is_lan="$(uci -q get network.$net.is_lan)"
+		is_lan=${is_lan:-0}
+		type="$(uci -q get network.$net.type)"
+
+		echo is_lan=$is_lan type=$type > /dev/console
+
+		[ "$is_lan" == "1" -a "$type" == "bridge" ] || continue
+
 		ifname="$(uci -q get network.$net.ifname)"
 		if [ "$net" == "$network" ]; then
 			ifname="$ifname $iface"
 		fi
+
 		uci -q set network.$net.ifname="$(echo $ifname | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[ \t]*$//')"
 	done
 	uci commit network
