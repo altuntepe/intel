@@ -189,16 +189,3 @@ EOF
 		devidx=$(($devidx + 1))
 	done
 }
-
-config_load network
-for radio in wlan0 wlan2; do
-	config_foreach remove_disabled_vifs interface $radio
-
-	for idx in 1 2 3 4; do
-		vif="$radio.$idx"
-		config_foreach remove_disabled_vifs interface $vif
-	done
-done
-
-config_load wireless
-config_foreach add_to_network wifi-iface

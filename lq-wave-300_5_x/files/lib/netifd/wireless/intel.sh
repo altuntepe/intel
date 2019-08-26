@@ -3,6 +3,7 @@
 . /lib/netifd/hostapd.sh
 . /lib/netifd/wireless/iopsys_fixup_hwmode.sh
 . /lib/netifd/wireless/iopsys_utils.sh
+. /lib/functions.sh
 
 wifi_interface_is_ap() {
         iw dev ${1} info | grep -q 'type AP'
@@ -755,6 +756,10 @@ drv_intel_setup() {
 
 	for_each_interface "ap" intel_prepare_vif $macaddr
 
+	## +++iopsys
+	network_remove_disabled_vifs
+	network_add_vifs
+
 	[ -n "$hostapd_ctrl" ] && {
 		local ret=1
 		local retry=0
@@ -821,6 +826,9 @@ drv_intel_teardown() {
 	intel_interface_cleanup "$phy"
 
 	drv_intel_cleanup
+
+	## +++iopsys
+	network_remove_disabled_vifs
 
 	## +++iopsys
 	ubus call led.wifi set '{"state":"off"}'
