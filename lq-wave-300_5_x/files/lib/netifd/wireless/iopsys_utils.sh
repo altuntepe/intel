@@ -94,3 +94,92 @@ wifi_generate_ifname() {
 		}
 	done
 }
+
+remove_from_networks() {
+	local iface=$1
+	local ifname=""
+
+	for net in $(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}' | tr '\n' ' '); do
+		ifname=""
+		for ifc in $(uci -q get network.$net.ifname); do
+			if [ "$ifc" != "$iface" ]; then
+				ifname="$ifname $ifc"
+			fi
+		done
+		uci -q set network.$net.ifname="$(echo $ifname | sed 's/[ \t]*$//')"
+		uci commit network
+	done
+}
+
+remove_disabled_vifs() {
+	local cfg=$1
+	local vif=$2
+
+	config_get is_lan $cfg is_lan "0"
+	config_get type $cfg type
+
+	[ "$is_lan" == "0" -o  "$type" != "bridge" ] && return
+
+	ifname=$(uci -q get network.$cfg.ifname)
+
+	for ifc in $ifname; do
+		[ -n "${ifc/wlan*/}" ] && continue
+
+		vif_cfg=$(uci show wireless | grep @wifi-iface | grep "ifname=\'$ifc\'" | awk -F '.' '{print $2}')
+
+		device=$(uci -q get wireless.$vif_cfg.device)
+		radio_disabled=$(uci -q get wireless.$device.disabled)
+		disabled=$(uci -q get wireless.$vif_cfg.disabled)
+		net=$(uci -q get wireless.$vif_cfg.network)
+		[ "$disabled" == "1" -o "$net" != "$cfg" -o "$radio_disabled" == "1" -o -z "$vif_cfg" ] || continue
+
+		remove_from_networks $ifc
+	done
+}
+
+network_remove_disabled_vifs() {
+	config_load network
+	config_foreach remove_disabled_vifs interface
+}
+
+add_to_network() {
+	local cfg=$1
+	local nets=$2
+	local iface=""
+	local ifname=""
+
+	config_get network $cfg network
+	config_get iface $cfg ifname
+	config_get disabled $cfg disabled "0"
+
+	[ -n "$iface" ] || return
+
+	[ "$disabled" == "1" ] && return
+
+	config_get device $cfg device
+	radio_disabled=$(uci -q get wireless.$device.disabled)
+	[ "$radio_disabled" == "1" ] && return
+
+	for net in $nets; do
+		is_lan="$(uci -q get network.$net.is_lan)"
+		is_lan=${is_lan:-0}
+		type="$(uci -q get network.$net.type)"
+
+		[ "$is_lan" == "1" -a "$type" == "bridge" ] || continue
+
+		ifname="$(uci -q get network.$net.ifname)"
+		if [ "$net" == "$network" ]; then
+			ifname="$ifname $iface"
+		fi
+
+		uci -q set network.$net.ifname="$(echo $ifname | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[ \t]*$//')"
+	done
+	uci commit network
+}
+
+network_add_vifs() {
+	nets=$(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}')
+
+	config_load wireless
+	config_foreach add_to_network wifi-iface "$nets"
+}
