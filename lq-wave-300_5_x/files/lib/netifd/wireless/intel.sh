@@ -770,8 +770,8 @@ drv_intel_setup() {
 	for_each_interface "ap" intel_prepare_vif $macaddr
 
 	## +++iopsys
-	network_remove_disabled_vifs
-	network_add_vifs
+	#network_remove_disabled_vifs
+	#network_add_vifs
 
 	[ -n "$hostapd_ctrl" ] && {
 		local ret=1
@@ -841,7 +841,7 @@ drv_intel_teardown() {
 	drv_intel_cleanup
 
 	## +++iopsys
-	network_remove_disabled_vifs
+	#network_remove_disabled_vifs
 
 	## +++iopsys
 	ubus call led.wifi set '{"state":"off"}'
