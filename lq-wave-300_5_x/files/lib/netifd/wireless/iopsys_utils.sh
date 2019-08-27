@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. /lib/functions.sh
+
 wlan2_list="wlan2.1 wlan2.2 wlan2.3 wlan2.4"
 wlan0_list="wlan0.1 wlan0.2 wlan0.3 wlan0.4"
 
