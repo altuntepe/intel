@@ -3,7 +3,6 @@
 . /lib/netifd/hostapd.sh
 . /lib/netifd/wireless/iopsys_fixup_hwmode.sh
 . /lib/netifd/wireless/iopsys_utils.sh
-. /lib/functions.sh
 
 FBT=0
 wifi_interface_is_ap() {
