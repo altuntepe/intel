@@ -1,0 +1,13 @@
+--- a/wireless/driver/linux/core.c	2018-12-21 09:28:36.000000000 +0100
++++ b/wireless/driver/linux/core.c	2019-08-27 08:49:51.605980276 +0200
+@@ -4822,6 +4822,10 @@ _mtlk_core_get_temperature (mtlk_handle_
+   mtlk_core_t *core = (mtlk_core_t*)hcore;
+   mtlk_clpb_t *clpb = *(mtlk_clpb_t **) data;
+ 
++  if (mtlk_core_is_in_scan_mode(core) || mtlk_core_scan_is_running(core)) {
++	return MTLK_ERR_BUSY;
++  }
++
+   MTLK_ASSERT(sizeof(mtlk_clpb_t*) == data_size);
+ 
+   MTLK_CFG_SET_ITEM_BY_FUNC(&temperature_cfg, temperature, _mtlk_core_get_temperature_req,
