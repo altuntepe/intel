@@ -115,6 +115,7 @@ remove_disabled_vifs() {
 	local cfg=$1
 	local vif=$2
 
+	#config_load network
 	config_get is_lan $cfg is_lan "0"
 	config_get type $cfg type
 
@@ -126,6 +127,14 @@ remove_disabled_vifs() {
 		[ -n "${ifc/wlan*/}" ] && continue
 
 		vif_cfg=$(uci show wireless | grep @wifi-iface | grep "ifname=\'$ifc\'" | awk -F '.' '{print $2}')
+		#test=$(ubus call uci get '{"config":"wireless", "type":"wifi-iface", "match":{"ifname":"'$ifc'"}}' | grep "\.name" | awk -F ' ' '{print $2}')
+		#vif_cfg="${test//[\",]}"
+#
+		#config_load wireless
+		#config_get device $vif_cfg device
+		#config_get radio_disabled $device disabled
+		#config_get disabled $vif_cfg disabled
+		#config_get net $vif_cfg network
 
 		device=$(uci -q get wireless.$vif_cfg.device)
 		radio_disabled=$(uci -q get wireless.$device.disabled)
@@ -140,6 +149,13 @@ remove_disabled_vifs() {
 network_remove_disabled_vifs() {
 	config_load network
 	config_foreach remove_disabled_vifs interface
+}
+
+network_add_vifs() {
+	nets=$(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}')
+
+	config_load wireless
+	config_foreach add_to_network wifi-iface "$nets"
 }
 
 add_to_network() {
@@ -175,11 +191,4 @@ add_to_network() {
 		uci -q set network.$net.ifname="$(echo $ifname | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[ \t]*$//')"
 	done
 	uci commit network
-}
-
-network_add_vifs() {
-	nets=$(uci show network | grep network.*.interface | awk -F'[.,=]' '{print$2}')
-
-	config_load wireless
-	config_foreach add_to_network wifi-iface "$nets"
 }
