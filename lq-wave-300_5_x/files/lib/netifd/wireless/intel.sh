@@ -566,12 +566,10 @@ intel_prepare_vif() {
 
 	[ "$uapsd" -eq 0 ] && json_add_boolean uapsd 0
 
-	[ "$wps" -gt 0 ] && {
-		json_add_boolean wps_label 1
-		json_add_boolean wps_pushbutton 1
-		json_add_string wps_manufacturer "iopsys"
-		json_add_string wps_device_name "iopsys-AP"
-	}
+	json_add_boolean wps_label 1
+	json_add_boolean wps_pushbutton 1
+	json_add_string wps_manufacturer "iopsys"
+	json_add_string wps_device_name "iopsys-AP"
 
 	#json_add_object data
 	#json_add_string ifname "$ifname"
