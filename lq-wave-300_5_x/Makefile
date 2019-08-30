@@ -538,8 +538,7 @@ endif
 	$(if $(COPY_SCRIPTS),
 		$(INSTALL_DIR) -p $(1)/ramdisk_copy/flash/
 		$(INSTALL_DIR) -p $(1)/$(SCRIPTS_FOLDER)/
-		$(CP) ./files/ramdisk_copy/* $(1)/ramdisk_copy/flash/
-		$(CP) ./files/scripts/* $(1)/$(SCRIPTS_FOLDER)/)
+		$(CP) ./files/ramdisk_copy/* $(1)/ramdisk_copy/flash/)
 	$(if $(REMOVE_TFTP_BINS_SCRIPT),
 		rm -f $(1)/$(SCRIPTS_FOLDER)/*_debug_tftp_bins.sh)
 	$(CP) ./$(IMAGES_FOLDER)/fw/fw_scd_file.scd $(1)/$(BIN_FOLDER)/ || echo "Skipping fw_scd_file.scd install"
