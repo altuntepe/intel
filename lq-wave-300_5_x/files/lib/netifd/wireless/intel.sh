@@ -4,6 +4,7 @@
 . /lib/netifd/wireless/iopsys_fixup_hwmode.sh
 . /lib/netifd/wireless/iopsys_utils.sh
 
+FBT=0
 wifi_interface_is_ap() {
         iw dev ${1} info | grep -q 'type AP'
 }
@@ -331,6 +332,7 @@ intel_hostapd_setup_bss() {
 	cat >> /var/run/hostapd-$phy.conf <<EOF
 $hostapd_cfg
 bssid=$bssaddr
+nas_identifier=$(echo $bssaddr | tr -d ':')
 ${dtim_period:+dtim_period=$dtim_period}
 ${max_listen_int:+max_listen_interval=$max_listen_int}
 EOF
@@ -525,7 +527,7 @@ intel_config_post_up() {
 
 intel_prepare_vif() {
 	json_select config
-	json_get_vars ifname mode ssid wps:0 disabled:0
+	json_get_vars ifname mode ssid wps:0 disabled:0 ieee80211r:0
 	json_get_vars network:0
 	json_get_vars isolate
 
@@ -610,6 +612,7 @@ intel_prepare_vif() {
 				}
 				hostapd_ctrl="${hostapd_ctrl:-/var/run/hostapd/$ifname}"
 			}
+			[ "$ieee80211r" == "1" ] && FBT=1
 		;;
 	esac
 
@@ -687,6 +690,16 @@ ifname_fixup() {
 		done
 	done
 	uci -q commit wireless
+}
+
+ifbt() {
+	killall -q -9 ifbt 2>/dev/null
+	if [ $(uci -q get owsd.ubusproxy.enable) == 1 ]
+	then
+	[ $FBT == "1" -a -f /sbin/ifbt ] && /sbin/ifbt -r &
+	else
+	[ $FBT == "1" -a -f /sbin/ifbt ] && /sbin/ifbt &
+	fi
 }
 
 drv_intel_setup() {
@@ -799,7 +812,7 @@ drv_intel_setup() {
 		rssi_threshold=${rssi_threshold:--75}
 		fapi_wlan_debug_cli BAND_STEERING -40 $rssi_threshold 5 15 &
 	fi
-
+	ifbt
 	## +++iopsys
 	ubus -t 5 call router.network reload
 }
