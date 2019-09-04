@@ -32,7 +32,6 @@ hostapd_append_wpa_key_mgmt() {
 	local auth_type="$(echo $auth_type | tr 'a-z' 'A-Z')"
 
 	append wpa_key_mgmt "WPA-$auth_type"
-	[ "${ieee80211r:-0}" -gt 0 ] && append wpa_key_mgmt "FT-${auth_type}"
 	[ "${ieee80211w:-0}" -gt 0 ] && append wpa_key_mgmt "WPA-${auth_type}-SHA256"
 }
 
@@ -380,35 +379,6 @@ hostapd_set_bss_options() {
 	if [ "$wpa" -ge "1" ]; then
 		json_get_vars ieee80211r
 		set_default ieee80211r 0
-
-		if [ "$ieee80211r" -gt "0" ]; then
-			json_get_vars mobility_domain r0_key_lifetime r1_key_holder \
-				reassociation_deadline pmk_r1_push ft_psk_generate_local ft_over_ds
-			json_get_values r0kh r0kh
-			json_get_values r1kh r1kh
-
-			set_default mobility_domain "4f57"
-			set_default r0_key_lifetime 10000
-			set_default reassociation_deadline 1000
-			set_default pmk_r1_push 0
-			set_default ft_psk_generate_local 0
-			set_default ft_over_ds 1
-
-			append bss_conf "mobility_domain=$mobility_domain" "$N"
-			append bss_conf "r0_key_lifetime=$r0_key_lifetime" "$N"
-			[ -n "$r1_key_holder" ] && append bss_conf "r1_key_holder=$r1_key_holder" "$N"
-			append bss_conf "reassociation_deadline=$reassociation_deadline" "$N"
-			append bss_conf "pmk_r1_push=$pmk_r1_push" "$N"
-			append bss_conf "ft_psk_generate_local=$ft_psk_generate_local" "$N"
-			append bss_conf "ft_over_ds=$ft_over_ds" "$N"
-
-			for kh in $r0kh; do
-				append bss_conf "r0kh=${kh//,/ }" "$N"
-			done
-			for kh in $r1kh; do
-				append bss_conf "r1kh=${kh//,/ }" "$N"
-			done
-		fi
 
 		append bss_conf "wpa_disable_eapol_key_retries=$wpa_disable_eapol_key_retries" "$N"
 
