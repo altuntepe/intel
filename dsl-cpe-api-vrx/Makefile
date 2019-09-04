@@ -115,7 +115,8 @@ CONFIGURE_ARGS += --enable-vrx \
 	--enable-add-drv-cflags="" \
 	--enable-adsl-led=no \
 	--enable-adsl-mib=no \
-	--enable-dsl-ceoc=no
+	--enable-dsl-ceoc=no \
+	--enable-debug-prints=no
 
 ifeq ($(CONFIG_dsl-cpe-mei-vrx_DEVICE_VR9),y)
 CONFIGURE_ARGS += --enable-vrx-device=vr9
