@@ -20,7 +20,7 @@ PKG_BASE_NAME:=drv_dsl_cpe_api_vrx
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/drv_dsl_cpe_api-$(PKG_VERSION)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=https://github.com/altuntepe/intel/tree/master/dsl-cpe-api-vrx
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 
 PKG_BUILD_DEPENDS:=dsl-cpe-mei-vrx
 
