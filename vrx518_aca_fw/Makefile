@@ -9,7 +9,7 @@ PKG_RELEASE:=1
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_SOURCE_URL:=https://mts-chd.intel.com/~wlnsw/dist/
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 #PKG_SOURCE_URL:=http://localhost
 
 include $(INCLUDE_DIR)/package.mk
