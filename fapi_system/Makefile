@@ -15,7 +15,7 @@ PKG_NAME:=system_fapi
 PKG_VERSION:=1.1.8.10
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=46da2ec36698813a5ce09093f2240a97943ea9ef
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/tree/master/fapi_system
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
