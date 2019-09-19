@@ -22,7 +22,7 @@ PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_RELEASE:=1
 PKG_INSTALL:=1
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 
 DSL_BIN_DIR=$(VENDOR_PATH)/bin
 DSL_INITD_DIR=$(VENDOR_PATH)/etc/init.d
