@@ -19,7 +19,7 @@ PKG_SOURCE_VERSION:=618071cc45785ec58dbef6d0768c74f25e8bdd38
 PKG_BASE_NAME:=$(PKG_NAME)
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.bz2
 #PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_wave/iwlwav-iw.git
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_NAME).git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 
 #PKG_MD5SUM:=40b89c61036add0c2dd1fc10767d3b5f
 
