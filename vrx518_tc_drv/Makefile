@@ -9,7 +9,7 @@ PKG_IS_KERNEL_MODULE=y
 
 PKG_SOURCE_PROTO:=git
 #PKG_SOURCE_URL:=ssh://git@gts-chd.intel.com:29418/sw_ugw/vrx518_tc_drv.git
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/vrx518_tc_drv.git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_SOURCE_VERSION:=1d1d49f10be8f2fb88e106efcbba1ae366489f3a
