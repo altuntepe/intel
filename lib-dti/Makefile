@@ -16,7 +16,7 @@ PKG_SOURCE_VERSION:=0f56dce3ac587854a258e27df4c962a0372f01d0
 PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 #PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/$(PKG_BASE_NAME).git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 
 
 PKG_BIN_DIR=/opt/lantiq/bin
