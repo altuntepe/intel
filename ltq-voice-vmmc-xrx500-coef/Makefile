@@ -23,7 +23,7 @@ PKG_SOURCE:=$(PKG_BASE_NAME)-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_BASE_NAME)-$(PKG_VERSION)
 PKG_UNPACK:=gzip -dc $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
 #PKG_SOURCE_URL:=http://localhost
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/coef_voip_xrx500.git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 
 VOICE_TARGET_FILENAME_FXS_DEDICATED:=xrx500_bbd_fxs.bin
 VOICE_TARGET_FILENAME_FXS_COMBINED:=xrx500_bbd_cmb_fxs.bin
