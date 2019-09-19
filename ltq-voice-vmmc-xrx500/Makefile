@@ -22,7 +22,7 @@ PKG_SOURCE_VERSION:=0d9243aea9aa2c65753a0e063b2d952dbd77c4a8
 PKG_SOURCE:=drv_vmmc_xrx500-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=http://localhost
 #PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/drv_vmmc_xrx500-$(PKG_VERSION)
-PKG_SOURCE_URL:=git@dev.iopsys.eu:intel/drv_vmmc_xrx500.git
+PKG_SOURCE_URL:=https://github.com/altuntepe/intel/$(PKG_NAME)
 PKG_START_SCRIPT:=load_voice_vmmc.sh
 PKG_BUILD_DEPENDS:=ifxos ltq-voice-tapi \
                    PACKAGE_ltq-evtlog:ltq-evtlog
