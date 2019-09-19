@@ -88,8 +88,7 @@ stop() {
          :
       fi
    fi
-#give userspace app enough time to release driver,otherwise, unload driver fail
-	sleep 5
+
    if [ ${bDisableAllLines} -eq 1 ]; then
       rmmod drv_dsl_cpe_api
    fi
